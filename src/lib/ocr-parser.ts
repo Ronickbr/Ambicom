@@ -25,67 +25,102 @@ export function parseElectroluxLabel(fullText: string): OCRMetadata {
         tensao: null,
     };
 
-    const lines = fullText.split('\n');
+    const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const text = fullText.toUpperCase();
 
-    const getValueAfter = (text: string, label: string) => {
-        const uText = text.toUpperCase();
-        const uLabel = label.toUpperCase();
-        const index = uText.indexOf(uLabel);
-        if (index === -1) return null;
+    // -- Regex Patterns for specific Electrolux data types --
+    const modelRegex = /\b[A-Z]{2,4}\s?\d{2,4}\b/; // e.g. RE31, DC35A, DF42
+    const pncRegex = /\b\d{9}\b/; // Exactly 9 digits (PNC)
+    const pncMlRegex = /\b\d{9}\s*\/\s*\d{2}\b/; // PNC/ML e.g. 900277741 / 02
+    const serialRegex = /\b\d{8,11}\b/; // Serial is usually 8-10 digits
+    const voltageRegex = /\b(127|220|110-127|220-240)\s*V~?\b/;
+    const dateRegex = /\b\d{2}[/-]\d{2}[/-]\d{2,4}\b/; // DD/MM/YY or DD/MM/YYYY
 
-        let val = text.substring(index + label.length).trim();
-        // Remove symbols and get the first line of the value
-        return val.replace(/^[:\-\s]+/, '').split('\n')[0].trim() || null;
+    // 1. Try Extracting by Specific Patterns first (more reliable)
+
+    // Model (Pattern search)
+    const modelMatch = text.match(modelRegex);
+    if (modelMatch) result.modelo = modelMatch[0];
+
+    // PNC / ML
+    const pncMatch = text.match(pncMlRegex) || text.match(pncRegex);
+    if (pncMatch) result.pnc_ml = pncMatch[0];
+
+    // No. Serie
+    const serialMatch = text.match(serialRegex);
+    // Be careful not to use the PNC as serial
+    if (serialMatch && (!result.pnc_ml || !result.pnc_ml.includes(serialMatch[0]))) {
+        result.numero_serie = serialMatch[0];
+    }
+
+    // Tensao
+    const voltMatch = text.match(voltageRegex);
+    if (voltMatch) result.tensao = voltMatch[1] + "V";
+
+    // Data
+    const dateMatch = text.match(dateRegex);
+    if (dateMatch) result.data_fabricacao = dateMatch[0];
+
+    // 2. Keyword Search with cleanup
+    const stopWords = [
+        "MODELO", "CODIGO", "COMERCIAL", "PNC", "SERIE", "DATA", "FABRICACAO",
+        "GAS", "VOL", "TOTAL", "TENSAO", "COR", "FREQ", "PESO", "CARGA",
+        "PRODUTO", "CHAVE", "CONTROLE", "FABRICADO", "INDUSTRIA", "BRASILEIRA"
+    ];
+
+    const cleanValue = (val: string | null) => {
+        if (!val) return null;
+        let cleaned = val.replace(/^[:\-\s]+/, '').trim();
+
+        // Remove lines that are just field labels
+        const upper = cleaned.toUpperCase();
+        for (const word of stopWords) {
+            if (upper.startsWith(word) || upper === word) {
+                return null;
+            }
+        }
+
+        // If the value contains common address/manufacturing parts, skip it
+        if (upper.includes("SAO JOSE") || upper.includes("MANAUS") || upper.includes("CURITIBA") || upper.includes("RUA")) {
+            return null;
+        }
+
+        // Limit length and return
+        return cleaned.substring(0, 30) || null;
     };
 
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].toUpperCase();
+    lines.forEach((line, i) => {
+        const uLine = line.toUpperCase();
 
-        // Modelo
-        if (line.includes("MODELO")) {
-            result.modelo = getValueAfter(lines[i], "MODELO") || lines[i + 1]?.trim();
+        // Specific Modelo pattern: Alphanumeric, usually starts with 2-3 letters
+        if (uLine.includes("MODELO") && !result.modelo) {
+            let val = line.split(/modelo/i)[1] || lines[i + 1] || "";
+            let cleaned = cleanValue(val);
+            if (cleaned && cleaned.length > 2) {
+                result.modelo = cleaned;
+            }
         }
 
-        // Código Comercial
-        if (line.includes("CODIGO COMERCIAL") || line.includes("CÓDIGO COMERCIAL")) {
-            result.codigo_comercial = getValueAfter(lines[i], "CODIGO COMERCIAL") || getValueAfter(lines[i], "CÓDIGO COMERCIAL") || lines[i + 1]?.trim();
+        if ((uLine.includes("COD") && uLine.includes("COMER")) && !result.codigo_comercial) {
+            let val = line.split(/comercial/i)[1] || lines[i + 1] || "";
+            result.codigo_comercial = cleanValue(val);
         }
 
-        // Cor
-        if (line.includes("COR")) {
-            result.cor = getValueAfter(lines[i], "COR");
+        if (uLine.includes("COR") && !result.cor) {
+            let val = line.split(/cor/i)[1] || "";
+            result.cor = cleanValue(val);
         }
 
-        // PNC/ML
-        if (line.includes("PNC/ML")) {
-            result.pnc_ml = getValueAfter(lines[i], "PNC/ML") || lines[i + 1]?.trim();
+        if (uLine.includes("GAS") && !result.gas_refrigerante) {
+            let val = line.split(/gas/i)[1] || lines[i + 1] || "";
+            result.gas_refrigerante = cleanValue(val);
         }
 
-        // Número de Série
-        if (line.includes("N. DE SERIE") || line.includes("N.DE SERIE") || line.includes("SERIE")) {
-            result.numero_serie = getValueAfter(lines[i], "N. DE SERIE") || getValueAfter(lines[i], "N.DE SERIE") || getValueAfter(lines[i], "SERIE") || lines[i + 1]?.trim();
+        if (uLine.includes("VOL") && uLine.includes("TOTAL") && !result.volume_total) {
+            let val = line.split(/total/i)[1] || lines[i + 1] || "";
+            result.volume_total = cleanValue(val);
         }
-
-        // Data Fabricação
-        if (line.includes("DATA FABRICACAO") || line.includes("DATA FABRICAÇÃO")) {
-            result.data_fabricacao = getValueAfter(lines[i], "DATA FABRICACAO") || getValueAfter(lines[i], "DATA FABRICAÇÃO") || lines[i + 1]?.trim();
-        }
-
-        // Gás Refrigerante
-        if (line.includes("GAS FRIGOR") || line.includes("GÁS FRIGOR") || line.includes("REFRIGERANTE")) {
-            result.gas_refrigerante = getValueAfter(lines[i], "GAS FRIGOR") || getValueAfter(lines[i], "GÁS FRIGOR") || getValueAfter(lines[i], "REFRIGERANTE") || lines[i + 1]?.trim();
-        }
-
-        // Volume Total
-        if (line.includes("VOL. TOTAL") || line.includes("VOLUME TOTAL")) {
-            result.volume_total = getValueAfter(lines[i], "VOL. TOTAL") || getValueAfter(lines[i], "VOLUME TOTAL") || lines[i + 1]?.trim();
-        }
-
-        // Tensão
-        if (line.includes("TENSAO") || line.includes("TENSÃO") || line.includes("VOLTAGEM")) {
-            result.tensao = getValueAfter(lines[i], "TENSAO") || getValueAfter(lines[i], "TENSÃO") || getValueAfter(lines[i], "VOLTAGEM") || lines[i + 1]?.trim();
-        }
-    }
+    });
 
     return result;
 }
