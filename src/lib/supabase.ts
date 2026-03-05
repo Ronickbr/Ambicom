@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('ERRO CRÍTICO: Variáveis de ambiente do Supabase não encontradas.');
-  console.info('Certifique-se de que o arquivo .env existe na raiz do projeto com VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
+  console.info('No Vite, variáveis devem começar com VITE_ (ex: VITE_SUPABASE_URL).');
+  console.info('No painel da Vercel, certifique-se de que as chaves começam com VITE_');
 }
 
 export const supabase = createClient(
@@ -16,10 +17,7 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      // Custom lock to avoid Navigator LockManager timeouts in some environments
       lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => {
-        // Bypass lock manager and execute immediately
-        // This avoids the 10s timeout if the lock is stuck
         return await fn();
       }
     }
