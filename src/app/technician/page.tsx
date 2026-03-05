@@ -95,8 +95,8 @@ export default function TechnicianPage() {
                             </div>
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Operações de Campo</span>
                         </div>
-                        <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-white uppercase italic">Fila <span className="text-primary not-italic font-light">Técnica</span></h1>
-                        <p className="text-muted-foreground font-medium text-sm mt-1 opacity-70 italic">Ativos aguardando inspeção, checklist e validação técnica.</p>
+                        <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Fila <span className="text-primary not-italic font-light">Técnica</span></h1>
+                        <p className="text-muted-foreground font-medium text-[10px] sm:text-sm mt-1 opacity-70 italic px-1">Ativos aguardando inspeção, checklist e validação técnica.</p>
                     </div>
                     <div className="glass-card flex items-center gap-4 py-4 px-8 border-white/5 bg-neutral-900/50 shadow-inner w-full md:w-auto justify-between md:justify-start">
                         <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20 shadow-sm"><Clock className="h-5 w-5" /></div>
@@ -109,14 +109,14 @@ export default function TechnicianPage() {
 
                 {/* Search Interface */}
                 <div className="flex flex-col md:flex-row items-center gap-4 py-2">
-                    <div className="relative flex-1 group w-full">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    <div className="relative flex-1 group w-full px-1 sm:px-0">
+                        <Search className="absolute left-5 sm:left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                         <input
                             type="text"
-                            placeholder="Localizar ativo por Serial ou Modelo..."
+                            placeholder="Localizar ativo por Serial..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full rounded-2xl border border-white/10 bg-neutral-900/50 py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all text-white shadow-inner backdrop-blur-sm placeholder:text-muted-foreground/30"
+                            className="w-full rounded-2xl border border-white/10 bg-neutral-900/50 py-3 sm:py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all text-white shadow-inner backdrop-blur-sm placeholder:text-muted-foreground/30 font-medium"
                         />
                     </div>
                     <div className="flex gap-3 w-full md:w-auto">
@@ -138,29 +138,28 @@ export default function TechnicianPage() {
                                 <div className="absolute top-0 left-0 w-1 h-full bg-amber-500/50 group-hover:bg-primary transition-colors" />
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 pointer-events-none" />
 
-                                <div className="p-4 md:p-6 md:w-64 border-b md:border-b-0 md:border-r border-white/5 bg-white/[0.02]">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center text-muted-foreground group-hover:text-white transition-colors">
-                                            <AlertTriangle className="h-4 w-4" />
+                                <div className="p-4 sm:p-6 md:w-64 border-b md:border-b-0 md:border-r border-white/5 bg-white/[0.02]">
+                                    <div className="flex items-center justify-between md:flex-col md:items-start md:gap-3 mb-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center text-muted-foreground group-hover:text-white transition-colors">
+                                                <AlertTriangle className="h-4 w-4" />
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Pendente</span>
                                         </div>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Pendente</span>
+                                        <p className="font-mono text-[10px] text-muted-foreground opacity-50 shrink-0">#{product.id.split('-')[0]}</p>
                                     </div>
-                                    <p className="font-mono text-xs text-muted-foreground">ID: {product.id.split('-')[0]}</p>
                                 </div>
-
-                                <div className="flex-1 p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-6 w-full">
+                                <div className="flex-1 p-5 sm:p-6 flex flex-col md:flex-row items-center md:items-center justify-between gap-6 w-full">
                                     <div className="space-y-1 text-center md:text-left">
-                                        <h3 className="text-xl font-black text-white group-hover:text-primary transition-colors tracking-tight uppercase italic">{product.model}</h3>
+                                        <h3 className="text-xl font-black text-white group-hover:text-primary transition-colors tracking-tight uppercase italic break-words">{product.model}</h3>
                                         <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em]">{product.brand} • <span className="font-mono text-white/50">{product.internal_serial}</span></p>
                                     </div>
-
-                                    <div className="flex items-center gap-8 flex-col md:flex-row">
-                                        <div className="text-center md:text-right">
-                                            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest mb-1">Entrada no Sistema</p>
-                                            <p className="text-xs font-bold text-white font-mono">{new Date(product.created_at).toLocaleString("pt-BR")}</p>
+                                    <div className="flex items-center gap-4 sm:gap-8 flex-row md:flex-row w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
+                                        <div className="text-left md:text-right">
+                                            <p className="text-[8px] sm:text-[9px] text-muted-foreground uppercase font-black tracking-widest mb-1">Entrada</p>
+                                            <p className="text-[10px] sm:text-xs font-bold text-white font-mono">{new Date(product.created_at).toLocaleString("pt-BR")}</p>
                                         </div>
-
-                                        <button className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 group-hover:bg-primary group-hover:text-white transition-all shadow-lg group-hover:scale-110 active:scale-95">
+                                        <button className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 group-hover:bg-primary group-hover:text-white transition-all shadow-lg active:scale-90 shrink-0">
                                             <ArrowRight className="h-5 w-5" />
                                         </button>
                                     </div>

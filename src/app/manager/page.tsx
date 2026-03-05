@@ -191,7 +191,7 @@ export default function ManagerDashboard() {
                 </div>
 
                 {/* KPI Grid */}
-                <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
                     <div className="glass-card p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                             <Package className="h-24 w-24 text-primary" />
@@ -205,8 +205,8 @@ export default function ManagerDashboard() {
                             </span>
                         </div>
                         <div className="space-y-1 relative z-10">
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Volume Total</p>
-                            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tighter">{stats.total}</h3>
+                            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Volume Total</p>
+                            <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.total}</h3>
                         </div>
                     </div>
 
@@ -217,8 +217,8 @@ export default function ManagerDashboard() {
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Aguardando Cadastro</p>
-                            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tighter">{stats.cadastro}</h3>
+                            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Cadastro</p>
+                            <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.cadastro}</h3>
                         </div>
                     </div>
 
@@ -229,8 +229,8 @@ export default function ManagerDashboard() {
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Em Avaliação Técnica</p>
-                            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tighter">{stats.avaliacao}</h3>
+                            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Avaliação</p>
+                            <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.avaliacao}</h3>
                         </div>
                     </div>
 
@@ -241,8 +241,8 @@ export default function ManagerDashboard() {
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Disponível em Estoque</p>
-                            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tighter">{stats.estoque}</h3>
+                            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Estoque</p>
+                            <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.estoque}</h3>
                         </div>
                     </div>
 
@@ -253,8 +253,8 @@ export default function ManagerDashboard() {
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Itens Vendidos</p>
-                            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tighter">{stats.vendidos}</h3>
+                            <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Vendidos</p>
+                            <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.vendidos}</h3>
                         </div>
                     </div>
                 </div>
@@ -266,7 +266,7 @@ export default function ManagerDashboard() {
                             <h3 className="text-lg font-black text-white uppercase tracking-tight">Trilha de Auditoria</h3>
                             <button className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-white transition-colors">Ver Completo</button>
                         </div>
-                        <div className="overflow-x-auto">
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-white/5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                                     <tr>
@@ -278,19 +278,9 @@ export default function ManagerDashboard() {
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {recentLogs.map((log) => {
-                                        // Handle potential array return from Supabase if relation is not detected as 1:1
-                                        const profileName = Array.isArray(log.profiles)
-                                            ? log.profiles[0]?.full_name
-                                            : log.profiles?.full_name;
-
-                                        const productModel = Array.isArray(log.products)
-                                            ? log.products[0]?.model
-                                            : log.products?.model;
-
-                                        const productSerial = Array.isArray(log.products)
-                                            ? log.products[0]?.internal_serial
-                                            : log.products?.internal_serial;
-
+                                        const profileName = Array.isArray(log.profiles) ? log.profiles[0]?.full_name : log.profiles?.full_name;
+                                        const productModel = Array.isArray(log.products) ? log.products[0]?.model : log.products?.model;
+                                        const productSerial = Array.isArray(log.products) ? log.products[0]?.internal_serial : log.products?.internal_serial;
                                         const statusInfo = statusConfig[log.new_status as keyof typeof statusConfig];
 
                                         return (
@@ -322,6 +312,39 @@ export default function ManagerDashboard() {
                                     })}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Mobile Logs View */}
+                        <div className="md:hidden divide-y divide-white/5">
+                            {recentLogs.map((log) => {
+                                const profileName = Array.isArray(log.profiles) ? log.profiles[0]?.full_name : log.profiles?.full_name;
+                                const productModel = Array.isArray(log.products) ? log.products[0]?.model : log.products?.model;
+                                const productSerial = Array.isArray(log.products) ? log.products[0]?.internal_serial : log.products?.internal_serial;
+                                const statusInfo = statusConfig[log.new_status as keyof typeof statusConfig];
+
+                                return (
+                                    <div key={log.id} className="p-4 space-y-3">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-white text-sm tracking-tight">{productModel || "N/A"}</span>
+                                                <span className="font-mono text-[9px] text-muted-foreground uppercase">{productSerial || "N/A"}</span>
+                                            </div>
+                                            <span className={`inline-flex px-2 py-0.5 rounded-md ${statusInfo?.color || 'bg-white/5 border border-white/10 text-white'} text-[8px] font-black uppercase tracking-widest`}>
+                                                {statusInfo?.label || log.new_status}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center pt-1">
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-5 w-5 rounded-full bg-white/5 flex items-center justify-center text-[8px] font-bold text-muted-foreground border border-white/5">
+                                                    {profileName?.substring(0, 1) || "?"}
+                                                </div>
+                                                <span className="text-[10px] font-medium text-muted-foreground">{profileName || "Sistema"}</span>
+                                            </div>
+                                            <span className="font-mono text-[9px] text-muted-foreground/40">{new Date(log.created_at).toLocaleString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 

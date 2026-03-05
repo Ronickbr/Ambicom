@@ -58,7 +58,7 @@ export default function InventoryPage() {
     const [products, setProducts] = useState<InventoryProduct[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("LIBERADO");
+    const [statusFilter, setStatusFilter] = useState("EM ESTOQUE");
     const [page, setPage] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -240,7 +240,7 @@ export default function InventoryPage() {
                         <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic leading-none">
                             Controle de <span className="text-primary tracking-normal font-light not-italic">Inventário</span>
                         </h1>
-                        <p className="text-muted-foreground font-medium text-xs sm:text-sm mt-2 opacity-70 italic">Monitoramento em tempo real de ativos e equipamentos industriais.</p>
+                        <p className="text-muted-foreground font-medium text-[10px] sm:text-sm mt-2 opacity-70 italic px-1">Monitoramento em tempo real de ativos e equipamentos industriais.</p>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6">
                         <div className="flex items-center gap-4 bg-neutral-900/50 border border-white/5 rounded-2xl px-6 py-3 shadow-inner justify-between sm:justify-start">
@@ -252,12 +252,12 @@ export default function InventoryPage() {
                         </div>
                         <div className="flex items-center justify-center bg-white/5 rounded-xl p-1 border border-white/10 shadow-lg">
                             {selectedIds.size > 0 && (
-                        <button
-                            onClick={async () => {
-                                const { printLabels } = await import("@/lib/export-utils");
-                                const selectedProducts = products.filter(p => selectedIds.has(p.id));
-                                printLabels(selectedProducts);
-                            }}
+                                <button
+                                    onClick={async () => {
+                                        const { printLabels } = await import("@/lib/export-utils");
+                                        const selectedProducts = products.filter(p => selectedIds.has(p.id));
+                                        printLabels(selectedProducts);
+                                    }}
                                     className="h-10 px-4 bg-primary text-white rounded-lg flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 animate-in zoom-in mr-1"
                                 >
                                     <Barcode className="h-4 w-4" />
@@ -574,8 +574,8 @@ export default function InventoryPage() {
 
                 {/* Modal de Edição */}
                 {editingProduct && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/95 backdrop-blur-2xl animate-in fade-in duration-300">
-                        <div className="glass-card w-full max-w-xl p-6 sm:p-10 border-white/10 shadow-4xl space-y-8 sm:space-y-10 bg-neutral-900 relative overflow-y-auto max-h-[90vh]">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/95 backdrop-blur-2xl animate-in fade-in duration-300">
+                        <div className="glass-card w-full max-w-xl p-6 sm:p-10 border-white/10 shadow-4xl space-y-6 sm:space-y-10 bg-neutral-900 relative overflow-y-auto max-h-[95vh]">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
 
                             <div className="flex justify-between items-start relative z-10">
@@ -639,8 +639,8 @@ export default function InventoryPage() {
 
                 {/* Modal de Exclusão */}
                 {deletingProduct && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/98 backdrop-blur-3xl animate-in zoom-in-95 duration-300">
-                        <div className="glass-card w-full max-w-md p-12 border-red-500/30 shadow-4xl text-center space-y-10 bg-neutral-950 relative overflow-hidden">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/98 backdrop-blur-3xl animate-in zoom-in-95 duration-300">
+                        <div className="glass-card w-full max-w-md p-8 sm:p-12 border-red-500/30 shadow-4xl text-center space-y-8 sm:space-y-10 bg-neutral-950 relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
                             <div className="h-24 w-24 rounded-3xl bg-red-500/10 flex items-center justify-center mx-auto ring-8 ring-red-500/5 rotate-12 group-hover:rotate-0 transition-transform"><AlertCircle className="h-12 w-12 text-red-500" /></div>
                             <div className="space-y-4">

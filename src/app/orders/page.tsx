@@ -140,7 +140,7 @@ export default function OrdersPage() {
         setShowAddModal(true);
         const { data: cData } = await supabase.from("clients").select("*");
         setClients((cData as Client[]) || []);
-        const { data: pData } = await supabase.from("products").select("*").in("status", ["LIBERADO", "GESTOR"]);
+        const { data: pData } = await supabase.from("products").select("*").in("status", ["EM ESTOQUE"]);
         setAvailableProducts((pData as Product[]) || []);
     };
 
@@ -303,67 +303,111 @@ export default function OrdersPage() {
                 </div>
 
                 {filteredOrders.length > 0 ? (
-                    <div className="glass-card overflow-hidden rounded-2xl border border-white/10 shadow-2xl p-0">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm border-collapse">
-                                <thead className="bg-white/5 text-muted-foreground uppercase text-[10px] font-black tracking-widest border-b border-white/5">
-                                    <tr>
-                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Código</th>
-                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Cliente / Destino</th>
-                                        <th className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">Status</th>
-                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Data Estimada</th>
-                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {filteredOrders.map((order) => (
-                                        <tr
-                                            key={order.id}
-                                            className="group hover:bg-white/[0.02] transition-all cursor-pointer"
-                                            onClick={() => handleViewOrder(order)}
-                                        >
-                                            <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all border border-primary/10">
-                                                        <Package className="h-4 w-4" />
-                                                    </div>
-                                                    <span className="font-mono text-sm font-bold text-white/80 group-hover:text-primary transition-colors">
-                                                        #{order.id.split("-")[0].toUpperCase()}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
-                                                <div className="flex flex-col">
-                                                    <span className="text-white font-bold text-base leading-tight">{order.clients?.name}</span>
-                                                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 font-bold">Venda Direta</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">
-                                                <span className={cn("inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm", statusStyles[order.status as keyof typeof statusStyles])}>
-                                                    {order.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
-                                                <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold bg-white/5 w-fit px-3 py-1 rounded-lg border border-white/5 shadow-inner">
-                                                    <Calendar className="h-3 w-3 text-primary" />
-                                                    {new Date(order.created_at).toLocaleDateString("pt-BR")}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleViewOrder(order);
-                                                    }}
-                                                    className="h-10 w-10 flex items-center justify-center text-muted-foreground hover:bg-white/10 rounded-xl transition-all group-hover:text-white hover:scale-110 active:scale-95 border border-transparent hover:border-white/10"
-                                                >
-                                                    <ChevronRight className="h-5 w-5" />
-                                                </button>
-                                            </td>
+                    <div className="space-y-4">
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block glass-card overflow-hidden rounded-2xl border border-white/10 shadow-2xl p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm border-collapse">
+                                    <thead className="bg-white/5 text-muted-foreground uppercase text-[10px] font-black tracking-widest border-b border-white/5">
+                                        <tr>
+                                            <th className="px-6 py-5 whitespace-nowrap">Código</th>
+                                            <th className="px-6 py-5 whitespace-nowrap">Cliente / Destino</th>
+                                            <th className="px-6 py-5 text-center whitespace-nowrap">Status</th>
+                                            <th className="px-6 py-5 whitespace-nowrap">Data Estimada</th>
+                                            <th className="px-6 py-5 whitespace-nowrap"></th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {filteredOrders.map((order) => (
+                                            <tr
+                                                key={order.id}
+                                                className="group hover:bg-white/[0.02] transition-all cursor-pointer"
+                                                onClick={() => handleViewOrder(order)}
+                                            >
+                                                <td className="px-6 py-5 whitespace-nowrap">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all border border-primary/10">
+                                                            <Package className="h-4 w-4" />
+                                                        </div>
+                                                        <span className="font-mono text-sm font-bold text-white/80 group-hover:text-primary transition-colors">
+                                                            #{order.id.split("-")[0].toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 whitespace-nowrap">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-white font-bold text-base leading-tight">{order.clients?.name}</span>
+                                                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 font-bold">Venda Direta</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 text-center whitespace-nowrap">
+                                                    <span className={cn("inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm", statusStyles[order.status as keyof typeof statusStyles])}>
+                                                        {order.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-5 whitespace-nowrap">
+                                                    <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold bg-white/5 w-fit px-3 py-1 rounded-lg border border-white/5 shadow-inner">
+                                                        <Calendar className="h-3 w-3 text-primary" />
+                                                        {new Date(order.created_at).toLocaleDateString("pt-BR")}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 text-right whitespace-nowrap">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleViewOrder(order);
+                                                        }}
+                                                        className="h-10 w-10 flex items-center justify-center text-muted-foreground hover:bg-white/10 rounded-xl transition-all group-hover:text-white hover:scale-110 active:scale-95 border border-transparent hover:border-white/10"
+                                                    >
+                                                        <ChevronRight className="h-5 w-5" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="grid grid-cols-1 gap-4 md:hidden">
+                            {filteredOrders.map((order) => (
+                                <div
+                                    key={order.id}
+                                    onClick={() => handleViewOrder(order)}
+                                    className="glass-card p-5 bg-neutral-900/40 border-white/5 space-y-4 active:scale-[0.98] transition-all"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                                                <Package className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Pedido</p>
+                                                <p className="text-sm font-mono font-bold text-white tracking-tight">#{order.id.split("-")[0].toUpperCase()}</p>
+                                            </div>
+                                        </div>
+                                        <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border", statusStyles[order.status as keyof typeof statusStyles])}>
+                                            {order.status}
+                                        </span>
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-2">Cliente / Destino</p>
+                                        <p className="text-lg font-black text-white">{order.clients?.name}</p>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                        <div className="flex items-center gap-2 text-muted-foreground font-bold">
+                                            <Calendar className="h-3.5 w-3.5 text-primary" />
+                                            <span className="text-xs">{new Date(order.created_at).toLocaleDateString("pt-BR")}</span>
+                                        </div>
+                                        <button className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-primary">
+                                            Detalhes <ChevronRight className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                         <div className="flex items-center justify-between p-4 border-t border-white/5 bg-neutral-900/50">
                             <span className="text-xs text-muted-foreground font-medium">
@@ -405,8 +449,8 @@ export default function OrdersPage() {
 
                 {/* Modal de Novo Pedido */}
                 {showAddModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
-                        <div className="glass-card w-full max-w-2xl space-y-6 sm:space-y-8 border-white/10 shadow-2xl p-6 sm:p-10 bg-neutral-900/90 relative overflow-hidden">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
+                        <div className="glass-card w-full max-w-2xl space-y-6 sm:space-y-8 border-white/10 shadow-2xl p-6 sm:p-10 bg-neutral-900/90 relative overflow-y-auto max-h-[95vh]">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
                             <div className="flex items-center justify-between relative">
@@ -510,8 +554,8 @@ export default function OrdersPage() {
 
             {/* Modal de Detalhes do Pedido */}
             {showDetailsModal && selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
-                    <div className="glass-card w-full max-w-4xl max-h-[90vh] overflow-hidden border-white/10 shadow-2xl bg-neutral-900/90 relative flex flex-col">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
+                    <div className="glass-card w-full max-w-4xl max-h-[95vh] overflow-hidden border-white/10 shadow-2xl bg-neutral-900/90 relative flex flex-col">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
                         {/* Modal Header */}

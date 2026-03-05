@@ -114,7 +114,7 @@ export default function TechnicianChecklist() {
             const { error: updateError } = await supabase
                 .from("products")
                 .update({
-                    status: "TECNICO"
+                    status: "EM AVALIAÇÃO"
                 })
                 .eq("id", id);
 
@@ -125,7 +125,7 @@ export default function TechnicianChecklist() {
                 .insert({
                     product_id: id,
                     old_status: "CADASTRO",
-                    new_status: "TECNICO",
+                    new_status: "EM AVALIAÇÃO",
                     actor_id: (await supabase.auth.getUser()).data.user?.id || null,
                     data: {
                         checklist: checklistData,

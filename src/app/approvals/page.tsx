@@ -164,7 +164,7 @@ export default function ApprovalsPage() {
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Conformidade & QA</span>
                         </div>
                         <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Central de <span className="text-primary not-italic font-light">Revisão</span></h1>
-                        <p className="text-muted-foreground font-medium text-xs sm:text-sm mt-1 opacity-70 italic">Validação de qualidade, triagem técnica e liberação de ativos.</p>
+                        <p className="text-muted-foreground font-medium text-[10px] sm:text-sm mt-1 opacity-70 italic px-1">Validação de qualidade, triagem técnica e liberação de ativos.</p>
                     </div>
                     <div className="glass-card flex items-center gap-4 py-3 px-6 sm:py-4 sm:px-8 border-white/5 bg-neutral-900/50 shadow-inner w-full md:w-auto">
                         <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20 shadow-sm shrink-0"><Clock className="h-5 w-5" /></div>
@@ -176,7 +176,7 @@ export default function ApprovalsPage() {
                 </div>
 
                 {/* Search Interface */}
-                <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 py-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 py-2 px-1 sm:px-0">
                     <div className="relative flex-1 group w-full">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                         <input
@@ -184,17 +184,17 @@ export default function ApprovalsPage() {
                             placeholder="Buscar por Modelo, Serial ou Marca..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full rounded-2xl border border-white/10 bg-neutral-900/50 py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all text-white shadow-inner backdrop-blur-sm placeholder:text-muted-foreground/30 font-medium"
+                            className="w-full rounded-2xl border border-white/10 bg-neutral-900/50 py-3 sm:py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all text-white shadow-inner backdrop-blur-sm placeholder:text-muted-foreground/30 font-medium"
                         />
                     </div>
-                    <div className="flex gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-                        <button className="flex-1 lg:flex-none px-6 sm:px-8 h-14 bg-neutral-900/50 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-widest text-white flex items-center justify-center gap-3 hover:bg-white/5 transition-all shadow-inner whitespace-nowrap">
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <button className="flex-1 sm:flex-none px-4 sm:px-8 h-12 sm:h-14 bg-neutral-900/50 rounded-2xl border border-white/10 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-white flex items-center justify-center gap-2 sm:gap-3 hover:bg-white/5 transition-all shadow-inner whitespace-nowrap">
                             <Filter className="h-4 w-4 text-primary" />
                             Marca
                         </button>
                         <button
                             onClick={() => toast.info("Histórico em desenvolvimento")}
-                            className="flex-1 lg:flex-none px-6 sm:px-8 h-14 bg-neutral-900/50 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-widest text-white flex items-center justify-center gap-3 hover:bg-white/5 transition-all shadow-inner whitespace-nowrap"
+                            className="flex-1 sm:flex-none px-4 sm:px-8 h-12 sm:h-14 bg-neutral-900/50 rounded-2xl border border-white/10 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-white flex items-center justify-center gap-2 sm:gap-3 hover:bg-white/5 transition-all shadow-inner whitespace-nowrap"
                         >
                             <HistoryIcon className="h-3.5 w-3.5 text-primary" />
                             Histórico
@@ -294,12 +294,12 @@ export default function ApprovalsPage() {
 
             {/* Detailed Product Modal */}
             {selectedProduct && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
                     <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)} />
-                    <div className="glass-card w-full max-w-5xl bg-[#0a0a0a] border border-white/10 max-h-[90vh] overflow-y-auto relative z-10 animate-in zoom-in-95 duration-200">
-                        <div className="p-6 sm:p-10 space-y-8">
+                    <div className="glass-card w-full max-w-5xl bg-[#0a0a0a] border border-white/10 max-h-[95vh] overflow-y-auto relative z-10 animate-in zoom-in-95 duration-200">
+                        <div className="p-4 sm:p-10 space-y-6 sm:space-y-8">
                             {/* Modal Header */}
-                            <div className="flex justify-between items-start gap-6 border-b border-white/5 pb-8">
+                            <div className="flex justify-between items-start gap-4 sm:gap-6 border-b border-white/5 pb-6 sm:pb-8">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-3">
                                         <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">

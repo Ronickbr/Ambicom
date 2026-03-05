@@ -223,8 +223,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             </aside>
 
             {/* Main Content */}
-            <main className="lg:pl-64">
-                <div className="container mx-auto p-4 md:p-8">
+            <main className="lg:pl-64 min-h-screen">
+                <div className="mx-auto p-2 sm:p-4 md:p-8">
                     {children}
                 </div>
             </main>
