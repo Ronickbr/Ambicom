@@ -49,17 +49,20 @@ serve(async (req: Request) => {
             {
               parts: [
                 {
-                  text: `Você é um especialista em extração de dados de etiquetas industriais (OCR inteligente).
+                  text: `Você é um especialista em extração de dados de etiquetas de eletrodomésticos da Electrolux (OCR inteligente).
                   Analise a imagem da etiqueta e extraia as seguintes informações em formato JSON estrito:
-                  - fabricante (string)
-                  - modelo (string)
-                  - codigo_comercial (string)
-                  - numero_serie (string)
-                  - gas_refrigerante (string)
-                  - volume_total (string)
-                  - tensao (string)
+                  - fabricante (string): Geralmente "Electrolux"
+                  - modelo (string): Localizado abaixo de "MODELO" (ex: IF56B, IM8S)
+                  - codigo_comercial (string): Localizado abaixo de "CODIGO COMERCIAL" (ex: 02469FBA)
+                  - cor (string): Localizado abaixo de "COR" (ex: 35, 30)
+                  - pnc_ml (string): Localizado abaixo de "PNC/ML" (ex: 924262803 / 02)
+                  - numero_serie (string): Localizado abaixo de "N. DE SERIE" (ex: 14201572)
+                  - data_fabricacao (string): Localizado abaixo de "DATA FABRICACAO" (formato DD/MM/AAAA)
+                  - gas_refrigerante (string): Localizado abaixo de "GAS FRIGOR." (ex: R600a)
+                  - volume_total (string): Localizado abaixo de "VOL. TOTAL" (ex: 474 L)
+                  - tensao (string): Localizado abaixo de "TENSAO" (ex: 220 V, 127 V)
                   
-                  Retorne APENAS o JSON puro, sem blocos de código markdown ou explicações. Se um campo não for encontrado, retorne null.`,
+                  Retorne APENAS o JSON puro, sem blocos de código markdown ou explicações. Se um campo não for encontrado ou estiver ilegível, retorne null.`,
                 },
                 {
                   inline_data: {
