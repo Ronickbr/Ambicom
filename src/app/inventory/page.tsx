@@ -457,229 +457,156 @@ export default function InventoryPage() {
                     </div>
                 ) : filteredProducts.length > 0 ? (
                     <div className="space-y-4">
-                        {/* Mobile Card View */}
-                        <div className="grid grid-cols-1 gap-4 lg:hidden px-2">
-                            {filteredProducts.map(p => {
-                                const config = statusConfig[p.status as keyof typeof statusConfig];
-                                return (
-                                    <div
-                                        key={p.id}
-                                        onClick={() => fetchHistory(p)}
-                                        className={cn(
-                                            "glass-card p-5 border-white/5 bg-neutral-900/40 space-y-4 active:scale-[0.98] transition-all",
-                                            selectedIds.has(p.id) && "border-primary/30 bg-primary/5"
-                                        )}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
-                                                    <Layers className="h-5 w-5 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-black text-white text-sm uppercase tracking-tight">{p.brand}</h4>
-                                                    <p className="text-xs text-muted-foreground font-medium">{p.model}</p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleSelect(p.id);
-                                                }}
-                                                className={cn(
-                                                    "h-6 w-6 rounded-md border-2 transition-all flex items-center justify-center",
-                                                    selectedIds.has(p.id) ? "bg-primary border-primary" : "border-white/20 bg-white/5"
-                                                )}
-                                            >
-                                                {selectedIds.has(p.id) && <CheckCircle className="h-4 w-4 text-white" />}
-                                            </button>
-                                        </div>
+                        <div className="glass-card overflow-hidden border-white/10 shadow-2xl bg-neutral-900/30 p-0 rounded-2xl">
+                            <div className="relative group/table" data-scroll="right">
+                                {/* Horizontal Scroll Indicators */}
+                                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                                <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
-                                        <div className="grid grid-cols-2 gap-4 py-2 border-y border-white/5">
-                                            <div className="flex flex-col gap-1">
-                                                <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">ID Rastreio</span>
-                                                <span className="text-[10px] font-mono font-bold text-white">{p.internal_serial}</span>
-                                            </div>
-                                            <div className="flex flex-col gap-1">
-                                                <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Status</span>
-                                                {config && (
-                                                    <div className={cn(
-                                                        "inline-flex items-center gap-1.5 text-[8px] font-black uppercase tracking-tight",
-                                                        config.color.split(' ')[1] // Get just the text color
-                                                    )}>
-                                                        <config.icon className="h-2.5 w-2.5" />
-                                                        {config.label}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-6 w-6 rounded-full bg-white/5 flex items-center justify-center text-primary">
-                                                    <User className="h-3 w-3" />
-                                                </div>
-                                                <span className="text-[9px] font-bold text-muted-foreground uppercase truncate max-w-[120px]">
-                                                    {p.orders?.clients?.name || "Stock Local"}
-                                                </span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                {isAuthorized && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setEditingProduct({ ...p });
-                                                        }}
-                                                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-white/5 text-muted-foreground border border-white/10"
+                                <div
+                                    className="overflow-x-auto scrollbar-hide"
+                                    onScroll={(e) => {
+                                        const target = e.currentTarget;
+                                        const group = target.parentElement;
+                                        if (group) {
+                                            const scrollLeft = target.scrollLeft;
+                                            const maxScroll = target.scrollWidth - target.clientWidth;
+                                            let status = 'none';
+                                            if (maxScroll > 0) {
+                                                if (scrollLeft <= 10) status = 'right';
+                                                else if (scrollLeft >= maxScroll - 10) status = 'left';
+                                                else status = 'both';
+                                            }
+                                            group.setAttribute('data-scroll', status);
+                                        }
+                                    }}
+                                >
+                                    <table className="w-full text-left border-collapse min-w-[700px] sm:min-w-full">
+                                        <thead className="bg-white/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                                            <tr>
+                                                <th className="px-4 py-6 text-center w-12">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={products.length > 0 && selectedIds.size === products.length}
+                                                        onChange={toggleSelectAll}
+                                                        className="h-4 w-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/30 cursor-pointer"
+                                                    />
+                                                </th>
+                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Equipamento</th>
+                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Última Operação</th>
+                                                <th className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">Status Lab</th>
+                                                <th className="px-4 sm:px-6 py-4 text-right whitespace-nowrap pr-6 sm:pr-10">Controle</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {filteredProducts.map((p) => {
+                                                const config = statusConfig[p.status as keyof typeof statusConfig];
+                                                const isSelected = selectedIds.has(p.id);
+                                                return (
+                                                    <tr
+                                                        key={p.id}
+                                                        onClick={() => fetchHistory(p)}
+                                                        className={cn(
+                                                            "group hover:bg-white/[0.03] transition-all cursor-pointer active:bg-white/[0.05]",
+                                                            isSelected && "bg-primary/[0.03]"
+                                                        )}
                                                     >
-                                                        <Edit2 className="h-3.5 w-3.5" />
-                                                    </button>
-                                                )}
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        fetchHistory(p);
-                                                    }}
-                                                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20"
-                                                >
-                                                    <HistoryIcon className="h-3.5 w-3.5" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Desktop Table View */}
-                        <div className="glass-card overflow-hidden border-white/5 shadow-2xl bg-neutral-900/30 hidden lg:block">
-                            <div className="overflow-x-auto">
-                                <table className="w-full border-collapse min-w-[1000px]">
-                                    <thead>
-                                        <tr className="bg-white/[0.02] border-b border-white/5">
-                                            <th className="px-4 py-6 text-center w-12">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={products.length > 0 && selectedIds.size === products.length}
-                                                    onChange={toggleSelectAll}
-                                                    className="h-4 w-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/30 cursor-pointer"
-                                                />
-                                            </th>
-                                            <th className="px-4 sm:px-6 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Equipamento (Marca/Modelo)</th>
-                                            <th className="px-4 sm:px-6 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Data Entrada (Liberação)</th>
-                                            <th className="px-4 sm:px-6 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Status</th>
-                                            <th className="px-4 sm:px-6 py-6 text-right text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {filteredProducts.map(p => {
-                                            const config = statusConfig[p.status as keyof typeof statusConfig];
-                                            return (
-                                                <tr
-                                                    key={p.id}
-                                                    onClick={() => fetchHistory(p)}
-                                                    className={cn("group hover:bg-white/[0.02] transition-all duration-300 cursor-pointer", selectedIds.has(p.id) && "bg-primary/5")}
-                                                >
-                                                    <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedIds.has(p.id)}
-                                                            onChange={() => toggleSelect(p.id)}
-                                                            className="h-4 w-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/30 cursor-pointer"
-                                                        />
-                                                    </td>
-                                                    <td className="px-4 sm:px-6 py-3">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-primary/50 group-hover:bg-primary/5 transition-all">
-                                                                <Layers className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-black text-white text-base group-hover:text-primary transition-colors tracking-tight">{p.brand} {p.model}</p>
-                                                                <div className="flex items-center gap-2 mt-0.5">
-                                                                    <span className="text-[9px] font-black text-primary uppercase tracking-widest bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">{p.voltage || "BIVOLT"}</span>
-                                                                    <span className="text-[9px] text-muted-foreground uppercase tracking-widest whitespace-nowrap">{new Date(p.updated_at).toLocaleDateString()}</span>
+                                                        <td className="px-4 py-6 text-center" onClick={e => e.stopPropagation()}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                onChange={() => toggleSelect(p.id)}
+                                                                className="h-4 w-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/30 cursor-pointer"
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 sm:px-6 py-4 sm:py-6 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                            <div className="flex items-center gap-3 sm:gap-4">
+                                                                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-primary/50 group-hover:bg-primary/5 transition-all shadow-inner shrink-0">
+                                                                    <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="font-black text-white text-sm sm:text-base group-hover:text-primary transition-colors tracking-tight uppercase italic leading-tight truncate max-w-[120px] sm:max-w-none">{p.brand} {p.model}</p>
+                                                                    <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
+                                                                        <span className="text-[8px] sm:text-[9px] font-black text-primary uppercase tracking-widest bg-primary/5 px-1 sm:px-1.5 py-0.5 rounded border border-primary/10 shadow-sm shrink-0">{p.voltage || "BIVOLT"}</span>
+                                                                        <span className="text-[8px] sm:text-[9px] font-mono text-muted-foreground/60 uppercase truncate">S/N: {p.internal_serial}</span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 sm:px-6 py-3">
-                                                        <div className="flex flex-col">
-                                                            <p className="font-black text-white text-base group-hover:text-primary transition-colors tracking-tight uppercase italic">{p.brand} {p.model}</p>
-                                                            <span className="text-[9px] font-mono text-muted-foreground/60">S/N: {p.original_serial || p.internal_serial}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 sm:px-6 py-3">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-white font-bold text-xs uppercase italic tracking-tight">{new Date(p.updated_at).toLocaleDateString('pt-BR')}</span>
-                                                            <span className="text-[9px] text-muted-foreground/40 uppercase font-black">{new Date(p.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 sm:px-6 py-3">
-                                                        {config && (
-                                                            <div className={cn(
-                                                                "inline-flex items-center gap-1.5 px-2 py-1 rounded text-[8px] font-black uppercase tracking-tight border",
-                                                                config.color
-                                                            )}>
-                                                                <config.icon className="h-2.5 w-2.5" />
-                                                                {config.label}
+                                                        </td>
+                                                        <td className="px-4 sm:px-6 py-4 sm:py-6 whitespace-nowrap">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-white font-bold text-[10px] sm:text-xs uppercase italic tracking-tight">{new Date(p.updated_at).toLocaleDateString('pt-BR')}</span>
+                                                                <span className="text-[8px] sm:text-[9px] text-muted-foreground/40 uppercase font-black">{new Date(p.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                                                             </div>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-4 sm:px-6 py-3 text-right" onClick={e => e.stopPropagation()}>
-                                                        <div className="flex items-center justify-end gap-2 group-hover:translate-x-[-4px] transition-transform">
-                                                            <button
-                                                                onClick={() => fetchHistory(p)}
-                                                                className="h-9 w-9 flex items-center justify-center rounded-xl bg-white/5 text-muted-foreground hover:bg-primary hover:text-white transition-all border border-white/10 shadow-sm"
-                                                                title="Detalhes e Histórico"
-                                                            >
-                                                                <HistoryIcon className="h-4 w-4" />
-                                                            </button>
-                                                            {isAuthorized && (
-                                                                <>
-                                                                    <button
-                                                                        onClick={() => setEditingProduct({ ...p })}
-                                                                        className="h-9 w-9 flex items-center justify-center rounded-xl bg-white/5 text-muted-foreground hover:bg-white hover:text-black transition-all border border-white/10 shadow-sm"
-                                                                        title="Editar Ativo"
-                                                                    >
-                                                                        <Edit2 className="h-4 w-4" />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setDeletingProduct(p)}
-                                                                        className="h-9 w-9 flex items-center justify-center rounded-xl bg-white/5 text-muted-foreground hover:bg-red-500 hover:text-white transition-all border border-white/10 shadow-sm"
-                                                                        title="Remover Registro"
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4" />
-                                                                    </button>
-                                                                </>
+                                                        </td>
+                                                        <td className="px-4 sm:px-6 py-4 sm:py-6 text-center whitespace-nowrap">
+                                                            {config && (
+                                                                <div className={cn(
+                                                                    "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider border shadow-sm",
+                                                                    config.color
+                                                                )}>
+                                                                    <config.icon className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                                                                    {config.label}
+                                                                </div>
                                                             )}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+                                                        </td>
+                                                        <td className="px-4 sm:px-6 py-4 sm:py-6 text-right whitespace-nowrap pr-6 sm:pr-10" onClick={e => e.stopPropagation()}>
+                                                            <div className="flex items-center justify-end gap-1 sm:gap-2">
+                                                                <button
+                                                                    onClick={() => fetchHistory(p)}
+                                                                    className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-muted-foreground hover:bg-primary/20 hover:text-primary transition-all border border-white/10 shadow-inner group/btn"
+                                                                    title="Detalhes e Histórico"
+                                                                >
+                                                                    <HistoryIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 group-hover/btn:scale-110 transition-transform" />
+                                                                </button>
+                                                                {isAuthorized && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={() => setEditingProduct({ ...p })}
+                                                                            className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-muted-foreground hover:bg-white hover:text-black transition-all border border-white/10 shadow-inner group/btn"
+                                                                            title="Editar Ativo"
+                                                                        >
+                                                                            <Edit2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 group-hover/btn:scale-110 transition-transform" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setDeletingProduct(p)}
+                                                                            className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-muted-foreground hover:bg-red-500/20 hover:text-red-500 transition-all border border-white/10 shadow-inner group/btn"
+                                                                            title="Remover Registro"
+                                                                        >
+                                                                            <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 group-hover/btn:scale-110 transition-transform" />
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 border-t border-white/5 bg-neutral-900/50">
-                            <span className="text-xs text-muted-foreground font-medium">
+                        <div className="flex items-center justify-between p-4 border border-white/5 rounded-2xl bg-neutral-900/50 shadow-lg">
+                            <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
                                 Mostrando <span className="text-white font-bold">{products.length}</span> de <span className="text-white font-bold">{totalCount}</span> registros
                             </span>
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => setPage(p => Math.max(0, p - 1))}
                                     disabled={page === 0}
-                                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/5"
                                 >
                                     <ChevronLeft className="h-4 w-4" />
                                 </button>
-                                <span className="text-xs font-bold text-white px-3 bg-white/5 py-2 rounded-lg border border-white/5">
-                                    Página {page + 1}
+                                <span className="text-[10px] font-black text-white px-4 bg-white/5 h-10 flex items-center rounded-xl border border-white/5 uppercase tracking-widest">
+                                    Pág {page + 1}
                                 </span>
                                 <button
                                     onClick={() => setPage(p => p + 1)}
                                     disabled={(page + 1) * PAGE_SIZE >= totalCount}
-                                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/5"
                                 >
                                     <ChevronRight className="h-4 w-4" />
                                 </button>
@@ -695,9 +622,7 @@ export default function InventoryPage() {
                             {searchTerm ? "O filtro atual não retornou resultados aproximados. Tente simplificar sua pesquisa." : "Sua base de inventário está vazia. Inicie cadastrando novos equipamentos."}
                         </p>
                     </div>
-                )}
-
-                {/* Modal de Edição */}
+                )}                          {/* Modal de Edição */}
                 {editingProduct && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/95 backdrop-blur-2xl animate-in fade-in duration-300">
                         <div className="glass-card w-full max-w-xl p-6 sm:p-10 border-white/10 shadow-4xl space-y-6 sm:space-y-10 bg-neutral-900 relative overflow-y-auto max-h-[95vh]">
@@ -841,68 +766,24 @@ export default function InventoryPage() {
 
                             <div className="flex-1 overflow-y-auto pr-2 sm:pr-6 space-y-8 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-primary/30 transition-colors relative z-10">
                                 {/* Photos Section */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                                <div className="mb-8">
                                     <div className="space-y-2">
-                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Evidence: Product</p>
-                                        <div className="aspect-video rounded-2xl bg-black/40 border border-white/5 overflow-hidden group relative">
-                                            {selectedProduct.photo_product ? (
-                                                <img src={selectedProduct.photo_product} alt="Produto" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Evidência Fotográfica</p>
+                                        <div className="aspect-video sm:aspect-[21/9] rounded-2xl bg-black/40 border border-white/5 overflow-hidden group relative">
+                                            {selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect ? (
+                                                <img
+                                                    src={(selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect) ?? undefined}
+                                                    alt="Produto"
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                />
                                             ) : (
                                                 <div className="flex flex-col items-center justify-center h-full opacity-10">
-                                                    <Box className="h-8 w-8 mb-2" />
-                                                    <span className="text-[8px] font-black uppercase">Sem Imagem</span>
+                                                    <Box className="h-12 w-12 mb-2" />
+                                                    <span className="text-[10px] font-black uppercase">Imagem não disponível</span>
                                                 </div>
                                             )}
-                                            <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform">
-                                                <p className="text-[8px] font-black text-white uppercase tracking-tighter">Vista Geral Ambiente</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Evidence: Model</p>
-                                        <div className="aspect-video rounded-2xl bg-black/40 border border-white/5 overflow-hidden group relative">
-                                            {selectedProduct.photo_model ? (
-                                                <img src={selectedProduct.photo_model} alt="Modelo" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                            ) : (
-                                                <div className="flex flex-col items-center justify-center h-full opacity-10">
-                                                    <Barcode className="h-8 w-8 mb-2" />
-                                                    <span className="text-[8px] font-black uppercase">Sem Imagem</span>
-                                                </div>
-                                            )}
-                                            <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform">
-                                                <p className="text-[8px] font-black text-white uppercase tracking-tighter">Etiqueta Identificação</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Evidence: Serial</p>
-                                        <div className="aspect-video rounded-2xl bg-black/40 border border-white/5 overflow-hidden group relative">
-                                            {selectedProduct.photo_serial ? (
-                                                <img src={selectedProduct.photo_serial} alt="Série" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                            ) : (
-                                                <div className="flex flex-col items-center justify-center h-full opacity-10">
-                                                    <Activity className="h-8 w-8 mb-2" />
-                                                    <span className="text-[8px] font-black uppercase">Sem Imagem</span>
-                                                </div>
-                                            )}
-                                            <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform">
-                                                <p className="text-[8px] font-black text-white uppercase tracking-tighter">Número Identificador</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Evidence: Defect</p>
-                                        <div className="aspect-video rounded-2xl bg-black/40 border border-white/5 overflow-hidden group relative">
-                                            {selectedProduct.photo_defect ? (
-                                                <img src={selectedProduct.photo_defect} alt="Avaria" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                            ) : (
-                                                <div className="flex flex-col items-center justify-center h-full opacity-10">
-                                                    <AlertCircle className="h-8 w-8 mb-2" />
-                                                    <span className="text-[8px] font-black uppercase">Sem Imagem</span>
-                                                </div>
-                                            )}
-                                            <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform">
-                                                <p className="text-[8px] font-black text-white uppercase tracking-tighter">Detalhe da Avaria</p>
+                                            <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent translate-y-full group-hover:translate-y-0 transition-transform">
+                                                <p className="text-[10px] font-black text-white uppercase tracking-wider italic">Registro de Conferência Terminal</p>
                                             </div>
                                         </div>
                                     </div>

@@ -163,11 +163,11 @@ export default function AdminSettingsPage() {
                                 <div className="space-y-3">
                                     <div className="flex gap-3">
                                         <div className="h-4 w-4 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">1</div>
-                                        <p className="text-[10px] text-muted-foreground">Se definir <strong>500</strong> e não houver registros, o primeiro ID será <strong>AMB-0500</strong>.</p>
+                                        <p className="text-[10px] text-muted-foreground">Se definir <strong>500</strong> e não houver registros, o primeiro ID será <strong>00500-{new Date().getFullYear()}</strong>.</p>
                                     </div>
                                     <div className="flex gap-3">
                                         <div className="h-4 w-4 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">2</div>
-                                        <p className="text-[10px] text-muted-foreground">Se já houver o ID <strong>AMB-0510</strong> e você mudar para <strong>100</strong>, o próximo será <strong>AMB-0511</strong> para evitar duplicidade.</p>
+                                        <p className="text-[10px] text-muted-foreground">Se já houver o ID <strong>00510-{new Date().getFullYear()}</strong> e você mudar para <strong>100</strong>, o próximo será <strong>00511-{new Date().getFullYear()}</strong> para evitar duplicidade.</p>
                                     </div>
                                 </div>
                             </div>

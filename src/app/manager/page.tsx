@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import {
     TrendingUp,
@@ -8,6 +9,7 @@ import {
     Calendar,
     Loader2,
     ShieldCheck,
+    FileDown,
     Users,
     Activity,
     Download,
@@ -165,6 +167,31 @@ export default function ManagerDashboard() {
                         </button>
                         <button
                             onClick={() => {
+                                toast.promise(async () => {
+                                    const { data, error } = await supabase
+                                        .from("products")
+                                        .select("internal_serial, original_serial, brand, model, status, voltage, created_at")
+                                        .order("created_at", { ascending: false });
+
+                                    if (error) throw error;
+
+                                    const { exportToPDF } = await import("@/lib/export-utils");
+                                    const headers = ["ID", "Marca", "Modelo", "Status", "Voltagem", "Serial"];
+                                    const pdfData = data.map(p => [p.internal_serial, p.brand, p.model, p.status, p.voltage, p.original_serial]);
+                                    exportToPDF("Relatório Gerencial Ambicom", headers, pdfData, "relatorio_gerencial");
+                                }, {
+                                    loading: 'Gerando PDF...',
+                                    success: 'PDF exportado com sucesso!',
+                                    error: 'Erro ao gerar PDF',
+                                });
+                            }}
+                            className="h-12 px-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-white transition-all whitespace-nowrap"
+                        >
+                            <FileDown className="h-4 w-4 text-primary" />
+                            PDF
+                        </button>
+                        <button
+                            onClick={() => {
                                 // Logic to fetch and export full data
                                 toast.promise(async () => {
                                     const { data, error } = await supabase
@@ -185,7 +212,7 @@ export default function ManagerDashboard() {
                             className="h-12 px-6 bg-primary hover:bg-primary/90 text-white rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                         >
                             <Download className="h-4 w-4" />
-                            Relatório
+                            Excel
                         </button>
                     </div>
                 </div>
@@ -266,85 +293,83 @@ export default function ManagerDashboard() {
                             <h3 className="text-lg font-black text-white uppercase tracking-tight">Trilha de Auditoria</h3>
                             <button className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-white transition-colors">Ver Completo</button>
                         </div>
-                        <div className="hidden md:block overflow-x-auto">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-white/5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                                    <tr>
-                                        <th className="px-6 py-4">Data/Hora</th>
-                                        <th className="px-6 py-4">Ativo</th>
-                                        <th className="px-6 py-4">Responsável</th>
-                                        <th className="px-6 py-4">Ação</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {recentLogs.map((log) => {
-                                        const profileName = Array.isArray(log.profiles) ? log.profiles[0]?.full_name : log.profiles?.full_name;
-                                        const productModel = Array.isArray(log.products) ? log.products[0]?.model : log.products?.model;
-                                        const productSerial = Array.isArray(log.products) ? log.products[0]?.internal_serial : log.products?.internal_serial;
-                                        const statusInfo = statusConfig[log.new_status as keyof typeof statusConfig];
+                        <div className="relative group/table" data-scroll="right">
+                            {/* Horizontal Scroll Indicators */}
+                            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
-                                        return (
-                                            <tr key={log.id} className="hover:bg-white/5 transition-colors group">
-                                                <td className="px-6 py-4 font-mono text-xs text-muted-foreground group-hover:text-white transition-colors">
-                                                    {new Date(log.created_at).toLocaleString("pt-BR")}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex flex-col">
-                                                        <span className="font-bold text-white text-xs">{productModel || "N/A"}</span>
-                                                        <span className="font-mono text-[10px] text-muted-foreground">{productSerial || "N/A"}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="h-6 w-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-white">
-                                                            {profileName?.substring(0, 1) || "?"}
+                            <div
+                                className="overflow-x-auto scrollbar-hide"
+                                onScroll={(e) => {
+                                    const target = e.currentTarget;
+                                    const group = target.parentElement;
+                                    if (group) {
+                                        const scrollLeft = target.scrollLeft;
+                                        const maxScroll = target.scrollWidth - target.clientWidth;
+                                        let status = 'none';
+                                        if (maxScroll > 0) {
+                                            if (scrollLeft <= 10) status = 'right';
+                                            else if (scrollLeft >= maxScroll - 10) status = 'left';
+                                            else status = 'both';
+                                        }
+                                        group.setAttribute('data-scroll', status);
+                                    }
+                                }}
+                            >
+                                <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
+                                    <thead className="bg-white/5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                                        <tr>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Data / Horário</th>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Ativo Identificado</th>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Operador Responsável</th>
+                                            <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Status Transição</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {recentLogs.map((log) => {
+                                            const profileName = Array.isArray(log.profiles) ? (log.profiles as any)[0]?.full_name : (log.profiles as any)?.full_name;
+                                            const productModel = Array.isArray(log.products) ? (log.products as any)[0]?.model : (log.products as any)?.model;
+                                            const productSerial = Array.isArray(log.products) ? (log.products as any)[0]?.internal_serial : (log.products as any)?.internal_serial;
+                                            const statusInfo = statusConfig[log.new_status as keyof typeof statusConfig];
+
+                                            return (
+                                                <tr key={log.id} className="hover:bg-white/[0.02] transition-colors group">
+                                                    <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-white font-bold text-[11px] sm:text-xs">{new Date(log.created_at).toLocaleDateString("pt-BR")}</span>
+                                                            <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
+                                                                {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
                                                         </div>
-                                                        <span className="text-xs font-medium text-white/80">{profileName || "Sistema"}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex px-2 py-1 rounded-md ${statusInfo?.color || 'bg-white/5 border border-white/10 text-white'} text-[10px] font-black uppercase tracking-wider`}>
-                                                        {statusInfo?.label || log.new_status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Mobile Logs View */}
-                        <div className="md:hidden divide-y divide-white/5">
-                            {recentLogs.map((log) => {
-                                const profileName = Array.isArray(log.profiles) ? log.profiles[0]?.full_name : log.profiles?.full_name;
-                                const productModel = Array.isArray(log.products) ? log.products[0]?.model : log.products?.model;
-                                const productSerial = Array.isArray(log.products) ? log.products[0]?.internal_serial : log.products?.internal_serial;
-                                const statusInfo = statusConfig[log.new_status as keyof typeof statusConfig];
-
-                                return (
-                                    <div key={log.id} className="p-4 space-y-3">
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-white text-sm tracking-tight">{productModel || "N/A"}</span>
-                                                <span className="font-mono text-[9px] text-muted-foreground uppercase">{productSerial || "N/A"}</span>
-                                            </div>
-                                            <span className={`inline-flex px-2 py-0.5 rounded-md ${statusInfo?.color || 'bg-white/5 border border-white/10 text-white'} text-[8px] font-black uppercase tracking-widest`}>
-                                                {statusInfo?.label || log.new_status}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-center pt-1">
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-5 w-5 rounded-full bg-white/5 flex items-center justify-center text-[8px] font-bold text-muted-foreground border border-white/5">
-                                                    {profileName?.substring(0, 1) || "?"}
-                                                </div>
-                                                <span className="text-[10px] font-medium text-muted-foreground">{profileName || "Sistema"}</span>
-                                            </div>
-                                            <span className="font-mono text-[9px] text-muted-foreground/40">{new Date(log.created_at).toLocaleString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-bold text-white text-[11px] sm:text-xs uppercase italic group-hover:text-primary transition-colors">{productModel || "N/A"}</span>
+                                                            <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground bg-white/5 w-fit px-1.5 py-0.5 rounded border border-white/5 mt-0.5">{productSerial || "N/A"}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                                                        <div className="flex items-center gap-2 sm:gap-3">
+                                                            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center text-[9px] sm:text-[10px] font-black text-primary border border-primary/20 shadow-inner">
+                                                                {profileName?.substring(0, 1).toUpperCase() || "?"}
+                                                            </div>
+                                                            <span className="text-[11px] sm:text-xs font-bold text-white/80 group-hover:text-white transition-colors">{profileName || "Sistema Automatizado"}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
+                                                        <span className={cn(
+                                                            "inline-flex px-2 sm:px-2.5 py-1 rounded-md text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-sm border",
+                                                            statusInfo?.color || 'bg-white/5 border-white/10 text-white'
+                                                        )}>
+                                                            {statusInfo?.label || log.new_status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 

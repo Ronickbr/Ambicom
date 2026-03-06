@@ -1,14 +1,10 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-
-// Extend jsPDF with autotable for TS
-interface jsPDFWithPlugin extends jsPDF {
-    autoTable: (options: unknown) => jsPDF;
-}
+import * as JsBarcode from 'jsbarcode';
 
 export const exportToPDF = (title: string, headers: string[], data: (string | number | boolean | null)[][], fileName: string) => {
-    const doc = new jsPDF() as jsPDFWithPlugin;
+    const doc = new jsPDF();
 
     // Add Title
     doc.setFontSize(18);
@@ -20,7 +16,7 @@ export const exportToPDF = (title: string, headers: string[], data: (string | nu
     const date = new Date().toLocaleString('pt-BR');
     doc.text(`Gerado em: ${date}`, 14, 30);
 
-    doc.autoTable({
+    autoTable(doc, {
         head: [headers],
         body: data,
         startY: 35,
@@ -216,11 +212,36 @@ export const printLabels = (products: any[]) => {
         doc.text("", 76, currentY + 8, { align: 'center' }); // Leave blank per user request
 
         currentY += 12;
-        doc.line(8, currentY, 92, currentY); // Bottom line
+        doc.line(8, currentY, 92, currentY); // Bottom grid line
 
-        // Vertical Border edges
-        doc.line(8, 28, 8, currentY);
-        doc.line(92, 28, 92, currentY);
+        // --- Barcode Section (internal_serial + commercial_code) ---
+        const barcodeData = `${val(p.internal_serial)}${val(p.commercial_code)}`.trim();
+        if (barcodeData) {
+            try {
+                const canvas = document.createElement('canvas');
+                // Handle different import behaviors (CJS vs ESM)
+                const barcodeFn = (JsBarcode as any).default || JsBarcode;
+                barcodeFn(canvas, barcodeData, {
+                    format: "CODE128",
+                    width: 2,
+                    height: 50,
+                    displayValue: true,
+                    fontSize: 16,
+                    margin: 0,
+                    background: "#ffffff"
+                });
+                const imgData = canvas.toDataURL('image/png');
+                // Posicionamento estratégico na base da etiqueta
+                doc.addImage(imgData, 'PNG', 10, currentY + 2, 80, 16);
+            } catch (err) {
+                console.error("Erro ao gerar código de barras:", err);
+            }
+        }
+
+        // Vertical Border edges (Extended)
+        doc.line(8, 28, 8, currentY + 19);
+        doc.line(92, 28, 92, currentY + 19);
+        doc.line(8, currentY + 19, 92, currentY + 19); // Outer bottom line
 
     });
 

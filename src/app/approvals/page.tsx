@@ -16,6 +16,7 @@ import {
     ShieldCheck,
     FileSearch,
     Printer,
+    Camera,
     History as HistoryIcon
 } from "lucide-react";
 import { toast } from "sonner";
@@ -261,80 +262,113 @@ export default function ApprovalsPage() {
                 </div>
 
                 {filteredProducts.length > 0 ? (
-                    <div className="grid gap-4 sm:gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                        {filteredProducts.map((product) => {
-                            const lastLogWithChecklist = product.product_logs?.find(l => l.data?.checklist);
-                            const checklist = lastLogWithChecklist?.data?.checklist || {};
-                            const itemsCount = Object.keys(checklist).length || 0;
-                            const checkedCount = Object.values(checklist).filter(v => v === true).length || 0;
+                    <div className="relative group/table" data-scroll="right">
+                        {/* Horizontal Scroll Indicators */}
+                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
-                            return (
-                                <div
-                                    key={product.id}
-                                    onClick={() => setSelectedProduct(product)}
-                                    className="glass-card group hover:border-primary/50 transition-all duration-500 overflow-hidden flex flex-col border-white/5 bg-neutral-900/30 cursor-pointer relative"
-                                >
-                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div
+                            className="overflow-x-auto scrollbar-hide glass-card border-white/5 bg-neutral-900/30 shadow-2xl rounded-2xl"
+                            onScroll={(e) => {
+                                const target = e.currentTarget;
+                                const group = target.parentElement;
+                                if (group) {
+                                    const scrollLeft = target.scrollLeft;
+                                    const maxScroll = target.scrollWidth - target.clientWidth;
+                                    let status = 'none';
+                                    if (maxScroll > 0) {
+                                        if (scrollLeft <= 10) status = 'right';
+                                        else if (scrollLeft >= maxScroll - 10) status = 'left';
+                                        else status = 'both';
+                                    }
+                                    group.setAttribute('data-scroll', status);
+                                }
+                            }}
+                        >
+                            <table className="w-full text-left border-collapse min-w-[900px] sm:min-w-full">
+                                <thead className="bg-white/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                                    <tr>
+                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Serial / Identificação</th>
+                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Produto / Modelo</th>
+                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Marca / Fabricante</th>
+                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Status Técnico</th>
+                                        <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Ações de Aprovação</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {filteredProducts.map((product) => {
+                                        const lastLogWithChecklist = product.product_logs?.find(l => l.data?.checklist);
+                                        const checklist = lastLogWithChecklist?.data?.checklist || {};
+                                        const itemsCount = Object.keys(checklist).length || 0;
+                                        const checkedCount = Object.values(checklist).filter(v => v === true).length || 0;
 
-                                    <div className="p-5 sm:p-8 space-y-6 flex-1">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-105 group-hover:bg-primary group-hover:text-white transition-all shadow-inner border border-primary/20 shrink-0">
-                                                <Package className="h-6 w-6 sm:h-7 sm:w-7" />
-                                            </div>
-                                            <span className="font-mono text-[10px] bg-white/5 px-3 py-1.5 rounded-xl text-muted-foreground border border-white/5 shadow-sm group-hover:text-primary transition-colors truncate max-w-[120px]">
-                                                {product.internal_serial}
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <h3 className="font-black text-lg sm:text-xl text-white group-hover:text-primary transition-colors uppercase italic tracking-tight line-clamp-2">{product.model}</h3>
-                                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em]">{product.brand}</p>
-                                        </div>
-
-                                        <div className="space-y-3 pt-4 border-t border-white/5">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Status Técnico</span>
-                                                    <span className="text-xs font-bold text-white/80 italic">{checkedCount} de {itemsCount} OK</span>
-                                                </div>
-                                                <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
-                                                    <CheckCircle2 className={cn("h-5 w-5", checkedCount === itemsCount ? "text-emerald-500" : "text-amber-500")} />
-                                                </div>
-                                            </div>
-                                            <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/5">
-                                                <div
-                                                    className={cn(
-                                                        "h-full rounded-full transition-all duration-1000",
-                                                        checkedCount === itemsCount ? "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]" : "bg-gradient-to-r from-amber-600 to-amber-400"
-                                                    )}
-                                                    style={{ width: itemsCount > 0 ? `${(checkedCount / itemsCount) * 100}% ` : '0%' }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-6 bg-white/5 border-t border-white/5 grid grid-cols-5 gap-3" onClick={e => e.stopPropagation()}>
-                                        <button
-                                            onClick={() => handleAction(product.id, "APPROVE")}
-                                            disabled={!!isProcessing}
-                                            className="col-span-4 h-14 bg-white text-black hover:bg-primary hover:text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 shadow-lg group/btn overflow-hidden relative"
-                                        >
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
-                                            {isProcessing === product.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-                                            Aprovar
-                                        </button>
-                                        <button
-                                            onClick={() => handleAction(product.id, "REJECT")}
-                                            disabled={!!isProcessing}
-                                            className="col-span-1 h-14 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center active:scale-95 group/reject"
-                                            title="Rejeitar"
-                                        >
-                                            <XCircle className="h-6 w-6" />
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                        return (
+                                            <tr
+                                                key={product.id}
+                                                onClick={() => setSelectedProduct(product)}
+                                                className="group hover:bg-white/[0.03] transition-colors cursor-pointer"
+                                            >
+                                                <td className="px-4 sm:px-6 py-6 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                    <span className="font-mono text-[10px] sm:text-[11px] bg-white/5 px-2.5 py-1.5 rounded-xl text-primary border border-primary/10 group-hover:bg-primary group-hover:text-white transition-all uppercase tracking-widest font-black">
+                                                        {product.internal_serial}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-6 whitespace-nowrap">
+                                                    <span className="font-black text-[13px] sm:text-base text-white uppercase italic tracking-tight group-hover:text-primary transition-colors">
+                                                        {product.model}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-6 whitespace-nowrap">
+                                                    <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] group-hover:text-white">
+                                                        {product.brand}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-6 whitespace-nowrap">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex flex-col min-w-[80px] sm:min-w-[100px]">
+                                                            <span className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1.5">
+                                                                {checkedCount}/{itemsCount} OK
+                                                            </span>
+                                                            <div className="h-1 sm:h-1.5 w-full bg-black/40 rounded-full overflow-hidden p-[1px] border border-white/5">
+                                                                <div
+                                                                    className={cn(
+                                                                        "h-full rounded-full transition-all duration-1000",
+                                                                        checkedCount === itemsCount ? "bg-emerald-500" : "bg-amber-500"
+                                                                    )}
+                                                                    style={{ width: itemsCount > 0 ? `${(checkedCount / itemsCount) * 100}%` : '0%' }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <CheckCircle2 className={cn("h-4 w-4 sm:h-5 sm:w-5 shrink-0", checkedCount === itemsCount ? "text-emerald-500" : "text-amber-500")} />
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-6 text-right whitespace-nowrap pr-6 sm:pr-10">
+                                                    <div className="flex items-center justify-end gap-1.5 sm:gap-2" onClick={e => e.stopPropagation()}>
+                                                        <button
+                                                            onClick={() => handleAction(product.id, "APPROVE")}
+                                                            disabled={!!isProcessing}
+                                                            className="h-9 sm:h-11 px-4 sm:px-6 bg-white text-black hover:bg-primary hover:text-white rounded-lg sm:rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-lg group/btn overflow-hidden relative min-w-[100px] sm:min-w-[120px]"
+                                                        >
+                                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
+                                                            {isProcessing === product.id ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" /> : <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4" />}
+                                                            Aprovar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleAction(product.id, "REJECT")}
+                                                            disabled={!!isProcessing}
+                                                            className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg sm:rounded-xl bg-red-500/10 text-red-500 border border-red-500/10 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center active:scale-95 group/reject"
+                                                            title="Rejeitar"
+                                                        >
+                                                            <XCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 ) : (
                     <div className="glass-card flex flex-col items-center justify-center py-32 text-center border-dashed border border-white/5 bg-neutral-900/20">
@@ -383,42 +417,27 @@ export default function ApprovalsPage() {
                             {/* Photos Section */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3">
-                                    <Package className="h-4 w-4 text-primary" />
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Evidências Visuais (Mandatório)</h3>
+                                    <Camera className="h-4 w-4 text-primary" />
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Evidência Visual do Ativo</h3>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {selectedProduct.photo_product && (
-                                        <div className="space-y-2">
-                                            <p className="text-[8px] font-black text-muted-foreground uppercase text-center">Ambiente / Produto</p>
-                                            <div className="aspect-video rounded-2xl bg-white/5 border border-white/10 overflow-hidden relative group">
-                                                <img src={selectedProduct.photo_product} alt="Produto" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                <div className="grid grid-cols-1 gap-6">
+                                    <div className="aspect-video sm:aspect-[21/9] rounded-2xl bg-black/40 border border-white/5 overflow-hidden group relative">
+                                        {selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect ? (
+                                            <img
+                                                src={(selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect) ?? undefined}
+                                                alt="Produto"
+                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex flex-col items-center justify-center gap-4 opacity-20">
+                                                <Package className="h-12 w-12" />
+                                                <p className="text-[10px] font-black uppercase tracking-widest">Sem evidência visual</p>
                                             </div>
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+                                            <p className="text-[10px] text-white/60 font-medium italic">Inspeção técnica realizada por profissional qualificado</p>
                                         </div>
-                                    )}
-                                    {selectedProduct.photo_model && (
-                                        <div className="space-y-2">
-                                            <p className="text-[8px] font-black text-muted-foreground uppercase text-center">Etiqueta de Modelo</p>
-                                            <div className="aspect-video rounded-2xl bg-white/5 border border-white/10 overflow-hidden relative group">
-                                                <img src={selectedProduct.photo_model} alt="Modelo" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                            </div>
-                                        </div>
-                                    )}
-                                    {selectedProduct.photo_serial && (
-                                        <div className="space-y-2">
-                                            <p className="text-[8px] font-black text-muted-foreground uppercase text-center">Número de Série</p>
-                                            <div className="aspect-video rounded-2xl bg-white/5 border border-white/10 overflow-hidden relative group">
-                                                <img src={selectedProduct.photo_serial} alt="Série" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                            </div>
-                                        </div>
-                                    )}
-                                    {selectedProduct.photo_defect && (
-                                        <div className="space-y-2">
-                                            <p className="text-[8px] font-black text-muted-foreground uppercase text-center">Detalhamento Avaria</p>
-                                            <div className="aspect-video rounded-2xl bg-white/5 border border-white/10 overflow-hidden relative group">
-                                                <img src={selectedProduct.photo_defect} alt="Avaria" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                            </div>
-                                        </div>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
 

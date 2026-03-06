@@ -16,13 +16,16 @@ import {
     ShieldCheck,
     Ban,
     Check,
-    Barcode
+    Barcode,
+    Camera
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import Webcam from "react-webcam";
+import { useScan } from "@/hooks/useScan";
 import { Order, Client, Product } from "@/lib/types";
 
 const statusStyles = {
@@ -53,6 +56,11 @@ export default function OrdersPage() {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+
+    // Camera Scanning States
+    const { scanImage, ocrLoading } = useScan();
+    const webcamRef = React.useRef<Webcam>(null);
+    const [showCamera, setShowCamera] = useState(false);
 
     const isAuthorized = profile?.role === "GESTOR" || profile?.role === "ADMIN";
 
@@ -237,6 +245,45 @@ export default function OrdersPage() {
             toast.error("Erro ao carregar detalhes do pedido");
         } finally {
             setIsFetchingDetails(false);
+        }
+    };
+
+    const handleCaptureToVerify = async () => {
+        if (!webcamRef.current) return;
+        const imageSrc = webcamRef.current.getScreenshot();
+        if (!imageSrc) return;
+
+        toast.info("Analisando etiqueta...");
+        const data = await scanImage(imageSrc);
+
+        if (data) {
+            // Check both internal serial and original serial
+            const serialToCheck = (data.internal_serial || data.numero_serie || "").toUpperCase();
+
+            if (!serialToCheck) {
+                toast.error("Não foi possível identificar o serial na etiqueta.");
+                return;
+            }
+
+            const foundItem = selectedOrder?.order_items?.find(
+                item => item.products?.internal_serial?.toUpperCase() === serialToCheck ||
+                    item.products?.original_serial?.toUpperCase() === serialToCheck
+            );
+
+            if (foundItem) {
+                const internal = foundItem.products?.internal_serial?.toUpperCase() || "";
+                if (verifiedSerials.includes(internal)) {
+                    toast.warning("Produto já conferido!");
+                } else {
+                    setVerifiedSerials(prev => [...prev, internal]);
+                    toast.success("Produto conferido via Câmera!", {
+                        description: foundItem.products?.model || "Item validado"
+                    });
+                    setShowCamera(false);
+                }
+            } else {
+                toast.error(`Serial ${serialToCheck} não pertence a este pedido!`);
+            }
         }
     };
 
@@ -431,133 +478,126 @@ export default function OrdersPage() {
 
                 {filteredOrders.length > 0 ? (
                     <div className="space-y-4">
-                        {/* Desktop Table View */}
-                        <div className="hidden md:block glass-card overflow-hidden rounded-2xl border border-white/10 shadow-2xl p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm border-collapse">
-                                    <thead className="bg-white/5 text-muted-foreground uppercase text-[10px] font-black tracking-widest border-b border-white/5">
-                                        <tr>
-                                            <th className="px-6 py-5 whitespace-nowrap">Código</th>
-                                            <th className="px-6 py-5 whitespace-nowrap">Cliente / Destino</th>
-                                            <th className="px-6 py-5 text-center whitespace-nowrap">Status</th>
-                                            <th className="px-6 py-5 whitespace-nowrap">Data Estimada</th>
-                                            <th className="px-6 py-5 whitespace-nowrap"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {filteredOrders.map((order) => (
-                                            <tr
-                                                key={order.id}
-                                                className="group hover:bg-white/[0.02] transition-all cursor-pointer"
-                                                onClick={() => handleViewOrder(order)}
-                                            >
-                                                <td className="px-6 py-5 whitespace-nowrap">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all border border-primary/10">
-                                                            <Package className="h-4 w-4" />
-                                                        </div>
-                                                        <span className="font-mono text-sm font-bold text-white/80 group-hover:text-primary transition-colors">
-                                                            #{order.id.split("-")[0].toUpperCase()}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5 whitespace-nowrap">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-white font-bold text-base leading-tight">{order.clients?.name}</span>
-                                                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 font-bold">Venda Direta</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5 text-center whitespace-nowrap">
-                                                    <span className={cn("inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm", statusStyles[order.status as keyof typeof statusStyles])}>
-                                                        {order.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-5 whitespace-nowrap">
-                                                    <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold bg-white/5 w-fit px-3 py-1 rounded-lg border border-white/5 shadow-inner">
-                                                        <Calendar className="h-3 w-3 text-primary" />
-                                                        {new Date(order.created_at).toLocaleDateString("pt-BR")}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5 text-right whitespace-nowrap">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleViewOrder(order);
-                                                        }}
-                                                        className="h-10 w-10 flex items-center justify-center text-muted-foreground hover:bg-white/10 rounded-xl transition-all group-hover:text-white hover:scale-110 active:scale-95 border border-transparent hover:border-white/10"
-                                                    >
-                                                        <ChevronRight className="h-5 w-5" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <div className="glass-card overflow-hidden rounded-2xl border border-white/10 shadow-2xl p-0">
+                            <div className="relative group/table" data-scroll="right">
+                                {/* Horizontal Scroll Indicators */}
+                                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                                <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
-                        {/* Mobile Card View */}
-                        <div className="grid grid-cols-1 gap-4 md:hidden">
-                            {filteredOrders.map((order) => (
                                 <div
-                                    key={order.id}
-                                    onClick={() => handleViewOrder(order)}
-                                    className="glass-card p-5 bg-neutral-900/40 border-white/5 space-y-4 active:scale-[0.98] transition-all"
+                                    className="overflow-x-auto scrollbar-hide"
+                                    onScroll={(e) => {
+                                        const target = e.currentTarget;
+                                        const group = target.parentElement;
+                                        if (group) {
+                                            const scrollLeft = target.scrollLeft;
+                                            const maxScroll = target.scrollWidth - target.clientWidth;
+                                            let status = 'none';
+                                            if (maxScroll > 0) {
+                                                if (scrollLeft <= 10) status = 'right';
+                                                else if (scrollLeft >= maxScroll - 10) status = 'left';
+                                                else status = 'both';
+                                            }
+                                            group.setAttribute('data-scroll', status);
+                                        }
+                                    }}
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                                <Package className="h-5 w-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Pedido</p>
-                                                <p className="text-sm font-mono font-bold text-white tracking-tight">#{order.id.split("-")[0].toUpperCase()}</p>
-                                            </div>
-                                        </div>
-                                        <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border", statusStyles[order.status as keyof typeof statusStyles])}>
-                                            {order.status}
-                                        </span>
-                                    </div>
-
-                                    <div className="pt-2">
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-2">Cliente / Destino</p>
-                                        <p className="text-lg font-black text-white">{order.clients?.name}</p>
-                                    </div>
-
-                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                                        <div className="flex items-center gap-2 text-muted-foreground font-bold">
-                                            <Calendar className="h-3.5 w-3.5 text-primary" />
-                                            <span className="text-xs">{new Date(order.created_at).toLocaleDateString("pt-BR")}</span>
-                                        </div>
-                                        <button className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-primary">
-                                            Detalhes <ChevronRight className="h-3 w-3" />
-                                        </button>
-                                    </div>
+                                    <table className="w-full text-left text-sm border-collapse min-w-[800px] sm:min-w-full">
+                                        <thead className="bg-white/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                                            <tr>
+                                                <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Código / OS</th>
+                                                <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Cliente / Destino</th>
+                                                <th className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">Status</th>
+                                                <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Data Registro</th>
+                                                <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {filteredOrders.map((order) => (
+                                                <tr
+                                                    key={order.id}
+                                                    className="group hover:bg-white/[0.02] transition-all cursor-pointer"
+                                                    onClick={() => handleViewOrder(order)}
+                                                >
+                                                    <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all border border-primary/10">
+                                                                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                                            </div>
+                                                            <span className="font-mono text-xs sm:text-sm font-black text-white/80 group-hover:text-primary transition-colors">
+                                                                #{order.id.split("-")[0].toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-white font-black text-[13px] sm:text-base leading-tight uppercase italic transition-colors group-hover:text-primary">{(order as any).clients?.name || "N/A"}</span>
+                                                            <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5 font-black opacity-60">Venda Direta</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">
+                                                        <span className={cn("inline-flex px-2 sm:px-3 py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-wider border shadow-sm", statusStyles[order.status as keyof typeof statusStyles])}>
+                                                            {order.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                                                        <div className="flex items-center gap-2 text-muted-foreground text-[10px] sm:text-xs font-black bg-white/5 w-fit px-2 sm:px-3 py-1 sm:py-1 rounded-lg border border-white/5 shadow-inner uppercase tracking-tighter sm:tracking-normal">
+                                                            <Calendar className="h-3 w-3 text-primary opacity-60" />
+                                                            {new Date(order.created_at).toLocaleDateString("pt-BR")}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
+                                                        <div className="flex items-center justify-end gap-2 sm:gap-3">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleExportPDF(order);
+                                                                }}
+                                                                className="h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center text-muted-foreground hover:bg-white/10 rounded-xl transition-all hover:text-white border border-transparent hover:border-white/10"
+                                                                title="Exportar PDF"
+                                                            >
+                                                                <FileDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleViewOrder(order);
+                                                                }}
+                                                                className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center text-muted-foreground hover:bg-primary rounded-lg sm:rounded-xl transition-all group-hover:text-white hover:scale-110 active:scale-95 border border-transparent hover:border-primary/10 shadow-lg"
+                                                            >
+                                                                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            ))}
-                        </div>
-                        <div className="flex items-center justify-between p-4 border-t border-white/5 bg-neutral-900/50">
-                            <span className="text-xs text-muted-foreground font-medium">
-                                Mostrando <span className="text-white font-bold">{orders.length}</span> de <span className="text-white font-bold">{totalCount}</span> pedidos
-                            </span>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setPage(p => Math.max(0, p - 1))}
-                                    disabled={page === 0}
-                                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                </button>
-                                <span className="text-xs font-bold text-white px-3 bg-white/5 py-2 rounded-lg border border-white/5">
-                                    Página {page + 1}
+                            </div>
+                            <div className="flex items-center justify-between p-4 border-t border-white/5 bg-neutral-900/50">
+                                <span className="text-xs text-muted-foreground font-medium">
+                                    Mostrando <span className="text-white font-bold">{orders.length}</span> de <span className="text-white font-bold">{totalCount}</span> pedidos
                                 </span>
-                                <button
-                                    onClick={() => setPage(p => p + 1)}
-                                    disabled={(page + 1) * PAGE_SIZE >= totalCount}
-                                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                >
-                                    <ChevronRight className="h-4 w-4" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                                        disabled={page === 0}
+                                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </button>
+                                    <span className="text-xs font-bold text-white px-3 bg-white/5 py-2 rounded-lg border border-white/5">
+                                        Página {page + 1}
+                                    </span>
+                                    <button
+                                        onClick={() => setPage(p => p + 1)}
+                                        disabled={(page + 1) * PAGE_SIZE >= totalCount}
+                                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -780,68 +820,132 @@ export default function OrdersPage() {
                                         </div>
 
                                         {selectedOrder.status === "PENDENTE" && (
-                                            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6">
-                                                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                                                    <Barcode className="h-6 w-6" />
+                                            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 sm:p-6 space-y-4">
+                                                <div className="flex flex-col sm:flex-row items-center gap-4">
+                                                    <button
+                                                        onClick={() => setShowCamera(!showCamera)}
+                                                        className={cn(
+                                                            "h-14 w-full sm:w-14 rounded-2xl flex items-center justify-center transition-all border shrink-0",
+                                                            showCamera ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                                                        )}
+                                                    >
+                                                        {showCamera ? <X className="h-6 w-6" /> : <Camera className="h-6 w-6" />}
+                                                    </button>
+                                                    <div className="flex-1 w-full">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Aguardando Conferência de ID Interno...</p>
+                                                        <form onSubmit={handleScanProduct} className="relative">
+                                                            <input
+                                                                ref={scannerRef}
+                                                                type="text"
+                                                                value={scanInput}
+                                                                onChange={(e) => setScanInput(e.target.value)}
+                                                                placeholder="Escaneie ou digite o ID Interno..."
+                                                                className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-6 text-sm text-white placeholder:text-muted-foreground/30 focus:border-primary/50 transition-all outline-none"
+                                                            />
+                                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden sm:block">
+                                                                <span className="text-[8px] font-bold text-muted-foreground/30 bg-white/5 px-2 py-1 rounded">ENTER</span>
+                                                            </div>
+                                                        </form>
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1 w-full">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Aguardando Scanner de ID Interno...</p>
-                                                    <form onSubmit={handleScanProduct} className="relative">
-                                                        <input
-                                                            ref={scannerRef}
-                                                            type="text"
-                                                            value={scanInput}
-                                                            onChange={(e) => setScanInput(e.target.value)}
-                                                            placeholder="Escaneie o ID Interno do produto..."
-                                                            className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-6 text-sm text-white placeholder:text-muted-foreground/30 focus:border-primary/50 transition-all outline-none"
+
+                                                {showCamera && (
+                                                    <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-white/10 animate-in fade-in zoom-in-95 duration-300">
+                                                        <Webcam
+                                                            ref={webcamRef}
+                                                            audio={false}
+                                                            screenshotFormat="image/jpeg"
+                                                            videoConstraints={{ facingMode: "environment" }}
+                                                            className="w-full h-full object-cover"
                                                         />
-                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                                                            <span className="text-[9px] font-bold text-muted-foreground/20 bg-white/5 px-2 py-1 rounded">ENTER PARA VALIDAR</span>
+                                                        <div className="absolute inset-0 border-2 border-primary/30 m-8 rounded-lg pointer-events-none">
+                                                            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-lg" />
+                                                            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-lg" />
+                                                            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-lg" />
+                                                            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-lg" />
                                                         </div>
-                                                    </form>
-                                                </div>
+                                                        <div className="absolute bottom-4 left-0 right-0 flex justify-center px-4">
+                                                            <button
+                                                                onClick={handleCaptureToVerify}
+                                                                disabled={ocrLoading}
+                                                                className="w-full max-w-xs h-12 bg-primary hover:bg-primary/90 text-white rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 transition-all shadow-xl disabled:opacity-50"
+                                                            >
+                                                                {ocrLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                                                                {ocrLoading ? "Validando..." : "Capturar e Validar"}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
                                         <div className="glass-card rounded-2xl border border-white/5 p-0 overflow-hidden">
-                                            <table className="w-full text-left text-sm">
-                                                <thead className="bg-white/5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-white/5">
-                                                    <tr>
-                                                        <th className="px-6 py-4">Produto</th>
-                                                        <th className="px-6 py-4">ID Interno</th>
-                                                        <th className="px-6 py-4">S/N Original</th>
-                                                        <th className="px-6 py-4">Marca</th>
-                                                        <th className="px-6 py-4 text-right">Conferência</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-white/5">
-                                                    {selectedOrder.order_items?.map((item: any) => {
-                                                        const isVerified = verifiedSerials.includes(item.products?.internal_serial?.toUpperCase());
-                                                        return (
-                                                            <tr key={item.id} className={cn("transition-colors", isVerified ? "bg-emerald-500/5" : "hover:bg-white/[0.01]")}>
-                                                                <td className="px-6 py-4 font-bold text-white">{item.products?.model || "N/A"}</td>
-                                                                <td className="px-6 py-4 font-mono text-xs text-primary">{item.products?.internal_serial || "N/A"}</td>
-                                                                <td className="px-6 py-4 font-mono text-xs text-muted-foreground">{item.products?.original_serial || "N/A"}</td>
-                                                                <td className="px-6 py-4 text-xs font-bold uppercase tracking-wider">{item.products?.brand || "N/A"}</td>
-                                                                <td className="px-6 py-4 text-right">
-                                                                    {isVerified ? (
-                                                                        <span className="inline-flex items-center gap-1.5 text-emerald-500 font-bold text-[10px] uppercase tracking-wider">
-                                                                            <Check className="h-3 w-3" /> OK
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="text-muted-foreground/30 font-bold text-[10px] uppercase tracking-wider italic">Pendente</span>
-                                                                    )}
-                                                                </td>
+                                            <div className="relative group/table" data-scroll="right">
+                                                {/* Horizontal Scroll Indicators */}
+                                                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0a0a0a] to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                                                <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+
+                                                <div
+                                                    className="overflow-x-auto scrollbar-hide border border-white/5 rounded-2xl"
+                                                    onScroll={(e) => {
+                                                        const target = e.currentTarget;
+                                                        const group = target.parentElement;
+                                                        if (group) {
+                                                            const scrollLeft = target.scrollLeft;
+                                                            const maxScroll = target.scrollWidth - target.clientWidth;
+                                                            let status = 'none';
+                                                            if (maxScroll > 0) {
+                                                                if (scrollLeft <= 10) status = 'right';
+                                                                else if (scrollLeft >= maxScroll - 10) status = 'left';
+                                                                else status = 'both';
+                                                            }
+                                                            group.setAttribute('data-scroll', status);
+                                                        }
+                                                    }}
+                                                >
+                                                    <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
+                                                        <thead className="bg-white/5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-white/5">
+                                                            <tr>
+                                                                <th className="px-4 sm:px-6 py-4 sticky left-0 bg-neutral-900 z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Produto</th>
+                                                                <th className="px-4 sm:px-6 py-4">ID Interno</th>
+                                                                <th className="px-4 sm:px-6 py-4">S/N Original</th>
+                                                                <th className="px-4 sm:px-6 py-4">Marca</th>
+                                                                <th className="px-4 sm:px-6 py-4 text-right">Conferência</th>
                                                             </tr>
-                                                        );
-                                                    })}
-                                                    {(!selectedOrder.order_items || selectedOrder.order_items.length === 0) && (
-                                                        <tr>
-                                                            <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground italic">Nenhum item vinculado a este pedido.</td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-white/5">
+                                                            {selectedOrder.order_items?.map((item: any) => {
+                                                                const isVerified = verifiedSerials.includes(item.products?.internal_serial?.toUpperCase());
+                                                                return (
+                                                                    <tr key={item.id} className={cn("transition-colors", isVerified ? "bg-emerald-500/5" : "hover:bg-white/[0.01]")}>
+                                                                        <td className="px-4 sm:px-6 py-4 font-black text-white italic uppercase sticky left-0 bg-neutral-900 group-hover:bg-neutral-800 transition-colors z-20 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">{item.products?.model || "N/A"}</td>
+                                                                        <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-primary font-black uppercase tracking-widest">{item.products?.internal_serial || "N/A"}</td>
+                                                                        <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-muted-foreground/40">{item.products?.original_serial || "N/A"}</td>
+                                                                        <td className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{item.products?.brand || "N/A"}</td>
+                                                                        <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
+                                                                            {isVerified ? (
+                                                                                <span className="inline-flex items-center gap-1.5 text-emerald-500 font-black text-[9px] uppercase tracking-wider bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                                                                                    <Check className="h-3 w-3" /> CONFIRMADO
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="text-muted-foreground/20 font-black text-[9px] uppercase tracking-widest italic flex items-center justify-end gap-2">
+                                                                                    <div className="h-1 w-1 rounded-full bg-muted-foreground/20 animate-pulse" />
+                                                                                    Pendente
+                                                                                </span>
+                                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                            {(!selectedOrder.order_items || selectedOrder.order_items.length === 0) && (
+                                                                <tr>
+                                                                    <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground italic">Nenhum item vinculado a este pedido.</td>
+                                                                </tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </>

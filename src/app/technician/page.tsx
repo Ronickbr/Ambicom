@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { Link } from "react-router-dom";
 import {
@@ -128,44 +129,89 @@ export default function TechnicianPage() {
                 </div>
 
                 {filteredProducts.length > 0 ? (
-                    <div className="grid gap-4">
-                        {filteredProducts.map((product) => (
-                            <Link
-                                key={product.id}
-                                to={`/technician/checklist/${product.id}`}
-                                className="glass-card group hover:border-primary/50 transition-all duration-300 relative overflow-hidden flex flex-col md:flex-row items-center p-0 bg-neutral-900/30 border-white/5"
-                            >
-                                <div className="absolute top-0 left-0 w-1 h-full bg-amber-500/50 group-hover:bg-primary transition-colors" />
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 pointer-events-none" />
+                    <div className="glass-card overflow-hidden rounded-2xl border border-white/10 shadow-2xl p-0">
+                        <div className="relative group/table" data-scroll="right">
+                            {/* Horizontal Scroll Indicators */}
+                            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
-                                <div className="p-4 sm:p-6 md:w-64 border-b md:border-b-0 md:border-r border-white/5 bg-white/[0.02]">
-                                    <div className="flex items-center justify-between md:flex-col md:items-start md:gap-3 mb-2">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center text-muted-foreground group-hover:text-white transition-colors">
-                                                <AlertTriangle className="h-4 w-4" />
-                                            </div>
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Pendente</span>
-                                        </div>
-                                        <p className="font-mono text-[10px] text-muted-foreground opacity-50 shrink-0">#{product.id.split('-')[0]}</p>
-                                    </div>
-                                </div>
-                                <div className="flex-1 p-5 sm:p-6 flex flex-col md:flex-row items-center md:items-center justify-between gap-6 w-full">
-                                    <div className="space-y-1 text-center md:text-left">
-                                        <h3 className="text-xl font-black text-white group-hover:text-primary transition-colors tracking-tight uppercase italic break-words">{product.model}</h3>
-                                        <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em]">{product.brand} • <span className="font-mono text-white/50">{product.internal_serial}</span></p>
-                                    </div>
-                                    <div className="flex items-center gap-4 sm:gap-8 flex-row md:flex-row w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
-                                        <div className="text-left md:text-right">
-                                            <p className="text-[8px] sm:text-[9px] text-muted-foreground uppercase font-black tracking-widest mb-1">Entrada</p>
-                                            <p className="text-[10px] sm:text-xs font-bold text-white font-mono">{new Date(product.created_at).toLocaleString("pt-BR")}</p>
-                                        </div>
-                                        <button className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 group-hover:bg-primary group-hover:text-white transition-all shadow-lg active:scale-90 shrink-0">
-                                            <ArrowRight className="h-5 w-5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
+                            <div
+                                className="overflow-x-auto scrollbar-hide"
+                                onScroll={(e) => {
+                                    const target = e.currentTarget;
+                                    const group = target.parentElement;
+                                    if (group) {
+                                        const scrollLeft = target.scrollLeft;
+                                        const maxScroll = target.scrollWidth - target.clientWidth;
+                                        let status = 'none';
+                                        if (maxScroll > 0) {
+                                            if (scrollLeft <= 10) status = 'right';
+                                            else if (scrollLeft >= maxScroll - 10) status = 'left';
+                                            else status = 'both';
+                                        }
+                                        group.setAttribute('data-scroll', status);
+                                    }
+                                }}
+                            >
+                                <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
+                                    <thead className="bg-white/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                                        <tr>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Ativo / Identificação</th>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Marca / Fabricante</th>
+                                            <th className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">Status Lab</th>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Entrada</th>
+                                            <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Checklist</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {filteredProducts.map((product) => (
+                                            <tr
+                                                key={product.id}
+                                                className="group hover:bg-white/[0.02] transition-all cursor-pointer"
+                                                onClick={() => navigate(`/technician/checklist/${product.id}`)}
+                                            >
+                                                <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                    <div className="flex items-center gap-3 sm:gap-4">
+                                                        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-all border border-amber-500/10 shadow-inner">
+                                                            <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="font-black text-white text-[13px] sm:text-base group-hover:text-primary transition-colors leading-tight uppercase italic truncate max-w-[120px] sm:max-w-none">{product.model}</span>
+                                                            <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground uppercase mt-0.5 tracking-widest bg-white/5 w-fit px-1.5 py-0.5 rounded border border-white/5">
+                                                                {product.internal_serial}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                                                    <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-hover:text-white transition-colors">
+                                                        {product.brand}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">
+                                                    <span className="inline-flex px-2 sm:px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[8px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm">
+                                                        Pendente
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[11px] sm:text-xs font-bold text-white/80">{new Date(product.created_at).toLocaleDateString("pt-BR")}</span>
+                                                        <span className="text-[9px] sm:text-[10px] text-muted-foreground/40 font-mono tracking-tighter uppercase">{new Date(product.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
+                                                    <button
+                                                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all border border-primary/20 shadow-lg active:scale-90 ml-auto"
+                                                    >
+                                                        <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <div className="glass-card flex flex-col items-center justify-center py-32 text-center border-dashed border border-white/5 bg-neutral-900/20">

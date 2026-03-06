@@ -226,55 +226,87 @@ export default function UsersManagementPage() {
                     </div>
                 </div>
 
-                {/* Users List */}
-                <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-                    {filteredUsers.map((u) => (
-                        <div key={u.id} className="glass-card border-white/5 bg-neutral-900/40 p-4 sm:p-6 flex items-start justify-between group hover:border-primary/30 transition-all duration-500 overflow-hidden relative">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {/* Users Table */}
+                <div className="glass-card overflow-hidden rounded-2xl border border-white/10 shadow-2xl p-0">
+                    <div className="relative group/table">
+                        {/* Horizontal Scroll Indicators */}
+                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 transition-opacity" />
+                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-100 group-has-[[data-scroll='right']]:opacity-100 transition-opacity" />
 
-                            <div className="flex gap-3 sm:gap-5">
-                                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all shrink-0">
-                                    <UserCircle className="h-6 w-6 sm:h-7 sm:w-7 text-muted-foreground group-hover:text-primary transition-colors" />
-                                </div>
-                                <div className="space-y-1 min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                                        <h3 className="font-bold text-base sm:text-lg text-white group-hover:text-primary transition-colors truncate max-w-[150px] sm:max-w-none">{u.full_name || "Sem Nome"}</h3>
-                                        <span className={cn(
-                                            "text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm whitespace-nowrap",
-                                            u.role === "ADMIN" ? "bg-red-500/10 text-red-400 border-red-500/20" :
-                                                u.role === "GESTOR" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
-                                                    u.role === "SUPERVISOR" ? "bg-sky-500/10 text-sky-400 border-sky-500/20" :
-                                                        "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                        )}>
-                                            {u.role}
-                                        </span>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60">
-                                        <span className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> {u.email || "Sem Email"}</span>
-                                        <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> {new Date(u.created_at || "").toLocaleDateString("pt-BR")}</span>
-                                        <span className="flex items-center gap-1.5"><Shield className="h-3 w-3" /> ID: {u.id.substring(0, 8)}...</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setEditingUser(u)}
-                                    className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 hover:bg-primary/20 hover:border-primary/50 transition-all text-muted-foreground hover:text-primary shadow-inner"
-                                    title="Editar Membro"
-                                >
-                                    <Settings className="h-4 w-4" />
-                                </button>
-                                <button
-                                    onClick={() => handleDeleteUser(u.id)}
-                                    className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 hover:bg-red-500/20 hover:border-red-500/50 transition-all text-muted-foreground hover:text-red-500 shadow-inner"
-                                    title="Excluir Membro"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            </div>
+                        <div className="overflow-x-auto scrollbar-hide">
+                            <table className="w-full text-left text-sm border-collapse min-w-[800px] sm:min-w-full">
+                                <thead className="bg-white/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                                    <tr>
+                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Membro</th>
+                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Contato</th>
+                                        <th className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">Cargo / Nível</th>
+                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Registro</th>
+                                        <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {filteredUsers.map((u) => (
+                                        <tr key={u.id} className="group hover:bg-white/[0.02] transition-colors">
+                                            <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                <div className="flex items-center gap-3 sm:gap-4">
+                                                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all shrink-0">
+                                                        <UserCircle className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-black text-white text-[13px] sm:text-base group-hover:text-primary transition-colors leading-tight uppercase italic">{u.full_name || "Sem Nome"}</span>
+                                                        <span className="text-[8px] sm:text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-0.5 opacity-40">ID: {u.id.substring(0, 8)}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2 text-white/80 font-black text-[11px] sm:text-xs">
+                                                        <Mail className="h-3 w-3 text-primary opacity-50" />
+                                                        {u.email || "Sem Email"}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">
+                                                <span className={cn(
+                                                    "inline-flex px-2 sm:px-3 py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-wider border shadow-sm",
+                                                    u.role === "ADMIN" ? "bg-red-500/10 text-red-400 border-red-500/20 shadow-red-500/5" :
+                                                        u.role === "GESTOR" ? "bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-amber-500/5" :
+                                                            u.role === "SUPERVISOR" ? "bg-sky-500/10 text-sky-400 border-sky-500/20 shadow-sky-500/5" :
+                                                                "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/5"
+                                                )}>
+                                                    {u.role}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                                                <div className="flex items-center gap-2 text-muted-foreground text-[10px] sm:text-xs font-black bg-white/5 w-fit px-2 sm:px-3 py-1 rounded-lg border border-white/5 shadow-inner">
+                                                    <Calendar className="h-3 w-3 text-primary opacity-60" />
+                                                    {new Date(u.created_at || "").toLocaleDateString("pt-BR")}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => setEditingUser(u)}
+                                                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 hover:bg-primary/20 hover:border-primary/50 transition-all text-muted-foreground hover:text-primary active:scale-95"
+                                                        title="Editar Membro"
+                                                    >
+                                                        <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteUser(u.id)}
+                                                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 hover:bg-red-500/20 hover:border-red-500/50 transition-all text-muted-foreground hover:text-red-500 active:scale-95"
+                                                        title="Excluir Membro"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
-                    ))}
+                    </div>
                 </div>
 
                 {/* Create Profile Modal */}

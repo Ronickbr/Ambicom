@@ -55,8 +55,6 @@ export default function Home() {
     const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000));
 
     try {
-      // 1. Fetch Stats efficiently using count
-      // Parallel queries for better performance
       const queries = [
         supabase.from("products").select("*", { count: 'exact', head: true }), // Total
         supabase.from("products").select("*", { count: 'exact', head: true }).eq('status', 'CADASTRO'), // Fila
@@ -80,7 +78,6 @@ export default function Home() {
         ]);
       }
 
-      // 2. Fetch Recent Activity from product_logs (Limit 5 is fine)
       const { data: logs, error: logsError } = await Promise.race([
         supabase
           .from("product_logs")
@@ -99,12 +96,10 @@ export default function Home() {
 
       setRecentActivity((logs as unknown as DashboardLog[]) || []);
 
-      // 3. Simple Lead Time Sim (Real would calculate diff between LEITURA and LIBERADO)
       setLeadTime({ avg: "--", status: "Aguardando Dados" });
 
     } catch (error) {
       console.error("Erro dashboard:", error);
-      // Optional: Add UI feedback for error here
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +131,7 @@ export default function Home() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
             {stats.map((stat, i) => (
               <div
                 key={i}
@@ -159,41 +154,90 @@ export default function Home() {
           </div>
 
           <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
-            {/* Recent Activity */}
-            <div className="glass-card p-4 sm:p-6 lg:col-span-2 border-white/5 bg-neutral-900/40">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-primary" />
-                    Atividade Recente
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1">Últimas movimentações no sistema</p>
-                </div>
+            {/* Recent Activity Table */}
+            <div className="glass-card overflow-hidden lg:col-span-2 border border-white/10 bg-neutral-900/40 rounded-2xl shadow-2xl p-0">
+              <div className="p-6 border-b border-white/5 bg-white/[0.02]">
+                <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-primary" />
+                  Atividade Recente
+                </h3>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black opacity-50 mt-1">Sincronização de eventos em tempo real</p>
               </div>
-              <div className="space-y-4">
-                {recentActivity.length === 0 ? (
-                  <div className="text-center p-4 text-muted-foreground text-sm">Nenhuma atividade recente</div>
-                ) : (
-                  recentActivity.map((log) => (
-                    <div key={log.id} className="flex items-center gap-3 sm:gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                        <Package className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">
-                          {log.products?.brand || "Marca N/A"} {log.products?.model || "Modelo N/A"}
-                          <span className="ml-2 text-xs text-muted-foreground">({log.products?.internal_serial || "N/A"})</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(log.created_at).toLocaleDateString()} • {new Date(log.created_at).toLocaleTimeString()}
-                        </p>
-                      </div>
-                      <div className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20 whitespace-nowrap">
-                        {log.new_status}
-                      </div>
-                    </div>
-                  ))
-                )}
+              <div className="relative group/table" data-scroll="right">
+                {/* Horizontal Scroll Indicators */}
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+
+                <div
+                  className="overflow-x-auto min-h-[300px] scrollbar-hide"
+                  onScroll={(e) => {
+                    const target = e.currentTarget;
+                    const group = target.parentElement;
+                    if (group) {
+                      const scrollLeft = target.scrollLeft;
+                      const maxScroll = target.scrollWidth - target.clientWidth;
+                      let status = 'none';
+                      if (maxScroll > 0) {
+                        if (scrollLeft <= 10) status = 'right';
+                        else if (scrollLeft >= maxScroll - 10) status = 'left';
+                        else status = 'both';
+                      }
+                      group.setAttribute('data-scroll', status);
+                    }
+                  }}
+                >
+                  <table className="w-full text-left border-collapse min-w-[600px] sm:min-w-full">
+                    <thead className="bg-white/5 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                      <tr>
+                        <th className="px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Data / Hora</th>
+                        <th className="px-6 py-5">Ativo Patrimonial</th>
+                        <th className="px-6 py-5 text-right pr-10">Status Transição</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {recentActivity.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="px-6 py-20 text-center text-muted-foreground italic text-sm">
+                            Nenhum registro de atividade nas últimas 24h
+                          </td>
+                        </tr>
+                      ) : (
+                        recentActivity.map((log) => (
+                          <tr key={log.id} className="group hover:bg-white/[0.02] transition-colors">
+                            <td className="px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                              <div className="flex flex-col">
+                                <span className="text-white font-bold text-xs">{new Date(log.created_at).toLocaleDateString("pt-BR")}</span>
+                                <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
+                                  {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              <div className="flex items-center gap-4">
+                                <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-inner group-hover:scale-110 transition-transform">
+                                  <Box className="h-4 w-4" />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-white font-black text-xs uppercase italic tracking-tight group-hover:text-primary transition-colors">
+                                    {log.products?.brand || "N/A"} {log.products?.model || "N/A"}
+                                  </span>
+                                  <span className="font-mono text-[9px] text-muted-foreground uppercase opacity-60">
+                                    {log.products?.internal_serial || "N/A"}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 text-right whitespace-nowrap pr-10">
+                              <span className="inline-flex px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] font-black uppercase tracking-widest shadow-sm">
+                                {log.new_status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
