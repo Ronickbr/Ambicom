@@ -57,7 +57,7 @@ export interface Product {
     defrost_power: string | null;
     frequency: string | null;
     voltage: string | null;
-    status: 'CADASTRO' | 'EM AVALIAÇÃO' | 'EM ESTOQUE' | 'VENDIDO' | 'RECUSADO';
+    status: 'CADASTRO' | 'EM AVALIAÇÃO' | 'EM ESTOQUE' | 'VENDIDO' | 'RECUSADO' | 'LIBERADO' | 'TECNICO' | 'SUPERVISOR' | 'GESTOR';
     photo_product: string | null;
     photo_model: string | null;
     photo_serial: string | null;
@@ -115,7 +115,7 @@ export interface ChecklistItem {
 export interface Order {
     id: string;
     client_id: string;
-    status: 'PENDENTE' | 'CONCLUIDO' | 'CANCELADO';
+    status: 'PENDENTE' | 'CONCLUIDO' | 'CANCELADO' | 'FATURADO' | 'DESPACHADO' | 'ENTREGUE';
     created_at: string;
     updated_at: string;
     clients?: {

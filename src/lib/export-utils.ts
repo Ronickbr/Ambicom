@@ -101,7 +101,7 @@ export const printLabels = async (products: any[]) => {
         doc.line(8, currentY, 92, currentY); // Divider
 
         // Row 2: NÚMERO DE SÉRIE AMBICOM (With QR code on the left)
-        const qrData = `${val(p.internal_serial)} ${val(p.commercial_code)}`.trim();
+        const qrData = val(p.internal_serial).trim();
         if (qrData) {
             try {
                 const qrImgData = await QRCode.toDataURL(qrData, {
@@ -231,14 +231,11 @@ export const printLabels = async (products: any[]) => {
         doc.text("", 76, currentY + 8, { align: 'center' }); // Leave blank per user request
 
         currentY += 12;
-        doc.line(8, currentY, 92, currentY); // Bottom grid line
 
-        // --- QR Code was added above in Row 2 ---
-
-        // Vertical Border edges (Extended)
-        doc.line(8, 28, 8, currentY + 19);
-        doc.line(92, 28, 92, currentY + 19);
-        doc.line(8, currentY + 19, 92, currentY + 19); // Outer bottom line
+        // Vertical Border edges
+        doc.line(8, 28, 8, currentY);
+        doc.line(92, 28, 92, currentY);
+        doc.line(8, currentY, 92, currentY); // Bottom border line
 
     }
 

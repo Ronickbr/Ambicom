@@ -29,10 +29,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const fetchProfile = useCallback(async (userId: string) => {
         logger.debug(`Fetching profile for user: ${userId}`);
         const start = performance.now();
-        
+
         // Create a timeout promise
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("Profile fetch timeout")), 10000)
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Profile fetch timeout")), 30000)
         );
 
         try {
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const initAuth = useCallback(async () => {
         logger.info("Initializing Auth...");
         const start = performance.now();
-        
+
         // Safety timeout to prevent infinite loading
         const safetyTimeout = setTimeout(() => {
             if (loading) {
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             logger.debug("Calling supabase.auth.getSession()...");
             const { data: { session }, error } = await supabase.auth.getSession();
-            
+
             if (error) {
                 logger.error("Supabase getSession error:", error);
                 throw error;
@@ -118,7 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // 2. Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!mounted) return;
-            
+
             logger.info(`Auth state changed: ${event}`, { sessionUser: session?.user?.id });
 
             // Avoid redundant fetching if initAuth already handled it
