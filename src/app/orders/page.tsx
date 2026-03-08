@@ -27,6 +27,7 @@ import { useNavigate } from "react-router-dom";
 import { useScan } from "@/hooks/useScan";
 import { Order, Client, Product } from "@/lib/types";
 import { Html5Qrcode } from "html5-qrcode";
+import { logger } from "@/lib/logger";
 
 const statusStyles = {
     PENDENTE: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -116,7 +117,7 @@ export default function OrdersPage() {
                     );
                 }
             } catch (err) {
-                console.error("Erro ao iniciar câmera:", err);
+                logger.error("Erro ao iniciar câmera:", err);
                 const errorStr = String(err).toLowerCase();
 
                 if (!window.isSecureContext) {
@@ -144,7 +145,7 @@ export default function OrdersPage() {
 
         return () => {
             if (html5QrCode && html5QrCode.isScanning) {
-                html5QrCode.stop().catch(e => console.error("Error stopping scanner", e));
+                html5QrCode.stop().catch(e => { /* silent stop */ });
             }
         };
     }, [showCamera]);
@@ -173,7 +174,8 @@ export default function OrdersPage() {
         }
     };
 
-    const isAuthorized = profile?.role === "GESTOR" || profile?.role === "ADMIN";
+    const isAuthorized = profile?.role === "GESTOR" || profile?.role === "ADMIN" || profile?.role === "TECNICO";
+    const canCreateOrder = profile?.role === "GESTOR" || profile?.role === "ADMIN";
 
     useEffect(() => {
         setPage(0);
@@ -221,7 +223,7 @@ export default function OrdersPage() {
             setTotalCount(count || 0);
         } catch (error) {
             const err = error as Error;
-            console.error("Erro ao buscar pedidos:", err);
+            logger.error("Erro ao buscar pedidos:", err);
             toast.error("Erro ao carregar pedidos", { description: err.message });
         } finally {
             setIsLoading(false);
@@ -352,7 +354,7 @@ export default function OrdersPage() {
             // Auto-focus scanner input
             setTimeout(() => scannerRef.current?.focus(), 500);
         } catch (error) {
-            console.error("Erro ao buscar detalhes do pedido:", error);
+            logger.error("Erro ao buscar detalhes do pedido:", error);
             toast.error("Erro ao carregar detalhes do pedido");
         } finally {
             setIsFetchingDetails(false);
@@ -503,13 +505,15 @@ export default function OrdersPage() {
                         <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Logística <span className="text-primary not-italic font-light">& Expedição</span></h1>
                         <p className="text-muted-foreground font-medium text-sm mt-1 opacity-70 italic">Gerenciamento de fluxo de saída e ordens de serviço.</p>
                     </div>
-                    <button
-                        onClick={prepareNewOrder}
-                        className="w-full md:w-auto h-12 sm:h-14 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-[10px] px-6 sm:px-10 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 whitespace-nowrap"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Novo Pedido
-                    </button>
+                    {canCreateOrder && (
+                        <button
+                            onClick={prepareNewOrder}
+                            className="w-full md:w-auto h-12 sm:h-14 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-[10px] px-6 sm:px-10 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 whitespace-nowrap"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Novo Pedido
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-4 py-2">
@@ -1038,7 +1042,7 @@ export default function OrdersPage() {
                                 </button>
                             )}
 
-                            {selectedOrder.status === "PENDENTE" && (
+                            {selectedOrder.status === "PENDENTE" && canCreateOrder && (
                                 <button
                                     onClick={() => handleCancelOrder(selectedOrder)}
                                     disabled={isSaving}

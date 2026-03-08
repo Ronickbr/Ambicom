@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Client } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 export default function ClientsPage() {
   const { profile } = useAuth();
@@ -50,7 +51,7 @@ export default function ClientsPage() {
       // setStats({ total, new: newThisMonth, growth });
     } catch (error) {
       const err = error as Error;
-      console.error("Erro ao buscar clientes:", err);
+      logger.error("Erro ao buscar clientes:", err);
       toast.error("Erro ao carregar clientes", { description: err.message });
     } finally {
       setIsLoading(false);

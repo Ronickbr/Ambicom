@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Lock, Mail, Loader2, ShieldCheck, Zap } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -29,7 +30,7 @@ export default function LoginPage() {
             // Redirect to dashboard
             navigate("/");
         } catch (error) {
-            console.error("Login error:", error);
+            logger.error("Login error:", error);
             const errorMessage = error instanceof Error ? error.message : "Verifique suas credenciais.";
             toast.error("Erro ao entrar", {
                 description: errorMessage,

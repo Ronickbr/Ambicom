@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Product, ChecklistItem } from "@/lib/types";
 import { Plus, X } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 export default function TechnicianChecklist() {
     const { id } = useParams();
@@ -59,7 +60,7 @@ export default function TechnicianChecklist() {
                 items.forEach(item => initial[item.id] = false);
                 setChecklistData(initial);
             } catch (error) {
-                console.error("Erro:", error);
+                logger.error("Erro ao carregar dados do checklist:", error);
                 toast.error("Erro ao carregar dados");
                 navigate("/technician");
             } finally {
@@ -101,7 +102,7 @@ export default function TechnicianChecklist() {
             setIsAddingField(false);
             toast.success("Novo campo adicionado permanentemente!");
         } catch (error) {
-            console.error("Erro ao adicionar campo:", error);
+            logger.error("Erro ao adicionar campo:", error);
             toast.error("Erro ao salvar novo campo");
         } finally {
             setIsSavingField(false);
@@ -146,7 +147,7 @@ export default function TechnicianChecklist() {
             navigate("/technician");
         } catch (error) {
             const err = error as Error;
-            console.error("Erro ao salvar:", err);
+            logger.error("Erro ao salvar checklist:", err);
             toast.error("Erro ao finalizar checklist", {
                 description: err.message
             });

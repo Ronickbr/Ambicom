@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import { logger } from "@/lib/logger";
 
 export default function AdminSettingsPage() {
     const { profile, loading: authLoading } = useAuth();
@@ -47,7 +48,7 @@ export default function AdminSettingsPage() {
                 setSequenceStart(data.value as string);
             }
         } catch (error) {
-            console.error("Erro ao carregar configurações:", error);
+            logger.error("Erro ao carregar configurações:", error);
             toast.error("Erro ao carregar configurações");
         } finally {
             setIsLoading(false);
@@ -75,7 +76,7 @@ export default function AdminSettingsPage() {
             if (error) throw error;
             toast.success("Configurações salvas com sucesso!");
         } catch (error) {
-            console.error("Erro ao salvar configurações:", error);
+            logger.error("Erro ao salvar configurações:", error);
             toast.error("Erro ao salvar configurações");
         } finally {
             setIsSaving(false);

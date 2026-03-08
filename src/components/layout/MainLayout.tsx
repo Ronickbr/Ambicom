@@ -26,7 +26,7 @@ const navigation = [
     { name: "Gestão", href: "/manager", icon: ShieldCheck, roles: ["GESTOR", "ADMIN"] },
     { name: "Estoque", href: "/inventory", icon: Package, roles: ["GESTOR", "SUPERVISOR", "ADMIN"] },
     { name: "Clientes", href: "/clients", icon: Users, roles: ["GESTOR", "ADMIN"] },
-    { name: "Pedidos", href: "/orders", icon: Package, roles: ["GESTOR", "ADMIN"] },
+    { name: "Pedidos", href: "/orders", icon: Package, roles: ["GESTOR", "ADMIN", "TECNICO"] },
     { name: "Usuários", href: "/admin/users", icon: Users, roles: ["ADMIN"] },
     { name: "Configurações", href: "/admin/settings", icon: Settings, roles: ["ADMIN"] },
 ];

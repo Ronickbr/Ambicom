@@ -118,8 +118,7 @@ export function useScan() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("OpenRouter Error Details:", errorData);
+        // OpenRouter error handled silently
         throw new Error(`Falha na API do OpenRouter: ${response.statusText}`);
       }
 
@@ -136,7 +135,7 @@ export function useScan() {
         return null;
       }
     } catch (error) {
-      console.error("AI OCR Error:", error);
+      logger.error("AI OCR Error:", error);
       toast.error("Erro na leitura da IA", {
         description: "Verifique sua conexão ou API Key."
       });
@@ -157,27 +156,32 @@ export function useScan() {
         photo_defect: null
       }
 
-      // Upload photos if provided
+      // Upload photos in parallel if provided
       if (base64Photos && isOnline) {
-        for (const [key, base64] of Object.entries(base64Photos)) {
-          if (base64) {
-            const fileName = `${internalSerial}/${key}_${Date.now()}.jpg`;
-            const blob = await fetch(base64).then(res => res.blob());
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('product-photos')
-              .upload(fileName, blob, { contentType: 'image/jpeg' });
+        const uploadPromises = Object.entries(base64Photos).map(async ([key, base64]) => {
+          if (!base64) return;
 
-            if (uploadError) {
-              logger.error(`Error uploading ${key}`, uploadError);
-            } else if (uploadData) {
-              const { data: { publicUrl } } = supabase.storage
-                .from('product-photos')
-                .getPublicUrl(fileName);
-              photoUrls[key] = publicUrl;
-            }
+          const fileName = `${internalSerial}/${key}_${Date.now()}.jpg`;
+          const blob = await fetch(base64).then(res => res.blob());
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('product-photos')
+            .upload(fileName, blob, { contentType: 'image/jpeg' });
+
+          if (uploadError) {
+            logger.error(`Error uploading ${key}`, uploadError);
+          } else if (uploadData) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('product-photos')
+              .getPublicUrl(fileName);
+            photoUrls[key] = publicUrl;
           }
-        }
+        });
+
+        await Promise.all(uploadPromises);
       }
+
+      const { data: { user } } = await supabase.auth.getUser();
 
       const { data: newProduct, error } = await supabase
         .from("products")
@@ -187,7 +191,7 @@ export function useScan() {
           internal_serial: internalSerial,
           status: 'CADASTRO',
           is_in_stock: true,
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          created_by: user?.id
         })
         .select()
         .single()

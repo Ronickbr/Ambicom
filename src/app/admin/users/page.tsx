@@ -23,6 +23,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { Profile, UserRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 const ROLES: UserRole[] = ["TECNICO", "SUPERVISOR", "GESTOR", "ADMIN"];
 
@@ -98,7 +99,7 @@ export default function UsersManagementPage() {
             fetchUsers(); // Refresh the list
         } catch (error) {
             const err = error as Error;
-            console.error("Erro ao atualizar usuário:", err);
+            logger.error("Erro ao atualizar usuário:", err);
             toast.error("Erro ao atualizar perfil", { description: err.message });
         } finally {
             setIsSaving(false);
@@ -127,7 +128,7 @@ export default function UsersManagementPage() {
             fetchUsers();
         } catch (error) {
             const err = error as Error;
-            console.error("Erro ao criar usuário:", err);
+            logger.error("Erro ao criar usuário:", err);
             toast.error("Erro ao criar usuário", { description: err.message });
         } finally {
             setIsSaving(false);
@@ -152,7 +153,7 @@ export default function UsersManagementPage() {
             fetchUsers();
         } catch (error) {
             const err = error as Error;
-            console.error("Erro ao excluir usuário:", err);
+            logger.error("Erro ao excluir usuário:", err);
             toast.error("Erro ao excluir usuário", { description: err.message });
         } finally {
             setIsLoading(false);

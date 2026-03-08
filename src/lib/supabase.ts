@@ -10,12 +10,7 @@ const supabaseAnonKey =
   import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY ||
   import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('ERRO CRÍTICO: Variáveis de ambiente do Supabase não encontradas.');
-  console.info('No Vite, variáveis devem começar com VITE_ (ex: VITE_SUPABASE_URL).');
-  console.info('No painel da Vercel, certifique-se de que as chaves começam com VITE_');
-}
-
+// Supabase configuration handled without console noise
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',

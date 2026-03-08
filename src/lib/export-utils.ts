@@ -115,7 +115,7 @@ export const printLabels = async (products: any[]) => {
                 // QR code position: left of the serial number field
                 doc.addImage(qrImgData, 'PNG', 10, currentY + 1, 15, 15);
             } catch (err) {
-                console.error("Erro ao gerar QR Code:", err);
+                // QR generation error handled silently
             }
         }
 

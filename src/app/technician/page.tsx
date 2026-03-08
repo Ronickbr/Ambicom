@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { Product } from "@/lib/types";
+import { logger } from "@/lib/logger";
 
 export default function TechnicianPage() {
     const { profile, loading: authLoading } = useAuth();
@@ -46,7 +47,7 @@ export default function TechnicianPage() {
                 if (error) throw error;
                 setProducts((data as Product[]) || []);
             } catch (error) {
-                console.error("Erro ao buscar fila:", error);
+                logger.error("Erro ao buscar fila:", error);
                 toast.error("Erro ao carregar fila técnica");
             } finally {
                 setIsLoading(false);

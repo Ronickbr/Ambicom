@@ -27,12 +27,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
 
     const fetchProfile = useCallback(async (userId: string) => {
+        // Try to load from cache first for instant UI
+        const cachedProfile = localStorage.getItem(`profile_${userId}`);
+        if (cachedProfile) {
+            try {
+                const parsed = JSON.parse(cachedProfile);
+                setProfile(parsed);
+                // Continue fetching in background to ensure data is fresh
+            } catch (e) {
+                logger.error("Error parsing cached profile", e);
+            }
+        }
+
         logger.debug(`Fetching profile for user: ${userId}`);
         const start = performance.now();
 
         // Create a timeout promise
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Profile fetch timeout")), 30000)
+            setTimeout(() => reject(new Error("Profile fetch timeout")), 15000)
         );
 
         try {
@@ -53,11 +65,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (error) {
                 logger.error("Error fetching profile:", error);
+                // If we have cached data, don't clear it on error to stay functional
                 return null;
             }
             if (data) {
                 logger.info("Profile loaded successfully", { role: data.role });
                 setProfile(data as Profile);
+                localStorage.setItem(`profile_${userId}`, JSON.stringify(data));
                 return data as Profile;
             }
         } catch (err) {

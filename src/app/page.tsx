@@ -12,6 +12,7 @@ import {
   Box
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 interface DashboardLog {
   id: string;
@@ -55,26 +56,19 @@ export default function Home() {
     const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000));
 
     try {
-      const queries = [
-        supabase.from("products").select("*", { count: 'exact', head: true }), // Total
-        supabase.from("products").select("*", { count: 'exact', head: true }).eq('status', 'CADASTRO'), // Fila
-        supabase.from("products").select("*", { count: 'exact', head: true }).eq('status', 'EM AVALIAÇÃO'), // Pendente
-        supabase.from("products").select("*", { count: 'exact', head: true }).eq('status', 'EM ESTOQUE'), // Concluido
-      ];
-
-      const results = await Promise.race([
-        Promise.all(queries),
+      const { data: statsData, error: statsError } = await Promise.race([
+        supabase.rpc('get_dashboard_stats'),
         timeoutPromise
-      ]) as any[];
+      ]) as any;
 
-      if (results) {
-        const [total, cadastro, tecnico, liberado] = results;
+      if (statsError) throw statsError;
 
+      if (statsData) {
         setStats([
-          { name: "Patrimônio Ativo", value: (total.count || 0).toString(), icon: Package, color: "text-blue-500", key: "TOTAL", label: "Total Geral" },
-          { name: "Fila de Inspeção", value: (cadastro.count || 0).toString(), icon: Clock, color: "text-yellow-500", key: "CADASTRO", label: "Aguardando" },
-          { name: "Pendente Liberação", value: (tecnico.count || 0).toString(), icon: AlertCircle, color: "text-orange-500", key: "TECNICO", label: "Em Análise" },
-          { name: "Total Expedido", value: (liberado.count || 0).toString(), icon: CheckCircle2, color: "text-emerald-500", key: "LIBERADO", label: "Concluídos" },
+          { name: "Patrimônio Ativo", value: (statsData.total || 0).toString(), icon: Package, color: "text-blue-500", key: "TOTAL", label: "Total Geral" },
+          { name: "Fila de Inspeção", value: (statsData.cadastro || 0).toString(), icon: Clock, color: "text-yellow-500", key: "CADASTRO", label: "Aguardando" },
+          { name: "Pendente Liberação", value: (statsData.em_avaliacao || 0).toString(), icon: AlertCircle, color: "text-orange-500", key: "TECNICO", label: "Em Análise" },
+          { name: "Total Expedido", value: (statsData.em_estoque || 0).toString(), icon: CheckCircle2, color: "text-emerald-500", key: "LIBERADO", label: "Concluídos" },
         ]);
       }
 
@@ -99,7 +93,7 @@ export default function Home() {
       setLeadTime({ avg: "--", status: "Aguardando Dados" });
 
     } catch (error) {
-      console.error("Erro dashboard:", error);
+      logger.error("Error fetching dashboard data:", error);
     } finally {
       setIsLoading(false);
     }

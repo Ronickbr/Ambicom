@@ -24,6 +24,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 interface ProductWithLogs extends Product {
     product_logs: {
@@ -77,7 +78,7 @@ export default function ApprovalsPage() {
             if (error) throw error;
             setProducts((data as any[]) || []);
         } catch (error) {
-            console.error("Erro ao buscar aprovações:", error);
+            logger.error("Erro ao buscar aprovações:", error);
             toast.error("Erro ao carregar fila de aprovação");
         } finally {
             setIsLoading(false);

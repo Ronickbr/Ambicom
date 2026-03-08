@@ -74,10 +74,10 @@ export default function InventoryPage() {
     // Fetch unique values for filters
     useEffect(() => {
         const fetchFilters = async () => {
-            const { data } = await supabase.from('products').select('brand, voltage');
+            const { data } = await supabase.rpc('get_inventory_filters');
             if (data) {
-                const brands = Array.from(new Set(data.map(p => p.brand))).filter(Boolean) as string[];
-                const voltages = Array.from(new Set(data.map(p => p.voltage))).filter(Boolean) as string[];
+                const brands = Array.from(new Set(data.map((p: any) => p.brand))).filter(Boolean) as string[];
+                const voltages = Array.from(new Set(data.map((p: any) => p.voltage))).filter(Boolean) as string[];
                 setAvailableBrands(brands.sort());
                 setAvailableVoltages(voltages.sort());
             }
@@ -262,10 +262,10 @@ export default function InventoryPage() {
         const { exportToPDF, exportToExcel } = await import("@/lib/export-utils");
         if (type === 'PDF') {
             const headers = ["ID", "Marca", "Modelo", "Status", "Serial"];
-            const pdfData = filteredProducts.map(p => [p.internal_serial, p.brand, p.model, p.status, p.original_serial]);
+            const pdfData = products.map(p => [p.internal_serial, p.brand, p.model, p.status, p.original_serial]);
             exportToPDF("Inventário Industrial", headers, pdfData, "estoque");
         } else {
-            const data = filteredProducts.map(p => ({
+            const data = products.map(p => ({
                 ID: p.internal_serial,
                 Marca: p.brand,
                 Modelo: p.model,
@@ -278,12 +278,7 @@ export default function InventoryPage() {
         toast.info(`Exportação ${type} iniciada`);
     };
 
-    const filteredProducts = products.filter(p => {
-        const searchStr = `${p.internal_serial} ${p.brand} ${p.model} ${p.original_serial}`.toLowerCase();
-        const match = searchStr.includes(searchTerm.toLowerCase());
-        const matchStatus = statusFilter === "ALL" || p.status === statusFilter;
-        return match && matchStatus;
-    });
+    // Products are already filtered by the database query
 
     const isAuthorized = profile?.role === "GESTOR" || profile?.role === "ADMIN";
 
@@ -455,7 +450,7 @@ export default function InventoryPage() {
                         </div>
                         <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground animate-pulse">Sincronizando Ativos...</p>
                     </div>
-                ) : filteredProducts.length > 0 ? (
+                ) : products.length > 0 ? (
                     <div className="space-y-4">
                         <div className="glass-card overflow-hidden border-white/10 shadow-2xl bg-neutral-900/30 p-0 rounded-2xl">
                             <div className="relative group/table" data-scroll="right">
@@ -499,7 +494,7 @@ export default function InventoryPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
-                                            {filteredProducts.map((p) => {
+                                            {products.map((p) => {
                                                 const config = statusConfig[p.status as keyof typeof statusConfig];
                                                 const isSelected = selectedIds.has(p.id);
                                                 return (

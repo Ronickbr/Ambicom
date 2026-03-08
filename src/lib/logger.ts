@@ -24,20 +24,9 @@ class DebugLogger {
       this.logs.shift();
     }
 
-    // Only log to console in development
-    if (import.meta.env.DEV) {
-      const style = {
-        info: 'color: #3b82f6',
-        warn: 'color: #f59e0b',
-        error: 'color: #ef4444; font-weight: bold',
-        debug: 'color: #a8a29e'
-      };
-
-      console.log(
-        `%c[${timestamp}] [${level.toUpperCase()}] ${message}`,
-        style[level],
-        data || ''
-      );
+    // console.log intentionally removed per user request for performance and cleanliness
+    if (level === 'error') {
+      console.error(`[${timestamp}] [ERROR] ${message}`, data);
     }
   }
 

@@ -2,6 +2,7 @@ import React from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { toast } from 'sonner'
 import { RefreshCw } from 'lucide-react'
+import { logger } from "@/lib/logger"
 
 export function ReloadPrompt() {
   const {
@@ -13,7 +14,7 @@ export function ReloadPrompt() {
       // SW Registered
     },
     onRegisterError(error: unknown) {
-      // SW registration error
+      logger.error('SW registration error:', error);
     },
   })
 

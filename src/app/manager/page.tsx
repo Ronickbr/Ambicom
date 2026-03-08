@@ -19,6 +19,7 @@ import {
     XCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
@@ -69,24 +70,17 @@ export default function ManagerDashboard() {
     const fetchManagerData = async () => {
         setIsLoading(true);
         try {
-            // Fetch Stats efficiently using count
-            const queries = [
-                supabase.from("products").select("*", { count: 'exact', head: true }), // Total
-                supabase.from("products").select("*", { count: 'exact', head: true }).in('status', ['EM ESTOQUE', 'VENDIDO']), // 1: Homologados
-                supabase.from("products").select("*", { count: 'exact', head: true }).eq('status', 'CADASTRO'), // 2: Cadastro
-                supabase.from("products").select("*", { count: 'exact', head: true }).eq('status', 'EM AVALIAÇÃO'), // 3: Em Avaliação
-                supabase.from("products").select("*", { count: 'exact', head: true }).eq('status', 'EM ESTOQUE'), // 4: Em Estoque
-                supabase.from("products").select("*", { count: 'exact', head: true }).eq('status', 'VENDIDO'), // 5: Vendidos
-            ];
+            // Fetch Stats efficiently using a single RPC call
+            const { data: statsData, error: statsError } = await supabase.rpc('get_dashboard_stats');
 
-            const results = await Promise.all(queries);
+            if (statsError) throw statsError;
 
             const newStats = {
-                total: results[0].count || 0,
-                cadastro: results[2].count || 0,
-                avaliacao: results[3].count || 0,
-                estoque: results[4].count || 0,
-                vendidos: results[5].count || 0,
+                total: statsData.total || 0,
+                cadastro: statsData.cadastro || 0,
+                avaliacao: statsData.em_avaliacao || 0,
+                estoque: statsData.em_estoque || 0,
+                vendidos: statsData.vendidos || 0,
             };
             setStats(newStats);
 
@@ -109,7 +103,7 @@ export default function ManagerDashboard() {
             setRecentLogs((logs as unknown as LogWithRelations[]) || []);
 
         } catch (error) {
-            console.error("Erro ao carregar dashboard:", error);
+            logger.error("Erro ao carregar dashboard:", error);
             toast.error("Erro ao carregar dados gerenciais");
         } finally {
             setIsLoading(false);
