@@ -46,6 +46,7 @@ export default function ApprovalsPage() {
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedProduct, setSelectedProduct] = useState<ProductWithLogs | null>(null);
+    const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
 
     const isAuthorized = profile?.role === "SUPERVISOR" || profile?.role === "GESTOR" || profile?.role === "ADMIN";
 
@@ -178,12 +179,6 @@ export default function ApprovalsPage() {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                <ShieldCheck className="h-4 w-4" />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Conformidade & QA</span>
-                        </div>
                         <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Central de <span className="text-primary not-italic font-light">Revisão</span></h1>
                         <p className="text-muted-foreground font-medium text-[10px] sm:text-sm mt-1 opacity-70 italic px-1">Validação de qualidade, triagem técnica e liberação de ativos.</p>
                     </div>
@@ -377,29 +372,45 @@ export default function ApprovalsPage() {
                             </div>
 
                             {/* Photos Section */}
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 <div className="flex items-center gap-3">
                                     <Camera className="h-4 w-4 text-primary" />
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Evidência Visual do Ativo</h3>
                                 </div>
-                                <div className="grid grid-cols-1 gap-6">
-                                    <div className="aspect-video sm:aspect-[21/9] rounded-2xl bg-black/40 border border-white/5 overflow-hidden group relative">
-                                        {selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect ? (
-                                            <img
-                                                src={(selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect) ?? undefined}
-                                                alt="Produto"
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex flex-col items-center justify-center gap-4 opacity-20">
-                                                <Package className="h-12 w-12" />
-                                                <p className="text-[10px] font-black uppercase tracking-widest">Sem evidência visual</p>
+                                <div className="flex justify-center">
+                                    {(() => {
+                                        const photo = selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect;
+                                        const label = selectedProduct.photo_product ? "VISTA GERAL" :
+                                            selectedProduct.photo_model ? "ETIQUETA MODELO" :
+                                                selectedProduct.photo_serial ? "ETIQUETA SERIAL" :
+                                                    selectedProduct.photo_defect ? "EVIDÊNCIA DEFEITO" : "FOTO";
+
+                                        return (
+                                            <div
+                                                className="group relative w-full max-w-md aspect-[3/4] rounded-3xl bg-black/40 border border-white/10 overflow-hidden cursor-zoom-in active:scale-95 transition-all shadow-2xl"
+                                                onClick={() => photo && setFullImageUrl(photo)}
+                                            >
+                                                {photo ? (
+                                                    <>
+                                                        <img
+                                                            src={photo}
+                                                            alt="Produto"
+                                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                        />
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
+                                                            <span className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-2">{label}</span>
+                                                            <p className="text-[10px] text-white/60 font-medium italic">Clique para zoom de alta definição</p>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="w-full h-full flex flex-col items-center justify-center gap-4 opacity-20">
+                                                        <Camera className="h-12 w-12 text-muted-foreground" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">Nenhuma Imagem Registrada</span>
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
-                                            <p className="text-[10px] text-white/60 font-medium italic">Inspeção técnica realizada por profissional qualificado</p>
-                                        </div>
-                                    </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
 
@@ -509,6 +520,22 @@ export default function ApprovalsPage() {
                             </div>
                         </div>
                     </div>
+                </div>
+            )}
+            {/* Full Image Zoom Modal */}
+            {fullImageUrl && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-200">
+                    <button
+                        onClick={() => setFullImageUrl(null)}
+                        className="absolute top-6 right-6 h-12 w-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all z-10"
+                    >
+                        <XCircle className="h-6 w-6" />
+                    </button>
+                    <img
+                        src={fullImageUrl}
+                        alt="Visualização ampliada"
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+                    />
                 </div>
             )}
         </MainLayout>

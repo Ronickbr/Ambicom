@@ -57,6 +57,7 @@ export default function OrdersPage() {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+    const [productSearchTerm, setProductSearchTerm] = useState("");
 
     // Camera Scanning States
     const { scanImage, ocrLoading } = useScan();
@@ -155,7 +156,7 @@ export default function OrdersPage() {
         const input = code.trim().toUpperCase();
 
         const foundItem = selectedOrder.order_items?.find(
-            item => item.products?.internal_serial?.toUpperCase() === input ||
+            (item: any) => item.products?.internal_serial?.toUpperCase() === input ||
                 item.products?.original_serial?.toUpperCase() === input
         );
 
@@ -266,6 +267,7 @@ export default function OrdersPage() {
 
     const prepareNewOrder = async () => {
         setShowAddModal(true);
+        setProductSearchTerm("");
         const { data: cData } = await supabase.from("clients").select("*");
         setClients((cData as Client[]) || []);
         const { data: pData } = await supabase.from("products").select("*").eq("status", "EM ESTOQUE").is("order_id", null);
@@ -371,7 +373,7 @@ export default function OrdersPage() {
 
         // Find if this serial exists in the order
         const foundItem = selectedOrder.order_items?.find(
-            item => item.products?.internal_serial?.toUpperCase() === input
+            (item: any) => item.products?.internal_serial?.toUpperCase() === input
         );
 
         if (foundItem) {
@@ -496,12 +498,6 @@ export default function OrdersPage() {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                <Package className="h-4 w-4" />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Logística & Expedição</span>
-                        </div>
                         <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Logística <span className="text-primary not-italic font-light">& Expedição</span></h1>
                         <p className="text-muted-foreground font-medium text-sm mt-1 opacity-70 italic">Gerenciamento de fluxo de saída e ordens de serviço.</p>
                     </div>
@@ -735,42 +731,88 @@ export default function OrdersPage() {
                                         <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">2. Selecionar Itens para Remessa</label>
                                         <span className="text-[10px] font-black px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">{selectedProducts.length} ITENS</span>
                                     </div>
-                                    <div className="border border-white/10 rounded-2xl bg-black/40 p-3 max-h-72 overflow-y-auto space-y-2 custom-scrollbar shadow-inner backdrop-blur-sm">
-                                        {availableProducts.length > 0 ? availableProducts.map(p => (
-                                            <label key={p.id} className={cn("flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer group/item", selectedProducts.includes(p.id) ? "bg-primary/10 border-primary/50 shadow-lg" : "hover:bg-white/5 border-white/5 bg-white/[0.02]")}>
-                                                <div className="relative flex items-center justify-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="h-6 w-6 rounded-lg border-white/10 bg-white/5 text-primary focus:ring-primary accent-primary cursor-pointer"
-                                                        checked={selectedProducts.includes(p.id)}
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) setSelectedProducts([...selectedProducts, p.id]);
-                                                            else setSelectedProducts(selectedProducts.filter(id => id !== p.id));
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center justify-between gap-4">
-                                                        <p className="font-bold text-sm text-white truncate group-hover/item:text-primary transition-colors">{p.model}</p>
-                                                        <span className="font-mono text-[10px] px-2 py-0.5 bg-white/5 rounded text-primary border border-primary/20 font-black uppercase tracking-tighter shadow-sm flex-shrink-0">
-                                                            {p.internal_serial}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 mt-1 opacity-60">
-                                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                        <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Liberado Gestor</p>
-                                                    </div>
-                                                </div>
-                                            </label>
-                                        )) : (
-                                            <div className="flex flex-col items-center justify-center p-12 text-center space-y-4 opacity-50">
-                                                <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center">
-                                                    <Package className="h-8 w-8 text-muted-foreground" />
-                                                </div>
-                                                <p className="text-xs text-muted-foreground italic leading-relaxed font-medium">Nenhum item disponível no momento.<br />Aguarde a liberação gerencial no inventário.</p>
-                                            </div>
-                                        )}
 
+                                    {/* Product Filter */}
+                                    <div className="relative group">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                        <input
+                                            type="text"
+                                            placeholder="Filtrar por marca, modelo ou serial..."
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 h-11 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all text-white font-medium"
+                                            value={productSearchTerm}
+                                            onChange={(e) => setProductSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="border border-white/10 rounded-2xl bg-black/40 p-3 max-h-72 overflow-y-auto space-y-2 custom-scrollbar shadow-inner backdrop-blur-sm">
+                                        {(() => {
+                                            const filtered = availableProducts.filter(p => {
+                                                const search = productSearchTerm.toLowerCase();
+                                                return (
+                                                    p.brand?.toLowerCase().includes(search) ||
+                                                    p.model?.toLowerCase().includes(search) ||
+                                                    p.internal_serial?.toLowerCase().includes(search) ||
+                                                    p.original_serial?.toLowerCase().includes(search) ||
+                                                    p.product_type?.toLowerCase().includes(search) ||
+                                                    p.market_class?.toLowerCase().includes(search) ||
+                                                    p.refrigerant_gas?.toLowerCase().includes(search) ||
+                                                    p.voltage?.toLowerCase().includes(search)
+                                                );
+                                            });
+
+                                            if (filtered.length === 0) {
+                                                return (
+                                                    <div className="flex flex-col items-center justify-center p-12 text-center space-y-4 opacity-50">
+                                                        <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center">
+                                                            <Package className="h-8 w-8 text-muted-foreground" />
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground italic leading-relaxed font-medium">
+                                                            {productSearchTerm ? "Nenhum item corresponde ao filtro." : "Nenhum item disponível no momento."}
+                                                            <br />Aguarde a liberação gerencial no inventário.
+                                                        </p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            return filtered.map(p => (
+                                                <label key={p.id} className={cn("flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer group/item", selectedProducts.includes(p.id) ? "bg-primary/10 border-primary/50 shadow-lg" : "hover:bg-white/5 border-white/5 bg-white/[0.02]")}>
+                                                    <div className="relative flex items-center justify-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="h-6 w-6 rounded-lg border-white/10 bg-white/5 text-primary focus:ring-primary accent-primary cursor-pointer"
+                                                            checked={selectedProducts.includes(p.id)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) setSelectedProducts([...selectedProducts, p.id]);
+                                                                else setSelectedProducts(selectedProducts.filter(id => id !== p.id));
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <p className="font-bold text-sm text-white truncate group-hover/item:text-primary transition-colors">{p.brand} {p.model}</p>
+                                                            <span className="font-mono text-[10px] px-2 py-0.5 bg-white/5 rounded text-primary border border-primary/20 font-black uppercase tracking-tighter shadow-sm flex-shrink-0">
+                                                                {p.internal_serial}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">{p.product_type || "Equipamento"}</p>
+                                                            <div className="flex items-center gap-1.5 ml-auto">
+                                                                {p.market_class && (
+                                                                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-primary/5 border border-primary/10 text-primary/60 font-bold uppercase tracking-tighter">{p.market_class}</span>
+                                                                )}
+                                                                {p.voltage && (
+                                                                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-white/40 font-bold">{p.voltage}</span>
+                                                                )}
+                                                                {p.refrigerant_gas && (
+                                                                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/5 border border-blue-500/10 text-blue-400/60 font-bold">{p.refrigerant_gas}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            ));
+                                        })()}
                                     </div>
                                 </div>
 
@@ -798,271 +840,273 @@ export default function OrdersPage() {
             </div>
 
             {/* Modal de Detalhes do Pedido */}
-            {showDetailsModal && selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
-                    <div className="glass-card w-full max-w-4xl max-h-[95vh] overflow-hidden border-white/10 shadow-2xl bg-neutral-900/90 relative flex flex-col">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            {
+                showDetailsModal && selectedOrder && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
+                        <div className="glass-card w-full max-w-4xl max-h-[95vh] overflow-hidden border-white/10 shadow-2xl bg-neutral-900/90 relative flex flex-col">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
-                        {/* Modal Header */}
-                        <div className="p-6 sm:p-8 border-b border-white/10 flex items-center justify-between shrink-0">
-                            <div className="space-y-1">
-                                <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
-                                    Pedido #{selectedOrder.id.split("-")[0].toUpperCase()}
-                                    <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border", statusStyles[selectedOrder.status as keyof typeof statusStyles])}>
-                                        {selectedOrder.status}
-                                    </span>
-                                </h2>
-                                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-black">Detalhes Completos da Transação</p>
-                            </div>
-                            <button onClick={() => setShowDetailsModal(false)} className="h-12 w-12 rounded-2xl bg-white/5 flex items-center justify-center text-muted-foreground hover:text-white transition-all hover:bg-red-500/20 hover:text-red-500 border border-white/10">
-                                <X className="h-6 w-6" />
-                            </button>
-                        </div>
-
-                        {/* Modal Content */}
-                        <div className="p-6 sm:p-8 overflow-y-auto flex-1 custom-scrollbar space-y-10">
-                            {isFetchingDetails ? (
-                                <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                                    <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Carregando Informações...</p>
+                            {/* Modal Header */}
+                            <div className="p-6 sm:p-8 border-b border-white/10 flex items-center justify-between shrink-0">
+                                <div className="space-y-1">
+                                    <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+                                        Pedido #{selectedOrder.id.split("-")[0].toUpperCase()}
+                                        <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border", statusStyles[selectedOrder.status as keyof typeof statusStyles])}>
+                                            {selectedOrder.status}
+                                        </span>
+                                    </h2>
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-black">Detalhes Completos da Transação</p>
                                 </div>
-                            ) : (
-                                <>
-                                    {/* Client Info Grid */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-4">
-                                            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
-                                                <User className="h-3 w-3" />
-                                                Dados do Cliente
-                                            </h3>
-                                            <div className="bg-white/5 rounded-2xl p-6 border border-white/5 space-y-4">
-                                                <div>
-                                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Nome Completo</p>
-                                                    <p className="text-white font-bold text-lg">{(selectedOrder as any).clients?.name || "N/A"}</p>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                                                    <div>
-                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">CPF/CNPJ</p>
-                                                        <p className="text-white font-mono text-sm">{(selectedOrder as any).clients?.tax_id || "N/A"}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Telefone</p>
-                                                        <p className="text-white text-sm">{(selectedOrder as any).clients?.phone || "N/A"}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="pt-4 border-t border-white/5">
-                                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Endereço</p>
-                                                    <p className="text-white text-sm">{(selectedOrder as any).clients?.address || "Não informado"}</p>
-                                                </div>
-                                            </div>
-                                        </div>
+                                <button onClick={() => setShowDetailsModal(false)} className="h-12 w-12 rounded-2xl bg-white/5 flex items-center justify-center text-muted-foreground hover:text-white transition-all hover:bg-red-500/20 hover:text-red-500 border border-white/10">
+                                    <X className="h-6 w-6" />
+                                </button>
+                            </div>
 
-                                        <div className="space-y-4">
-                                            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
-                                                <Calendar className="h-3 w-3" />
-                                                Informações do Pedido
-                                            </h3>
-                                            <div className="bg-white/5 rounded-2xl p-6 border border-white/5 space-y-4 h-full">
-                                                <div className="grid grid-cols-2 gap-6">
-                                                    <div>
-                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Data de Criação</p>
-                                                        <p className="text-white font-bold">{new Date(selectedOrder.created_at).toLocaleDateString("pt-BR")}</p>
-                                                        <p className="text-[10px] text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleTimeString("pt-BR")}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Última Atualização</p>
-                                                        <p className="text-white font-bold">{new Date(selectedOrder.updated_at).toLocaleDateString("pt-BR")}</p>
-                                                        <p className="text-[10px] text-muted-foreground">{new Date(selectedOrder.updated_at).toLocaleTimeString("pt-BR")}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="pt-4 border-t border-white/5">
-                                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">ID Único (UUID)</p>
-                                                    <p className="text-muted-foreground font-mono text-[10px] break-all">{selectedOrder.id}</p>
-                                                </div>
-                                            </div>
-                                        </div>
+                            {/* Modal Content */}
+                            <div className="p-6 sm:p-8 overflow-y-auto flex-1 custom-scrollbar space-y-10">
+                                {isFetchingDetails ? (
+                                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                        <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Carregando Informações...</p>
                                     </div>
-
-                                    {/* Products List */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
-                                                <Package className="h-3 w-3" />
-                                                Itens do Pedido ({selectedOrder.order_items?.length || 0})
-                                            </h3>
-                                            {selectedOrder.status === "PENDENTE" && (
-                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                                                    Conferência: {verifiedSerials.length} de {selectedOrder.order_items?.length || 0}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {selectedOrder.status === "PENDENTE" && (
-                                            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 sm:p-6 space-y-4">
-                                                <div className="flex flex-col sm:flex-row items-center gap-4">
-                                                    <button
-                                                        onClick={() => setShowCamera(!showCamera)}
-                                                        className={cn(
-                                                            "h-14 w-full sm:w-14 rounded-2xl flex items-center justify-center transition-all border shrink-0",
-                                                            showCamera ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-                                                        )}
-                                                    >
-                                                        {showCamera ? <X className="h-6 w-6" /> : <Camera className="h-6 w-6" />}
-                                                    </button>
-                                                    <div className="flex-1 w-full">
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Aguardando Conferência de ID Interno...</p>
-                                                        <form onSubmit={handleScanProduct} className="relative">
-                                                            <input
-                                                                ref={scannerRef}
-                                                                type="text"
-                                                                value={scanInput}
-                                                                onChange={(e) => setScanInput(e.target.value)}
-                                                                placeholder="Escaneie ou digite o ID Interno..."
-                                                                className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-6 text-sm text-white placeholder:text-muted-foreground/30 focus:border-primary/50 transition-all outline-none"
-                                                            />
-                                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden sm:block">
-                                                                <span className="text-[8px] font-bold text-muted-foreground/30 bg-white/5 px-2 py-1 rounded">ENTER</span>
-                                                            </div>
-                                                        </form>
+                                ) : (
+                                    <>
+                                        {/* Client Info Grid */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="space-y-4">
+                                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                                                    <User className="h-3 w-3" />
+                                                    Dados do Cliente
+                                                </h3>
+                                                <div className="bg-white/5 rounded-2xl p-6 border border-white/5 space-y-4">
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Nome Completo</p>
+                                                        <p className="text-white font-bold text-lg">{(selectedOrder as any).clients?.name || "N/A"}</p>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                                                        <div>
+                                                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">CPF/CNPJ</p>
+                                                            <p className="text-white font-mono text-sm">{(selectedOrder as any).clients?.tax_id || "N/A"}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Telefone</p>
+                                                            <p className="text-white text-sm">{(selectedOrder as any).clients?.phone || "N/A"}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="pt-4 border-t border-white/5">
+                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Endereço</p>
+                                                        <p className="text-white text-sm">{(selectedOrder as any).clients?.address || "Não informado"}</p>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                {showCamera && (
-                                                    <div className="fixed inset-0 z-[100] bg-black sm:relative sm:z-0 sm:aspect-video sm:rounded-xl sm:overflow-hidden sm:border sm:border-white/10 animate-in fade-in zoom-in-95 duration-300 flex flex-col items-center justify-center p-4">
-                                                        <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 relative">
-                                                            <div id="reader" className="w-full"></div>
-
-                                                            <button
-                                                                onClick={() => setShowCamera(false)}
-                                                                className="absolute top-4 right-4 z-[110] h-10 w-10 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-xl border border-white/10 active:scale-90 transition-all"
-                                                            >
-                                                                <X className="h-6 w-6" />
-                                                            </button>
+                                            <div className="space-y-4">
+                                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                                                    <Calendar className="h-3 w-3" />
+                                                    Informações do Pedido
+                                                </h3>
+                                                <div className="bg-white/5 rounded-2xl p-6 border border-white/5 space-y-4 h-full">
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                        <div>
+                                                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Data de Criação</p>
+                                                            <p className="text-white font-bold">{new Date(selectedOrder.created_at).toLocaleDateString("pt-BR")}</p>
+                                                            <p className="text-[10px] text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleTimeString("pt-BR")}</p>
                                                         </div>
-
-                                                        <div className="mt-6 bg-black/60 backdrop-blur-md px-6 py-2 rounded-full border border-white/5 shadow-xl">
-                                                            <p className="text-white/70 text-[9px] uppercase font-black tracking-[0.3em] italic text-center">Aponte para o QR Code da etiqueta</p>
+                                                        <div>
+                                                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Última Atualização</p>
+                                                            <p className="text-white font-bold">{new Date(selectedOrder.updated_at).toLocaleDateString("pt-BR")}</p>
+                                                            <p className="text-[10px] text-muted-foreground">{new Date(selectedOrder.updated_at).toLocaleTimeString("pt-BR")}</p>
                                                         </div>
                                                     </div>
+                                                    <div className="pt-4 border-t border-white/5">
+                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">ID Único (UUID)</p>
+                                                        <p className="text-muted-foreground font-mono text-[10px] break-all">{selectedOrder.id}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Products List */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                                                    <Package className="h-3 w-3" />
+                                                    Itens do Pedido ({selectedOrder.order_items?.length || 0})
+                                                </h3>
+                                                {selectedOrder.status === "PENDENTE" && (
+                                                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                                        Conferência: {verifiedSerials.length} de {selectedOrder.order_items?.length || 0}
+                                                    </span>
                                                 )}
                                             </div>
-                                        )}
 
-                                        <div className="glass-card rounded-2xl border border-white/5 p-0 overflow-hidden">
-                                            <div className="relative group/table" data-scroll="right">
-                                                {/* Horizontal Scroll Indicators */}
-                                                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0a0a0a] to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-                                                <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-
-                                                <div
-                                                    className="overflow-x-auto scrollbar-hide border border-white/5 rounded-2xl"
-                                                    onScroll={(e) => {
-                                                        const target = e.currentTarget;
-                                                        const group = target.parentElement;
-                                                        if (group) {
-                                                            const scrollLeft = target.scrollLeft;
-                                                            const maxScroll = target.scrollWidth - target.clientWidth;
-                                                            let status = 'none';
-                                                            if (maxScroll > 0) {
-                                                                if (scrollLeft <= 10) status = 'right';
-                                                                else if (scrollLeft >= maxScroll - 10) status = 'left';
-                                                                else status = 'both';
-                                                            }
-                                                            group.setAttribute('data-scroll', status);
-                                                        }
-                                                    }}
-                                                >
-                                                    <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
-                                                        <thead className="bg-white/5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-white/5">
-                                                            <tr>
-                                                                <th className="px-4 sm:px-6 py-4 sticky left-0 bg-neutral-900 z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Produto</th>
-                                                                <th className="px-4 sm:px-6 py-4">ID Interno</th>
-                                                                <th className="px-4 sm:px-6 py-4">S/N Original</th>
-                                                                <th className="px-4 sm:px-6 py-4">Marca</th>
-                                                                <th className="px-4 sm:px-6 py-4 text-right">Conferência</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-white/5">
-                                                            {selectedOrder.order_items?.map((item: any) => {
-                                                                const isVerified = verifiedSerials.includes(item.products?.internal_serial?.toUpperCase());
-                                                                return (
-                                                                    <tr key={item.id} className={cn("transition-colors", isVerified ? "bg-emerald-500/5" : "hover:bg-white/[0.01]")}>
-                                                                        <td className="px-4 sm:px-6 py-4 font-black text-white italic uppercase sticky left-0 bg-neutral-900 group-hover:bg-neutral-800 transition-colors z-20 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">{item.products?.model || "N/A"}</td>
-                                                                        <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-primary font-black uppercase tracking-widest">{item.products?.internal_serial || "N/A"}</td>
-                                                                        <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-muted-foreground/40">{item.products?.original_serial || "N/A"}</td>
-                                                                        <td className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{item.products?.brand || "N/A"}</td>
-                                                                        <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
-                                                                            {isVerified ? (
-                                                                                <span className="inline-flex items-center gap-1.5 text-emerald-500 font-black text-[9px] uppercase tracking-wider bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                                                                                    <Check className="h-3 w-3" /> CONFIRMADO
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span className="text-muted-foreground/20 font-black text-[9px] uppercase tracking-widest italic flex items-center justify-end gap-2">
-                                                                                    <div className="h-1 w-1 rounded-full bg-muted-foreground/20 animate-pulse" />
-                                                                                    Pendente
-                                                                                </span>
-                                                                            )}
-                                                                        </td>
-                                                                    </tr>
-                                                                );
-                                                            })}
-                                                            {(!selectedOrder.order_items || selectedOrder.order_items.length === 0) && (
-                                                                <tr>
-                                                                    <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground italic">Nenhum item vinculado a este pedido.</td>
-                                                                </tr>
+                                            {selectedOrder.status === "PENDENTE" && (
+                                                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 sm:p-6 space-y-4">
+                                                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                                                        <button
+                                                            onClick={() => setShowCamera(!showCamera)}
+                                                            className={cn(
+                                                                "h-14 w-full sm:w-14 rounded-2xl flex items-center justify-center transition-all border shrink-0",
+                                                                showCamera ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
                                                             )}
-                                                        </tbody>
-                                                    </table>
+                                                        >
+                                                            {showCamera ? <X className="h-6 w-6" /> : <Camera className="h-6 w-6" />}
+                                                        </button>
+                                                        <div className="flex-1 w-full">
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Aguardando Conferência de ID Interno...</p>
+                                                            <form onSubmit={handleScanProduct} className="relative">
+                                                                <input
+                                                                    ref={scannerRef}
+                                                                    type="text"
+                                                                    value={scanInput}
+                                                                    onChange={(e) => setScanInput(e.target.value)}
+                                                                    placeholder="Escaneie ou digite o ID Interno..."
+                                                                    className="w-full h-14 bg-black/40 border border-white/10 rounded-xl px-6 text-sm text-white placeholder:text-muted-foreground/30 focus:border-primary/50 transition-all outline-none"
+                                                                />
+                                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden sm:block">
+                                                                    <span className="text-[8px] font-bold text-muted-foreground/30 bg-white/5 px-2 py-1 rounded">ENTER</span>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+
+                                                    {showCamera && (
+                                                        <div className="fixed inset-0 z-[100] bg-black sm:relative sm:z-0 sm:aspect-video sm:rounded-xl sm:overflow-hidden sm:border sm:border-white/10 animate-in fade-in zoom-in-95 duration-300 flex flex-col items-center justify-center p-4">
+                                                            <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 relative">
+                                                                <div id="reader" className="w-full"></div>
+
+                                                                <button
+                                                                    onClick={() => setShowCamera(false)}
+                                                                    className="absolute top-4 right-4 z-[110] h-10 w-10 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-xl border border-white/10 active:scale-90 transition-all"
+                                                                >
+                                                                    <X className="h-6 w-6" />
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="mt-6 bg-black/60 backdrop-blur-md px-6 py-2 rounded-full border border-white/5 shadow-xl">
+                                                                <p className="text-white/70 text-[9px] uppercase font-black tracking-[0.3em] italic text-center">Aponte para o QR Code da etiqueta</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <div className="glass-card rounded-2xl border border-white/5 p-0 overflow-hidden">
+                                                <div className="relative group/table" data-scroll="right">
+                                                    {/* Horizontal Scroll Indicators */}
+                                                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0a0a0a] to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                                                    <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+
+                                                    <div
+                                                        className="overflow-x-auto scrollbar-hide border border-white/5 rounded-2xl"
+                                                        onScroll={(e) => {
+                                                            const target = e.currentTarget;
+                                                            const group = target.parentElement;
+                                                            if (group) {
+                                                                const scrollLeft = target.scrollLeft;
+                                                                const maxScroll = target.scrollWidth - target.clientWidth;
+                                                                let status = 'none';
+                                                                if (maxScroll > 0) {
+                                                                    if (scrollLeft <= 10) status = 'right';
+                                                                    else if (scrollLeft >= maxScroll - 10) status = 'left';
+                                                                    else status = 'both';
+                                                                }
+                                                                group.setAttribute('data-scroll', status);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
+                                                            <thead className="bg-white/5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-white/5">
+                                                                <tr>
+                                                                    <th className="px-4 sm:px-6 py-4 sticky left-0 bg-neutral-900 z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Produto</th>
+                                                                    <th className="px-4 sm:px-6 py-4">ID Interno</th>
+                                                                    <th className="px-4 sm:px-6 py-4">S/N Original</th>
+                                                                    <th className="px-4 sm:px-6 py-4">Marca</th>
+                                                                    <th className="px-4 sm:px-6 py-4 text-right">Conferência</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-white/5">
+                                                                {selectedOrder.order_items?.map((item: any) => {
+                                                                    const isVerified = verifiedSerials.includes(item.products?.internal_serial?.toUpperCase());
+                                                                    return (
+                                                                        <tr key={item.id} className={cn("transition-colors", isVerified ? "bg-emerald-500/5" : "hover:bg-white/[0.01]")}>
+                                                                            <td className="px-4 sm:px-6 py-4 font-black text-white italic uppercase sticky left-0 bg-neutral-900 group-hover:bg-neutral-800 transition-colors z-20 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">{item.products?.model || "N/A"}</td>
+                                                                            <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-primary font-black uppercase tracking-widest">{item.products?.internal_serial || "N/A"}</td>
+                                                                            <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-muted-foreground/40">{item.products?.original_serial || "N/A"}</td>
+                                                                            <td className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{item.products?.brand || "N/A"}</td>
+                                                                            <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
+                                                                                {isVerified ? (
+                                                                                    <span className="inline-flex items-center gap-1.5 text-emerald-500 font-black text-[9px] uppercase tracking-wider bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                                                                                        <Check className="h-3 w-3" /> CONFIRMADO
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="text-muted-foreground/20 font-black text-[9px] uppercase tracking-widest italic flex items-center justify-end gap-2">
+                                                                                        <div className="h-1 w-1 rounded-full bg-muted-foreground/20 animate-pulse" />
+                                                                                        Pendente
+                                                                                    </span>
+                                                                                )}
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                                {(!selectedOrder.order_items || selectedOrder.order_items.length === 0) && (
+                                                                    <tr>
+                                                                        <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground italic">Nenhum item vinculado a este pedido.</td>
+                                                                    </tr>
+                                                                )}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                                    </>
+                                )}
+                            </div>
 
-                        {/* Modal Footer */}
-                        <div className="p-6 sm:p-8 bg-black/40 border-t border-white/5 flex flex-col sm:flex-row gap-4 shrink-0">
-                            <button
-                                onClick={() => handleExportPDF(selectedOrder)}
-                                className="flex-1 h-14 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 border border-white/10"
-                            >
-                                <FileDown className="h-5 w-5" />
-                                Exportar PDF
-                            </button>
-
-                            {selectedOrder.status === "PENDENTE" && (
+                            {/* Modal Footer */}
+                            <div className="p-6 sm:p-8 bg-black/40 border-t border-white/5 flex flex-col sm:flex-row gap-4 shrink-0">
                                 <button
-                                    onClick={() => handleFinalizeOrder(selectedOrder)}
-                                    disabled={isSaving}
-                                    className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-3 disabled:grayscale disabled:opacity-50"
+                                    onClick={() => handleExportPDF(selectedOrder)}
+                                    className="flex-1 h-14 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 border border-white/10"
                                 >
-                                    {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-                                    {verifiedSerials.length < (selectedOrder.order_items?.length || 0) ? `Faltam ${(selectedOrder.order_items?.length || 0) - verifiedSerials.length} Itens` : "Finalizar envio do pedido"}
+                                    <FileDown className="h-5 w-5" />
+                                    Exportar PDF
                                 </button>
-                            )}
 
-                            {selectedOrder.status === "PENDENTE" && canCreateOrder && (
+                                {selectedOrder.status === "PENDENTE" && (
+                                    <button
+                                        onClick={() => handleFinalizeOrder(selectedOrder)}
+                                        disabled={isSaving}
+                                        className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-3 disabled:grayscale disabled:opacity-50"
+                                    >
+                                        {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
+                                        {verifiedSerials.length < (selectedOrder.order_items?.length || 0) ? `Faltam ${(selectedOrder.order_items?.length || 0) - verifiedSerials.length} Itens` : "Finalizar envio do pedido"}
+                                    </button>
+                                )}
+
+                                {selectedOrder.status === "PENDENTE" && canCreateOrder && (
+                                    <button
+                                        onClick={() => handleCancelOrder(selectedOrder)}
+                                        disabled={isSaving}
+                                        className="flex-1 h-14 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all border border-red-500/20 flex items-center justify-center gap-3 disabled:opacity-50"
+                                    >
+                                        <Ban className="h-5 w-5" />
+                                        Cancelar Envio
+                                    </button>
+                                )}
+
                                 <button
-                                    onClick={() => handleCancelOrder(selectedOrder)}
-                                    disabled={isSaving}
-                                    className="flex-1 h-14 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all border border-red-500/20 flex items-center justify-center gap-3 disabled:opacity-50"
+                                    onClick={() => setShowDetailsModal(false)}
+                                    className="flex-1 h-14 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
                                 >
-                                    <Ban className="h-5 w-5" />
-                                    Cancelar Envio
+                                    Fechar Detalhes
                                 </button>
-                            )}
-
-                            <button
-                                onClick={() => setShowDetailsModal(false)}
-                                className="flex-1 h-14 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
-                            >
-                                Fechar Detalhes
-                            </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </MainLayout>
+                )
+            }
+        </MainLayout >
     );
 }
