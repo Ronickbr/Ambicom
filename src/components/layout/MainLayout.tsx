@@ -23,7 +23,6 @@ const navigation = [
     { name: "Escanear", href: "/scan", icon: Scan, roles: ["TECNICO", "ADMIN"] },
     { name: "Fila Técnica", href: "/technician", icon: ClipboardList, roles: ["TECNICO", "ADMIN"] },
     { name: "Central de Revisão", href: "/approvals", icon: CheckCircle2, roles: ["SUPERVISOR", "ADMIN"] },
-    { name: "Gestão", href: "/manager", icon: ShieldCheck, roles: ["GESTOR", "ADMIN"] },
     { name: "Estoque", href: "/inventory", icon: Package, roles: ["GESTOR", "SUPERVISOR", "ADMIN"] },
     { name: "Clientes", href: "/clients", icon: Users, roles: ["GESTOR", "ADMIN"] },
     { name: "Pedidos", href: "/orders", icon: Package, roles: ["GESTOR", "ADMIN", "TECNICO"] },
@@ -37,6 +36,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     const { profile, signOut, loading } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const navigate = useNavigate();
+
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const userRole = profile?.role || "TECNICO";
     const filteredNavigation = navigation.filter(item => item.roles.includes(userRole));
@@ -95,52 +96,83 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         <div className="min-h-screen bg-background text-foreground">
             <DebugPanel />
             {/* Sidebar Desktop */}
-            <aside className="fixed left-0 top-0 hidden h-full w-64 border-r border-border bg-card/30 backdrop-blur-md lg:block">
-                <div className="flex h-16 items-center px-6 border-b border-border gap-3">
-                    <img src="/logo.png" alt="Logo" className="h-8 w-8 rounded-lg bg-primary/20 p-1" />
-                    <span className="text-xl font-bold tracking-tight text-white">Ambicom</span>
+            <aside className={cn(
+                "fixed left-0 top-0 hidden h-full border-r border-border bg-card/30 backdrop-blur-md lg:block transition-all duration-300 ease-in-out z-50",
+                isSidebarCollapsed ? "w-20" : "w-64"
+            )}>
+                <div className={cn(
+                    "flex h-16 items-center border-b border-border gap-3 transition-all duration-300",
+                    isSidebarCollapsed ? "justify-center px-0" : "px-6"
+                )}>
+                    <img src="/logo.png" alt="Logo" className="h-8 w-8 rounded-lg bg-primary/20 p-1 shrink-0" />
+                    {!isSidebarCollapsed && (
+                        <span className="text-xl font-bold tracking-tight text-white truncate animate-in fade-in duration-300">Ambicom</span>
+                    )}
                 </div>
 
+                {/* Collapse Toggle Button */}
+                <button
+                    onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                    className="absolute -right-3 top-20 h-6 w-6 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary transition-colors shadow-md z-50"
+                >
+                    <Menu className="h-3 w-3" />
+                </button>
+
                 {/* User Profile Summary */}
-                <div className="p-4 border-b border-white/5">
-                    <div className="bg-white/5 rounded-xl p-3 flex items-center gap-3 border border-white/5">
-                        <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+                <div className={cn("border-b border-white/5 transition-all duration-300", isSidebarCollapsed ? "p-2" : "p-4")}>
+                    <div className={cn(
+                        "bg-white/5 rounded-xl flex items-center border border-white/5 transition-all duration-300",
+                        isSidebarCollapsed ? "p-2 justify-center" : "p-3 gap-3"
+                    )}>
+                        <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
                             {profile?.full_name?.substring(0, 2).toUpperCase() || "US"}
                         </div>
-                        <div className="flex flex-col overflow-hidden">
-                            <span className="text-xs font-bold text-white truncate">{profile?.full_name || "Usuário"}</span>
-                            <span className="text-[8px] font-bold text-primary uppercase tracking-tighter opacity-80">{profile?.role}</span>
-                        </div>
+                        {!isSidebarCollapsed && (
+                            <div className="flex flex-col overflow-hidden animate-in fade-in duration-300">
+                                <span className="text-xs font-bold text-white truncate">{profile?.full_name || "Usuário"}</span>
+                                <span className="text-[8px] font-bold text-primary uppercase tracking-tighter opacity-80">{profile?.role}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <nav className="flex flex-col gap-1 p-4">
+                <nav className={cn("flex flex-col gap-1 transition-all duration-300", isSidebarCollapsed ? "p-2" : "p-4")}>
                     {filteredNavigation.map((item) => {
                         const isActive = pathname === item.href;
                         return (
                             <Link
                                 key={item.name}
                                 to={item.href}
+                                title={isSidebarCollapsed ? item.name : ""}
                                 className={cn(
-                                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                                    "flex items-center rounded-lg transition-all duration-200 group",
+                                    isSidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5",
                                     isActive
                                         ? "bg-primary text-white shadow-lg shadow-primary/20"
                                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                                 )}
                             >
-                                <item.icon className="h-4 w-4" />
-                                {item.name}
+                                <item.icon className={cn("h-4 w-4 shrink-0 transition-transform group-hover:scale-110", isActive && "animate-pulse")} />
+                                {!isSidebarCollapsed && (
+                                    <span className="text-sm font-medium truncate animate-in slide-in-from-left-1 duration-300">{item.name}</span>
+                                )}
                             </Link>
                         );
                     })}
                 </nav>
-                <div className="absolute bottom-4 w-full px-4">
+                <div className={cn("absolute bottom-4 w-full transition-all duration-300", isSidebarCollapsed ? "px-2" : "px-4")}>
                     <button
                         onClick={handleSignOut}
-                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                        className={cn(
+                            "flex items-center rounded-lg font-medium text-destructive transition-colors hover:bg-destructive/10 group w-full",
+                            isSidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2"
+                        )}
+                        title={isSidebarCollapsed ? "Sair do Sistema" : ""}
                     >
-                        <LogOut className="h-4 w-4" />
-                        Sair do Sistema
+                        <LogOut className="h-4 w-4 shrink-0" />
+                        {!isSidebarCollapsed && (
+                            <span className="text-sm truncate animate-in slide-in-from-left-1 duration-300">Sair do Sistema</span>
+                        )}
                     </button>
                 </div>
             </aside>
@@ -218,7 +250,10 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             </aside>
 
             {/* Main Content */}
-            <main className="lg:pl-64 min-h-screen">
+            <main className={cn(
+                "min-h-screen transition-all duration-300 ease-in-out",
+                isSidebarCollapsed ? "lg:pl-20" : "lg:pl-64"
+            )}>
                 <div className="mx-auto p-2 sm:p-4 md:p-8">
                     {children}
                 </div>

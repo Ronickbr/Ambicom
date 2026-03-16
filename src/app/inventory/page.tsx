@@ -26,7 +26,12 @@ import {
     UserCheck,
     Clock,
     CheckCircle,
-    XCircle
+    XCircle,
+    ZoomIn,
+    ZoomOut,
+    RotateCcw,
+    Move,
+    Camera
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -61,25 +66,48 @@ export default function InventoryPage() {
     const [statusFilter, setStatusFilter] = useState("EM ESTOQUE");
     const [brandFilter, setBrandFilter] = useState("ALL");
     const [voltageFilter, setVoltageFilter] = useState("ALL");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
+    const [typeFilter, setTypeFilter] = useState("ALL");
+    const [classFilter, setClassFilter] = useState("ALL");
+    const [gasFilter, setGasFilter] = useState("ALL");
     const [availableBrands, setAvailableBrands] = useState<string[]>([]);
     const [availableVoltages, setAvailableVoltages] = useState<string[]>([]);
+    const [availableTypes, setAvailableTypes] = useState<string[]>([]);
+    const [availableClasses, setAvailableClasses] = useState<string[]>([]);
+    const [availableGases, setAvailableGases] = useState<string[]>([]);
     const [showFilters, setShowFilters] = useState(false);
     const [page, setPage] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [visibleFiltersMetadata, setVisibleFiltersMetadata] = useState<string[]>(['brand', 'voltage', 'type', 'class', 'gas']);
+    const ALL_FILTERS = [
+        { id: 'brand', label: 'Fabricante' },
+        { id: 'voltage', label: 'Voltagem' },
+        { id: 'type', label: 'Tipo de Produto' },
+        { id: 'class', label: 'Classe/Mercado' },
+        { id: 'gas', label: 'Gás Refrigerante' }
+    ];
     const PAGE_SIZE = 50;
 
     // Fetch unique values for filters
     useEffect(() => {
         const fetchFilters = async () => {
-            const { data } = await supabase.rpc('get_inventory_filters');
+            // Get all possible values for filtering
+            const { data } = await supabase
+                .from('products')
+                .select('brand, voltage, product_type, market_class, refrigerant_gas');
+
             if (data) {
                 const brands = Array.from(new Set(data.map((p: any) => p.brand))).filter(Boolean) as string[];
                 const voltages = Array.from(new Set(data.map((p: any) => p.voltage))).filter(Boolean) as string[];
+                const types = Array.from(new Set(data.map((p: any) => p.product_type))).filter(Boolean) as string[];
+                const classes = Array.from(new Set(data.map((p: any) => p.market_class))).filter(Boolean) as string[];
+                const gases = Array.from(new Set(data.map((p: any) => p.refrigerant_gas))).filter(Boolean) as string[];
+
                 setAvailableBrands(brands.sort());
                 setAvailableVoltages(voltages.sort());
+                setAvailableTypes(types.sort());
+                setAvailableClasses(classes.sort());
+                setAvailableGases(gases.sort());
             }
         };
         fetchFilters();
@@ -88,25 +116,26 @@ export default function InventoryPage() {
     // Reset page when filters change
     useEffect(() => {
         setPage(0);
-    }, [searchTerm, statusFilter, brandFilter, voltageFilter, startDate, endDate]);
+    }, [searchTerm, statusFilter, brandFilter, voltageFilter, typeFilter, classFilter, gasFilter]);
+
     const [selectedProduct, setSelectedProduct] = useState<InventoryProduct | null>(null);
     const [history, setHistory] = useState<ProductLog[]>([]);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const [editingProduct, setEditingProduct] = useState<InventoryProduct | null>(null);
     const [deletingProduct, setDeletingProduct] = useState<InventoryProduct | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-
-    // Reset page when filters change
-    useEffect(() => {
-        setPage(0);
-    }, [searchTerm, statusFilter]);
+    const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
+    const [zoom, setZoom] = useState(1);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchInventory();
         }, 500);
         return () => clearTimeout(timer);
-    }, [page, searchTerm, statusFilter, brandFilter, voltageFilter, startDate, endDate]);
+    }, [page, searchTerm, statusFilter, brandFilter, voltageFilter, typeFilter, classFilter, gasFilter]);
 
     const fetchInventory = async () => {
         setIsLoading(true);
@@ -120,7 +149,7 @@ export default function InventoryPage() {
                 .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
             if (searchTerm) {
-                query = query.or(`brand.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%,internal_serial.ilike.%${searchTerm}%,original_serial.ilike.%${searchTerm}%`);
+                query = query.or(`brand.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%,internal_serial.ilike.%${searchTerm}%,original_serial.ilike.%${searchTerm}%,product_type.ilike.%${searchTerm}%,market_class.ilike.%${searchTerm}%,refrigerant_gas.ilike.%${searchTerm}%,voltage.ilike.%${searchTerm}%,pnc_ml.ilike.%${searchTerm}%,commercial_code.ilike.%${searchTerm}%`);
             }
 
             if (statusFilter !== "ALL") {
@@ -135,15 +164,16 @@ export default function InventoryPage() {
                 query = query.eq('voltage', voltageFilter);
             }
 
-            if (startDate) {
-                query = query.gte('created_at', new Date(startDate).toISOString());
+            if (typeFilter !== "ALL") {
+                query = query.eq('product_type', typeFilter);
             }
 
-            if (endDate) {
-                // Set to end of day
-                const endOfDay = new Date(endDate);
-                endOfDay.setHours(23, 59, 59, 999);
-                query = query.lte('created_at', endOfDay.toISOString());
+            if (classFilter !== "ALL") {
+                query = query.eq('market_class', classFilter);
+            }
+
+            if (gasFilter !== "ALL") {
+                query = query.eq('refrigerant_gas', gasFilter);
             }
 
             const result = await Promise.race([
@@ -210,6 +240,24 @@ export default function InventoryPage() {
                     model: editingProduct.model,
                     original_serial: editingProduct.original_serial,
                     voltage: editingProduct.voltage,
+                    commercial_code: editingProduct.commercial_code,
+                    color: editingProduct.color,
+                    product_type: editingProduct.product_type,
+                    pnc_ml: editingProduct.pnc_ml,
+                    manufacturing_date: editingProduct.manufacturing_date,
+                    market_class: editingProduct.market_class,
+                    refrigerant_gas: editingProduct.refrigerant_gas,
+                    gas_charge: editingProduct.gas_charge,
+                    compressor: editingProduct.compressor,
+                    volume_freezer: editingProduct.volume_freezer,
+                    volume_refrigerator: editingProduct.volume_refrigerator,
+                    volume_total: editingProduct.volume_total,
+                    pressure_high_low: editingProduct.pressure_high_low,
+                    freezing_capacity: editingProduct.freezing_capacity,
+                    electric_current: editingProduct.electric_current,
+                    defrost_power: editingProduct.defrost_power,
+                    frequency: editingProduct.frequency,
+                    status: editingProduct.status,
                 })
                 .eq("id", editingProduct.id);
             if (updateError) throw updateError;
@@ -225,7 +273,7 @@ export default function InventoryPage() {
                     data: {
                         action: "EDIT_TECHNICAL_DATA",
                         editor_role: profile?.role,
-                        fields_updated: ["brand", "model", "original_serial", "voltage"],
+                        fields_updated: ["all_technical_fields"],
                         timestamp: new Date().toISOString()
                     }
                 });
@@ -287,12 +335,6 @@ export default function InventoryPage() {
             <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-12">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                <Layers className="h-4 w-4" />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Intelligence & Assets</span>
-                        </div>
                         <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic leading-none">
                             Controle de <span className="text-primary tracking-normal font-light not-italic">Inventário</span>
                         </h1>
@@ -345,7 +387,7 @@ export default function InventoryPage() {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Rastrear por ID, Marca, Modelo ou Serial..."
+                                placeholder="Rastrear por ID, Marca, Modelo, Tipo ou Serial..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full h-12 sm:h-14 bg-transparent border-none rounded-xl pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all text-white"
@@ -377,66 +419,128 @@ export default function InventoryPage() {
                     </div>
 
                     {showFilters && (
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border-t border-white/5 animate-in slide-in-from-top-2 duration-300">
-                            <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Fabricante</label>
-                                <select
-                                    value={brandFilter}
-                                    onChange={e => setBrandFilter(e.target.value)}
-                                    className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
-                                >
-                                    <option value="ALL" className="bg-neutral-900">Todas as Marcas</option>
-                                    {availableBrands.map(b => (
-                                        <option key={b} value={b} className="bg-neutral-900">{b}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Voltagem</label>
-                                <select
-                                    value={voltageFilter}
-                                    onChange={e => setVoltageFilter(e.target.value)}
-                                    className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
-                                >
-                                    <option value="ALL" className="bg-neutral-900">Todas as Voltagens</option>
-                                    {availableVoltages.map(v => (
-                                        <option key={v} value={v} className="bg-neutral-900">{v}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Deste: (Início)</label>
-                                <input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={e => setStartDate(e.target.value)}
-                                    className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Até: (Fim)</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="date"
-                                        value={endDate}
-                                        onChange={e => setEndDate(e.target.value)}
-                                        className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold flex-1"
-                                    />
-                                    <button
-                                        onClick={() => {
-                                            setBrandFilter("ALL");
-                                            setVoltageFilter("ALL");
-                                            setStartDate("");
-                                            setEndDate("");
-                                            setStatusFilter("ALL");
-                                            setSearchTerm("");
-                                        }}
-                                        className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
-                                        title="Limpar Filtros"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
+                        <div className="border-t border-white/5 animate-in slide-in-from-top-2 duration-300">
+                            {/* Filter Management Bar */}
+                            <div className="flex items-center gap-2 px-4 py-3 bg-white/[0.02] border-b border-white/5">
+                                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mr-2">Configurar Visibilidade:</span>
+                                <div className="flex flex-wrap gap-2">
+                                    {ALL_FILTERS.map(f => {
+                                        const isVisible = visibleFiltersMetadata.includes(f.id);
+                                        return (
+                                            <button
+                                                key={f.id}
+                                                onClick={() => {
+                                                    if (isVisible) setVisibleFiltersMetadata(prev => prev.filter(id => id !== f.id));
+                                                    else setVisibleFiltersMetadata(prev => [...prev, f.id]);
+                                                }}
+                                                className={cn(
+                                                    "px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-wider transition-all border",
+                                                    isVisible
+                                                        ? "bg-primary/20 text-primary border-primary/30"
+                                                        : "bg-white/5 text-muted-foreground border-white/10 opacity-50 hover:opacity-100"
+                                                )}
+                                            >
+                                                {isVisible ? <CheckCircle className="inline h-2.5 w-2.5 mr-1" /> : <XCircle className="inline h-2.5 w-2.5 mr-1" />}
+                                                {f.label}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
+                                {visibleFiltersMetadata.includes('brand') && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Fabricante</label>
+                                        <select
+                                            value={brandFilter}
+                                            onChange={e => setBrandFilter(e.target.value)}
+                                            className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
+                                        >
+                                            <option value="ALL" className="bg-neutral-900">Todas as Marcas</option>
+                                            {availableBrands.map(b => (
+                                                <option key={b} value={b} className="bg-neutral-900">{b}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                {visibleFiltersMetadata.includes('voltage') && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Voltagem</label>
+                                        <select
+                                            value={voltageFilter}
+                                            onChange={e => setVoltageFilter(e.target.value)}
+                                            className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
+                                        >
+                                            <option value="ALL" className="bg-neutral-900">Todas as Voltagens</option>
+                                            {availableVoltages.map(v => (
+                                                <option key={v} value={v} className="bg-neutral-900">{v}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                {visibleFiltersMetadata.includes('type') && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Tipo de Produto</label>
+                                        <select
+                                            value={typeFilter}
+                                            onChange={e => setTypeFilter(e.target.value)}
+                                            className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
+                                        >
+                                            <option value="ALL" className="bg-neutral-900">Todos os Tipos</option>
+                                            {availableTypes.map(t => (
+                                                <option key={t} value={t} className="bg-neutral-900">{t}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                {visibleFiltersMetadata.includes('class') && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Classe/Mercado</label>
+                                        <select
+                                            value={classFilter}
+                                            onChange={e => setClassFilter(e.target.value)}
+                                            className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
+                                        >
+                                            <option value="ALL" className="bg-neutral-900">Todas as Classes</option>
+                                            {availableClasses.map(c => (
+                                                <option key={c} value={c} className="bg-neutral-900">{c}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                {visibleFiltersMetadata.includes('gas') && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Gás Refrigerante</label>
+                                        <div className="flex gap-2">
+                                            <select
+                                                value={gasFilter}
+                                                onChange={e => setGasFilter(e.target.value)}
+                                                className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold flex-1"
+                                            >
+                                                <option value="ALL" className="bg-neutral-900">Todos os Gases</option>
+                                                {availableGases.map(g => (
+                                                    <option key={g} value={g} className="bg-neutral-900">{g}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                onClick={() => {
+                                                    setBrandFilter("ALL");
+                                                    setVoltageFilter("ALL");
+                                                    setTypeFilter("ALL");
+                                                    setClassFilter("ALL");
+                                                    setGasFilter("ALL");
+                                                    setStatusFilter("ALL");
+                                                    setSearchTerm("");
+                                                }}
+                                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all group/clear"
+                                                title="Limpar Filtros"
+                                            >
+                                                <Trash2 className="h-4 w-4 group-active/clear:scale-90 transition-transform" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -488,9 +592,10 @@ export default function InventoryPage() {
                                                     />
                                                 </th>
                                                 <th className="px-4 sm:px-6 py-4 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Equipamento</th>
-                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Última Operação</th>
-                                                <th className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">Status Lab</th>
-                                                <th className="px-4 sm:px-6 py-4 text-right whitespace-nowrap pr-6 sm:pr-10">Controle</th>
+                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Especificações</th>
+                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Rastreabilidade</th>
+                                                <th className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">Status</th>
+                                                <th className="px-4 sm:px-6 py-4 text-right whitespace-nowrap pr-6 sm:pr-10">Ações</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
@@ -502,10 +607,11 @@ export default function InventoryPage() {
                                                         key={p.id}
                                                         onClick={() => fetchHistory(p)}
                                                         className={cn(
-                                                            "group hover:bg-white/[0.03] transition-all cursor-pointer active:bg-white/[0.05]",
-                                                            isSelected && "bg-primary/[0.03]"
+                                                            "group border-b border-white/[0.02] hover:bg-white/[0.04] transition-all cursor-pointer active:bg-white/[0.06] relative overflow-hidden",
+                                                            isSelected && "bg-primary/[0.05]"
                                                         )}
                                                     >
+                                                        {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_15px_rgba(14,165,233,0.5)]" />}
                                                         <td className="px-4 py-6 text-center" onClick={e => e.stopPropagation()}>
                                                             <input
                                                                 type="checkbox"
@@ -529,18 +635,31 @@ export default function InventoryPage() {
                                                             </div>
                                                         </td>
                                                         <td className="px-4 sm:px-6 py-4 sm:py-6 whitespace-nowrap">
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className="text-white font-bold text-[10px] sm:text-[11px] uppercase tracking-tight">{p.product_type || "N/A"}</span>
+                                                                <div className="flex items-center gap-1.5 focus:outline-none">
+                                                                    <span className="text-[8px] font-black text-muted-foreground uppercase opacity-40">{p.refrigerant_gas || "S/GÁS"}</span>
+                                                                    <div className="h-1 w-1 rounded-full bg-white/10" />
+                                                                    <span className="text-[8px] font-black text-muted-foreground uppercase opacity-40">{p.market_class || "STAND."}</span>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 sm:px-6 py-4 sm:py-6 whitespace-nowrap">
                                                             <div className="flex flex-col">
-                                                                <span className="text-white font-bold text-[10px] sm:text-xs uppercase italic tracking-tight">{new Date(p.updated_at).toLocaleDateString('pt-BR')}</span>
-                                                                <span className="text-[8px] sm:text-[9px] text-muted-foreground/40 uppercase font-black">{new Date(p.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                <span className="text-white font-mono font-bold text-[10px] sm:text-xs">S/N: {p.internal_serial}</span>
+                                                                <span className="text-[8px] sm:text-[9px] text-muted-foreground/40 font-mono uppercase tracking-tight">ORIG: {p.original_serial || "N/A"}</span>
                                                             </div>
                                                         </td>
                                                         <td className="px-4 sm:px-6 py-4 sm:py-6 text-center whitespace-nowrap">
                                                             {config && (
                                                                 <div className={cn(
-                                                                    "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider border shadow-sm",
+                                                                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all duration-500 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.5)] backdrop-blur-md group-hover:scale-105",
                                                                     config.color
                                                                 )}>
-                                                                    <config.icon className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                                                                    <div className="relative">
+                                                                        <config.icon className="h-2.5 w-2.5 relative z-10" />
+                                                                        <div className="absolute inset-0 blur-sm bg-current opacity-50" />
+                                                                    </div>
                                                                     {config.label}
                                                                 </div>
                                                             )}
@@ -631,50 +750,234 @@ export default function InventoryPage() {
                                 <button onClick={() => setEditingProduct(null)} className="h-12 w-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-neutral-800 transition-all border border-white/10 text-white shadow-lg"><X className="h-6 w-6" /></button>
                             </div>
 
-                            <form onSubmit={handleUpdate} className="space-y-6 relative z-10">
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Fabricante / Marca</label>
-                                        <input
-                                            required
-                                            className="w-full h-15 bg-white/5 border border-white/10 rounded-2xl px-5 text-white focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none shadow-inner font-bold transition-all"
-                                            value={editingProduct.brand || ""}
-                                            onChange={e => setEditingProduct({ ...editingProduct, brand: e.target.value })}
-                                        />
+                            <form onSubmit={handleUpdate} className="space-y-8 relative z-10">
+                                <div className="space-y-6">
+                                    {/* Grupo: Identificação Principal */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/70 mb-4 flex items-center gap-2">
+                                            <div className="h-1 w-4 bg-primary/30 rounded-full" /> Identificação e Rastreabilidade
+                                        </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Fabricante / Marca</label>
+                                                <input
+                                                    required
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    value={editingProduct.brand || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, brand: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Modelo Comercial</label>
+                                                <input
+                                                    required
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    value={editingProduct.model || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, model: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Serial Original</label>
+                                                <input
+                                                    required
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-primary font-mono font-black focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none transition-all tracking-widest text-sm"
+                                                    value={editingProduct.original_serial || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, original_serial: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">PNC / ML</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    value={editingProduct.pnc_ml || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, pnc_ml: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Código Comercial</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    value={editingProduct.commercial_code || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, commercial_code: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Tipo de Produto</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    value={editingProduct.product_type || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, product_type: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Cor</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    value={editingProduct.color || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, color: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Classe / Mercado</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    value={editingProduct.market_class || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, market_class: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Fabricação</label>
+                                                <input
+                                                    type="date"
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    value={editingProduct.manufacturing_date ? new Date(editingProduct.manufacturing_date).toISOString().split('T')[0] : ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, manufacturing_date: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Modelo Comercial</label>
-                                        <input
-                                            required
-                                            className="w-full h-15 bg-white/5 border border-white/10 rounded-2xl px-5 text-white focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none shadow-inner font-bold transition-all"
-                                            value={editingProduct.model || ""}
-                                            onChange={e => setEditingProduct({ ...editingProduct, model: e.target.value })}
-                                        />
+
+                                    {/* Grupo: Elétrica e Performance */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/70 mb-4 flex items-center gap-2">
+                                            <div className="h-1 w-4 bg-primary/30 rounded-full" /> Elétrica e Performance
+                                        </h3>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Voltagem</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.voltage || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, voltage: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Corrente (A)</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.electric_current || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, electric_current: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Frequência</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.frequency || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, frequency: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Potência Degelo</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.defrost_power || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, defrost_power: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Grupo: Refrigeração e Volumes */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/70 mb-4 flex items-center gap-2">
+                                            <div className="h-1 w-4 bg-primary/30 rounded-full" /> Refrigeração e Capacidades
+                                        </h3>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Gás</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.refrigerant_gas || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, refrigerant_gas: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Carga Gás</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.gas_charge || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, gas_charge: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Compressor</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.compressor || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, compressor: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Vol. Freezer</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.volume_freezer || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, volume_freezer: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Vol. Refrig.</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.volume_refrigerator || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, volume_refrigerator: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Vol. Total</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.volume_total || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, volume_total: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Capac. Congel.</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.freezing_capacity || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, freezing_capacity: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Pressão (H/L)</label>
+                                                <input
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    value={editingProduct.pressure_high_low || ""}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, pressure_high_low: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Status Ativo</label>
+                                                <select
+                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs appearance-none cursor-pointer"
+                                                    value={editingProduct.status}
+                                                    onChange={e => setEditingProduct({ ...editingProduct, status: e.target.value as any })}
+                                                >
+                                                    {Object.entries(statusConfig).map(([val, conf]) => (
+                                                        <option key={val} value={val} className="bg-neutral-900">{conf.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Número de Serial Original</label>
-                                    <input
-                                        required
-                                        className="w-full h-15 bg-white/5 border border-white/10 rounded-2xl px-5 text-primary font-mono font-black focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none shadow-inner transition-all tracking-widest"
-                                        value={editingProduct.original_serial || ""}
-                                        onChange={e => setEditingProduct({ ...editingProduct, original_serial: e.target.value })}
-                                    />
-                                </div>
+
                                 <div className="grid grid-cols-2 gap-4 pt-6">
                                     <button
                                         type="button"
                                         onClick={() => setEditingProduct(null)}
-                                        className="h-16 rounded-2xl border border-white/10 text-muted-foreground font-black uppercase tracking-widest text-[10px] hover:bg-white/5 hover:text-white transition-all"
+                                        className="h-14 rounded-2xl border border-white/10 text-muted-foreground font-black uppercase tracking-widest text-[10px] hover:bg-white/5 hover:text-white transition-all shadow-lg shadow-black/20"
                                     >
                                         Cancelar
                                     </button>
                                     <button
                                         disabled={isSaving}
-                                        className="h-16 rounded-2xl bg-primary text-white hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] transition-all disabled:opacity-50 shadow-xl shadow-primary/20 border-t border-white/20 flex items-center justify-center gap-3"
+                                        className="h-14 rounded-2xl bg-primary text-white hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] transition-all disabled:opacity-50 shadow-xl shadow-primary/20 border-t border-white/20 flex items-center justify-center gap-3 active:scale-95"
                                     >
                                         {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-                                        Salvar Alterações
+                                        Atualizar Ativo
                                     </button>
                                 </div>
                             </form>
@@ -762,24 +1065,45 @@ export default function InventoryPage() {
                             <div className="flex-1 overflow-y-auto pr-2 sm:pr-6 space-y-8 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-primary/30 transition-colors relative z-10">
                                 {/* Photos Section */}
                                 <div className="mb-8">
-                                    <div className="space-y-2">
-                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Evidência Fotográfica</p>
-                                        <div className="aspect-video sm:aspect-[21/9] rounded-2xl bg-black/40 border border-white/5 overflow-hidden group relative">
-                                            {selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect ? (
-                                                <img
-                                                    src={(selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect) ?? undefined}
-                                                    alt="Produto"
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                                />
-                                            ) : (
-                                                <div className="flex flex-col items-center justify-center h-full opacity-10">
-                                                    <Box className="h-12 w-12 mb-2" />
-                                                    <span className="text-[10px] font-black uppercase">Imagem não disponível</span>
-                                                </div>
-                                            )}
-                                            <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent translate-y-full group-hover:translate-y-0 transition-transform">
-                                                <p className="text-[10px] font-black text-white uppercase tracking-wider italic">Registro de Conferência Terminal</p>
-                                            </div>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <Camera className="h-4 w-4 text-primary" />
+                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Evidência Fotográfica</p>
+                                        </div>
+                                        <div className="flex justify-center">
+                                            {(() => {
+                                                const photo = selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect;
+                                                const label = selectedProduct.photo_product ? "VISTA GERAL" :
+                                                    selectedProduct.photo_model ? "ETIQUETA MODELO" :
+                                                        selectedProduct.photo_serial ? "ETIQUETA SERIAL" :
+                                                            selectedProduct.photo_defect ? "EVIDÊNCIA DEFEITO" : "FOTO";
+
+                                                return (
+                                                    <div
+                                                        className="group relative w-full max-w-md aspect-[3/4] rounded-3xl bg-black/40 border border-white/10 overflow-hidden cursor-zoom-in active:scale-95 transition-all shadow-2xl"
+                                                        onClick={() => photo && setFullImageUrl(photo)}
+                                                    >
+                                                        {photo ? (
+                                                            <>
+                                                                <img
+                                                                    src={photo}
+                                                                    alt="Produto"
+                                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                                />
+                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
+                                                                    <span className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-2">{label}</span>
+                                                                    <p className="text-[10px] text-white/60 font-medium italic">Clique para zoom de alta definição</p>
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <div className="w-full h-full flex flex-col items-center justify-center gap-4 opacity-20">
+                                                                <Camera className="h-12 w-12 text-muted-foreground" />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">Nenhuma Imagem Registrada</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
@@ -908,6 +1232,88 @@ export default function InventoryPage() {
                     </div>
                 )}
             </div>
+
+            {/* Photo Zoom Modal */}
+            {fullImageUrl && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-2xl animate-in fade-in duration-300">
+                    <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
+                        <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-2xl p-1.5 backdrop-blur-xl">
+                            <button
+                                onClick={() => setZoom(prev => Math.min(prev + 0.5, 5))}
+                                className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white transition-all"
+                                title="Zoom In"
+                            >
+                                <ZoomIn className="h-5 w-5" />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setZoom(1);
+                                    setPosition({ x: 0, y: 0 });
+                                }}
+                                className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white transition-all"
+                                title="Reset"
+                            >
+                                <RotateCcw className="h-5 w-5" />
+                            </button>
+                            <button
+                                onClick={() => setZoom(prev => Math.max(prev - 0.5, 1))}
+                                className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white transition-all"
+                                title="Zoom Out"
+                            >
+                                <ZoomOut className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => {
+                                setFullImageUrl(null);
+                                setZoom(1);
+                                setPosition({ x: 0, y: 0 });
+                            }}
+                            className="h-12 w-12 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-lg"
+                        >
+                            <X className="h-6 w-6" />
+                        </button>
+                    </div>
+
+                    <div
+                        className="relative w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing"
+                        onMouseDown={(e) => {
+                            if (zoom > 1) {
+                                setIsDragging(true);
+                                setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+                            }
+                        }}
+                        onMouseMove={(e) => {
+                            if (isDragging && zoom > 1) {
+                                setPosition({
+                                    x: e.clientX - dragStart.x,
+                                    y: e.clientY - dragStart.y
+                                });
+                            }
+                        }}
+                        onMouseUp={() => setIsDragging(false)}
+                        onMouseLeave={() => setIsDragging(false)}
+                    >
+                        <img
+                            src={fullImageUrl}
+                            alt="Zoom"
+                            className="max-w-[90vw] max-h-[90vh] object-contain transition-transform duration-200 select-none shadow-2xl"
+                            style={{
+                                transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+                                transition: isDragging ? 'none' : 'transform 0.2s ease-out'
+                            }}
+                            draggable={false}
+                        />
+
+                        {zoom === 1 && (
+                            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-full backdrop-blur-md opacity-50">
+                                <Move className="h-4 w-4 text-white" />
+                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Use o scroll ou botões para analisar detalhes</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </MainLayout>
     );
 }

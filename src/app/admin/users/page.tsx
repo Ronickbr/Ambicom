@@ -192,12 +192,6 @@ export default function UsersManagementPage() {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                <ShieldCheck className="h-4 w-4" />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Controle de Identidade & Acesso</span>
-                        </div>
                         <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Gestão de <span className="text-primary not-italic font-light">Membros</span></h1>
                         <p className="text-muted-foreground font-medium text-xs sm:text-sm mt-1 opacity-70 italic">Administração de permissões, cargos e auditoria de segurança.</p>
                     </div>

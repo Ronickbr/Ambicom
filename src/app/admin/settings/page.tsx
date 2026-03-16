@@ -7,7 +7,8 @@ import {
     Loader2,
     ShieldAlert,
     Hash,
-    Info
+    Info,
+    ClipboardList
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -20,6 +21,7 @@ export default function AdminSettingsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [sequenceStart, setSequenceStart] = useState<string>("1");
+    const [orderSequenceStart, setOrderSequenceStart] = useState<string>("1");
 
     const isAuthorized = profile?.role === "ADMIN";
 
@@ -39,13 +41,16 @@ export default function AdminSettingsPage() {
         try {
             const { data, error } = await supabase
                 .from("system_settings")
-                .select("value")
-                .eq("key", "ambicom_sequence_start")
-                .maybeSingle();
+                .select("key, value");
 
             if (error) throw error;
-            if (data?.value) {
-                setSequenceStart(data.value as string);
+
+            if (data) {
+                const ambicom = data.find(s => s.key === "ambicom_sequence_start");
+                const order = data.find(s => s.key === "order_note_sequence_start");
+
+                if (ambicom) setSequenceStart(ambicom.value as string);
+                if (order) setOrderSequenceStart(order.value as string);
             }
         } catch (error) {
             logger.error("Erro ao carregar configurações:", error);
@@ -60,12 +65,14 @@ export default function AdminSettingsPage() {
         setIsSaving(true);
         try {
             const numValue = parseInt(sequenceStart);
-            if (isNaN(numValue) || numValue < 1) {
-                toast.error("O valor deve ser um número positivo");
+            const orderNumValue = parseInt(orderSequenceStart);
+
+            if (isNaN(numValue) || numValue < 1 || isNaN(orderNumValue) || orderNumValue < 1) {
+                toast.error("Os valores devem ser números positivos");
                 return;
             }
 
-            const { error } = await supabase
+            const { error: error1 } = await supabase
                 .from("system_settings")
                 .upsert({
                     key: "ambicom_sequence_start",
@@ -73,7 +80,18 @@ export default function AdminSettingsPage() {
                     updated_by: profile?.id
                 }, { onConflict: 'key' });
 
-            if (error) throw error;
+            if (error1) throw error1;
+
+            const { error: error2 } = await supabase
+                .from("system_settings")
+                .upsert({
+                    key: "order_note_sequence_start",
+                    value: orderSequenceStart,
+                    updated_by: profile?.id
+                }, { onConflict: 'key' });
+
+            if (error2) throw error2;
+
             toast.success("Configurações salvas com sucesso!");
         } catch (error) {
             logger.error("Erro ao salvar configurações:", error);
@@ -101,12 +119,6 @@ export default function AdminSettingsPage() {
             <div className="max-w-4xl mx-auto space-y-10 pb-12">
                 {/* Header Section */}
                 <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                            <Settings className="h-4 w-4" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Painel de Controle</span>
-                    </div>
                     <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Configurações do <span className="text-primary not-italic font-light">Sistema</span></h1>
                     <p className="text-muted-foreground font-medium text-sm sm:text-base mt-2 opacity-70 italic">Gerenciamento global de parâmetros e sequenciamento.</p>
                 </div>
@@ -169,6 +181,54 @@ export default function AdminSettingsPage() {
                                     <div className="flex gap-3">
                                         <div className="h-4 w-4 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">2</div>
                                         <p className="text-[10px] text-muted-foreground">Se já houver o ID <strong>00510-{new Date().getFullYear()}</strong> e você mudar para <strong>100</strong>, o próximo será <strong>00511-{new Date().getFullYear()}</strong> para evitar duplicidade.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Order Note Sequence Setting Card */}
+                        <div className="pt-8 border-t border-white/5 space-y-8">
+                            <div className="flex items-center gap-4 border-b border-white/5 pb-6">
+                                <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                                    <ClipboardList className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black text-white uppercase tracking-tight">Sequenciamento de Notas de Pedido</h3>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-widest">Defina o número inicial para novas notas</p>
+                                </div>
+                            </div>
+
+                            <div className="grid sm:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block ml-1">Valor Inicial da Nota</label>
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-amber-500 transition-colors">
+                                            <span className="font-mono font-bold text-lg">Nº</span>
+                                        </div>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            required
+                                            className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 text-2xl font-mono font-black text-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 outline-none shadow-inner transition-all"
+                                            value={orderSequenceStart}
+                                            onChange={(e) => setOrderSequenceStart(e.target.value)}
+                                        />
+                                    </div>
+                                    <p className="text-[9px] text-muted-foreground leading-relaxed font-medium uppercase tracking-tighter">
+                                        Novos pedidos seguirão esta numeração sequencial.
+                                    </p>
+                                </div>
+
+                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <Info className="h-3.5 w-3.5 text-amber-500" />
+                                        <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Observação</h4>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex gap-3">
+                                            <div className="h-4 w-4 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">!</div>
+                                            <p className="text-[10px] text-muted-foreground italic">Este valor define o ponto de partida do contador de notas. Se houver notas com números superiores, o sistema continuará do maior valor encontrado.</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

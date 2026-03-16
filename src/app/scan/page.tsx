@@ -184,12 +184,6 @@ export default function ScanPage() {
             <div className="max-w-6xl mx-auto space-y-10 pb-12">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                <Camera className="h-4 w-4" />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Identificação de Produto</span>
-                        </div>
                         <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-white uppercase italic">Captura de <span className="text-primary not-italic font-light">Etiqueta</span></h1>
                         <p className="text-muted-foreground font-medium text-sm mt-1 opacity-70 italic">Análise via IA para entrada de ativos no fluxo industrial.</p>
                     </div>
@@ -374,11 +368,31 @@ export default function ScanPage() {
                         </div>
 
                         <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1 bg-black/20">
+                            {/* Visual Preview */}
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Documento Digitalizado</label>
+                                <div className="flex justify-center">
+                                    <div className="w-full max-w-[280px] aspect-[3/4] rounded-2xl bg-black border border-white/10 overflow-hidden relative group">
+                                        <img
+                                            src={labelPhoto ?? undefined}
+                                            alt="Etiqueta Capturada"
+                                            className="w-full h-full object-cover opacity-80"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                                <span className="text-[8px] font-black text-white uppercase tracking-widest">Análise de IA Concluída</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Form fields for review */}
                             <div className="space-y-6">
                                 {/* Seção Identificação */}
                                 <div className="space-y-4">
-                                    <h4 className="text-[10px] font-black text-primary uppercase tracking-widest border-l-2 border-primary pl-2">Identificação</h4>
+                                    <h4 className="text-[10px] font-black text-primary uppercase tracking-widest border-l-2 border-primary pl-2">Identificação Extraída</h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5 col-span-2">
                                             <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Fabricante / Marca</label>

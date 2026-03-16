@@ -1,272 +1,370 @@
 import React, { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import {
-  Package,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  TrendingUp,
-  Loader2,
-  Activity,
-  BarChart3,
-  Box
-} from "lucide-react";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import {
+  TrendingUp,
+  Package,
+  AlertCircle,
+  Calendar,
+  Loader2,
+  ShieldCheck,
+  FileDown,
+  Users,
+  Activity,
+  Download,
+  Clock,
+  Box,
+  CheckCircle2,
+  XCircle
+} from "lucide-react";
+import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { useNavigate } from "react-router-dom";
 
-interface DashboardLog {
+interface LogWithRelations {
   id: string;
-  new_status: string;
   created_at: string;
+  new_status: string;
   products: {
-    brand: string | null;
     model: string | null;
     internal_serial: string | null;
-  } | null;
-}
-
-interface DashboardStat {
-  name: string;
-  value: string;
-  icon: React.ElementType;
-  color: string;
-  key: string;
-  trend?: string;
-  label: string;
+  } | {
+    model: string | null;
+    internal_serial: string | null;
+  }[] | null;
+  profiles: {
+    full_name: string | null;
+  } | {
+    full_name: string | null;
+  }[] | null;
 }
 
 export default function Home() {
-  const [stats, setStats] = useState<DashboardStat[]>([
-    { name: "Patrimônio Ativo", value: "0", icon: Package, color: "text-blue-500", key: "TOTAL", label: "Total Geral" },
-    { name: "Fila de Inspeção", value: "0", icon: Clock, color: "text-yellow-500", key: "CADASTRO", label: "Aguardando" },
-    { name: "Pendente Liberação", value: "0", icon: AlertCircle, color: "text-orange-500", key: "EM AVALIAÇÃO", label: "Em Análise" },
-    { name: "Stock Disponível", value: "0", icon: Box, color: "text-emerald-500", key: "EM ESTOQUE", label: "Pronto" },
-  ]);
-  const [recentActivity, setRecentActivity] = useState<DashboardLog[]>([]);
+  const { profile, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const [leadTime, setLeadTime] = useState({ avg: "--", status: "Aguardando Dados" });
+  const [stats, setStats] = useState({
+    total: 0,
+    cadastro: 0,
+    avaliacao: 0,
+    estoque: 0,
+    vendidos: 0
+  });
+  const [recentLogs, setRecentLogs] = useState<LogWithRelations[]>([]);
+
+  const isManager = profile?.role === "GESTOR" || profile?.role === "ADMIN";
 
   useEffect(() => {
-    fetchDashboardData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!authLoading) {
+      fetchDashboardData();
+    }
+  }, [authLoading]);
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000));
-
     try {
-      const { data: statsData, error: statsError } = await Promise.race([
-        supabase.rpc('get_dashboard_stats'),
-        timeoutPromise
-      ]) as any;
+      const { data: statsData, error: statsError } = await supabase.rpc('get_dashboard_stats');
 
       if (statsError) throw statsError;
 
-      if (statsData) {
-        setStats([
-          { name: "Patrimônio Ativo", value: (statsData.total || 0).toString(), icon: Package, color: "text-blue-500", key: "TOTAL", label: "Total Geral" },
-          { name: "Fila de Inspeção", value: (statsData.cadastro || 0).toString(), icon: Clock, color: "text-yellow-500", key: "CADASTRO", label: "Aguardando" },
-          { name: "Pendente Liberação", value: (statsData.em_avaliacao || 0).toString(), icon: AlertCircle, color: "text-orange-500", key: "TECNICO", label: "Em Análise" },
-          { name: "Total Expedido", value: (statsData.em_estoque || 0).toString(), icon: CheckCircle2, color: "text-emerald-500", key: "LIBERADO", label: "Concluídos" },
-        ]);
-      }
+      const newStats = {
+        total: statsData.total || 0,
+        cadastro: statsData.cadastro || 0,
+        avaliacao: statsData.em_avaliacao || 0,
+        estoque: statsData.em_estoque || 0,
+        vendidos: statsData.vendidos || 0,
+      };
+      setStats(newStats);
 
-      const { data: logs, error: logsError } = await Promise.race([
-        supabase
-          .from("product_logs")
-          .select(`
-                      id,
-                      new_status,
-                      created_at,
-                      products (brand, model, internal_serial)
-                  `)
-          .order("created_at", { ascending: false })
-          .limit(5),
-        timeoutPromise
-      ]) as any;
+      const { data: logs, error: logError } = await supabase
+        .from("product_logs")
+        .select(`
+                    id,
+                    created_at,
+                    new_status,
+                    products (model, internal_serial),
+                    profiles (full_name)
+                `)
+        .order("created_at", { ascending: false })
+        .limit(10);
 
-      if (logsError) throw logsError;
+      if (logError) throw logError;
 
-      setRecentActivity((logs as unknown as DashboardLog[]) || []);
-
-      setLeadTime({ avg: "--", status: "Aguardando Dados" });
+      setRecentLogs((logs as unknown as LogWithRelations[]) || []);
 
     } catch (error) {
-      logger.error("Error fetching dashboard data:", error);
+      logger.error("Erro ao carregar dashboard:", error);
+      toast.error("Erro ao carregar dados do dashboard");
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <MainLayout>
-      {isLoading ? (
-        <div className="max-w-7xl mx-auto flex h-[60vh] flex-col items-center justify-center space-y-6">
+  if (authLoading) return null;
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="max-w-7xl mx-auto flex h-[80vh] flex-col items-center justify-center space-y-6">
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl animate-pulse" />
-            <Loader2 className="h-12 w-12 animate-spin text-primary relative z-10 opacity-40" />
+            <Loader2 className="h-16 w-16 animate-spin text-primary relative z-10 opacity-40" />
           </div>
-          <div className="text-center space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground animate-pulse">Consolidando Dashboards</p>
-            <p className="text-[8px] text-muted-foreground/40 uppercase tracking-widest">Sincronizando métricas em tempo real</p>
+          <div className="text-center space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground animate-pulse">Consolidando Métricas</p>
+            <p className="text-[8px] text-muted-foreground/40 uppercase tracking-widest">Processando indicadores de performance</p>
           </div>
         </div>
-      ) : (
-        <div className="space-y-6 pb-20 sm:pb-0">
-          {/* Header */}
-          <div className="flex flex-col gap-1 px-1">
-            <h1 className="text-2xl sm:text-4xl font-black tracking-tighter text-white uppercase italic">
-              Dashboard <span className="text-primary not-italic font-light">Geral</span>
-            </h1>
-            <p className="text-muted-foreground font-medium text-[10px] sm:text-base opacity-70">
-              Visão geral do sistema e indicadores de performance.
-            </p>
-          </div>
+      </MainLayout>
+    );
+  }
 
-          {/* Stats Grid */}
-          <div className="grid gap-4 sm:gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-            {stats.map((stat, i) => (
-              <div
-                key={i}
-                className="glass-card p-4 sm:p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all active:scale-[0.98]"
+  const statusConfig = {
+    'CADASTRO': { label: 'Cadastro', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: Clock },
+    'EM AVALIAÇÃO': { label: 'Em Avaliação', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: Activity },
+    'EM ESTOQUE': { label: 'Em Estoque', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: Box },
+    'VENDIDO': { label: 'Vendido', color: 'bg-purple-500/10 text-purple-500 border-purple-500/20', icon: CheckCircle2 },
+    'RECUSADO': { label: 'Recusado', color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: XCircle },
+  };
+
+  return (
+    <MainLayout>
+      <div className="max-w-7xl mx-auto space-y-10 pb-12">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Dashboard <span className="text-primary not-italic font-light">Geral</span></h1>
+            <p className="text-muted-foreground font-medium text-xs sm:text-sm mt-1 opacity-70 italic">Análise de fluxo, gargalos e performance operacional.</p>
+          </div>
+          {isManager && (
+            <div className="flex gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+              <button className="h-12 px-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-white transition-all whitespace-nowrap">
+                <Calendar className="h-4 w-4 text-primary" />
+                Esta Semana
+              </button>
+              <button
+                onClick={() => {
+                  toast.promise(async () => {
+                    const { data, error } = await supabase
+                      .from("products")
+                      .select("internal_serial, original_serial, brand, model, status, voltage, created_at")
+                      .order("created_at", { ascending: false });
+
+                    if (error) throw error;
+
+                    const { exportToPDF } = await import("@/lib/export-utils");
+                    const headers = ["ID", "Marca", "Modelo", "Status", "Voltagem", "Serial"];
+                    const pdfData = data.map(p => [p.internal_serial, p.brand, p.model, p.status, p.voltage, p.original_serial]);
+                    exportToPDF("Relatório Geral Ambicom", headers, pdfData, "dashboard_geral");
+                  }, {
+                    loading: 'Gerando PDF...',
+                    success: 'PDF exportado com sucesso!',
+                    error: 'Erro ao gerar PDF',
+                  });
+                }}
+                className="h-12 px-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-white transition-all whitespace-nowrap"
               >
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <stat.icon className="h-16 w-16 sm:h-24 sm:w-24 text-primary" />
-                </div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-2xl ${stat.color} flex items-center justify-center border border-white/10`}>
-                    <stat.icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                  </div>
-                </div>
-                <div className="space-y-1 relative z-10">
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{stat.label}</p>
-                  <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tighter">{stat.value}</h3>
-                </div>
+                <FileDown className="h-4 w-4 text-primary" />
+                PDF
+              </button>
+              <button
+                onClick={() => {
+                  toast.promise(async () => {
+                    const { data, error } = await supabase
+                      .from("products")
+                      .select("internal_serial, original_serial, brand, model, status, voltage, created_at")
+                      .order("created_at", { ascending: false });
+
+                    if (error) throw error;
+
+                    const { exportToExcel } = await import("@/lib/export-utils");
+                    exportToExcel(data, "dashboard_geral_ambicom");
+                  }, {
+                    loading: 'Gerando relatório...',
+                    success: 'Relatório exportado com sucesso!',
+                    error: 'Erro ao gerar relatório',
+                  });
+                }}
+                className="h-12 px-6 bg-primary hover:bg-primary/90 text-white rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
+              >
+                <Download className="h-4 w-4" />
+                Excel
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* KPI Grid */}
+        <div className="grid gap-4 sm:gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="glass-card p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+              <Package className="h-24 w-24 text-primary" />
+            </div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                <Package className="h-6 w-6" />
               </div>
-            ))}
+              <span className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground/40 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
+                Realtime
+              </span>
+            </div>
+            <div className="space-y-1 relative z-10">
+              <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Volume Total</p>
+              <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.total}</h3>
+            </div>
           </div>
 
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
-            {/* Recent Activity Table */}
-            <div className="glass-card overflow-hidden lg:col-span-2 border border-white/10 bg-neutral-900/40 rounded-2xl shadow-2xl p-0">
-              <div className="p-6 border-b border-white/5 bg-white/[0.02]">
-                <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-primary" />
-                  Atividade Recente
-                </h3>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black opacity-50 mt-1">Sincronização de eventos em tempo real</p>
+          <div className="glass-card p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                <Clock className="h-6 w-6" />
               </div>
-              <div className="relative group/table" data-scroll="right">
-                {/* Horizontal Scroll Indicators */}
-                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-                <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Cadastro</p>
+              <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.cadastro}</h3>
+            </div>
+          </div>
 
-                <div
-                  className="overflow-x-auto min-h-[300px] scrollbar-hide"
-                  onScroll={(e) => {
-                    const target = e.currentTarget;
-                    const group = target.parentElement;
-                    if (group) {
-                      const scrollLeft = target.scrollLeft;
-                      const maxScroll = target.scrollWidth - target.clientWidth;
-                      let status = 'none';
-                      if (maxScroll > 0) {
-                        if (scrollLeft <= 10) status = 'right';
-                        else if (scrollLeft >= maxScroll - 10) status = 'left';
-                        else status = 'both';
-                      }
-                      group.setAttribute('data-scroll', status);
+          <div className="glass-card p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                <Activity className="h-6 w-6" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Avaliação</p>
+              <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.avaliacao}</h3>
+            </div>
+          </div>
+
+          <div className="glass-card p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                <Box className="h-6 w-6" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Estoque</p>
+              <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.estoque}</h3>
+            </div>
+          </div>
+
+          <div className="glass-card p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20">
+                <CheckCircle2 className="h-6 w-6" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Vendidos</p>
+              <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.vendidos}</h3>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
+          {/* Recent Logs Table */}
+          <div className="lg:col-span-2 glass-card p-0 border-white/5 bg-neutral-900/20 overflow-hidden">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+              <h3 className="text-lg font-black text-white uppercase tracking-tight">Trilha de Auditoria</h3>
+              <button className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-white transition-colors">Ver Completo</button>
+            </div>
+            <div className="relative group/table" data-scroll="right">
+              {/* Horizontal Scroll Indicators */}
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+              <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+
+              <div
+                className="overflow-x-auto scrollbar-hide"
+                onScroll={(e) => {
+                  const target = e.currentTarget;
+                  const group = target.parentElement;
+                  if (group) {
+                    const scrollLeft = target.scrollLeft;
+                    const maxScroll = target.scrollWidth - target.clientWidth;
+                    let status = 'none';
+                    if (maxScroll > 0) {
+                      if (scrollLeft <= 10) status = 'right';
+                      else if (scrollLeft >= maxScroll - 10) status = 'left';
+                      else status = 'both';
                     }
-                  }}
-                >
-                  <table className="w-full text-left border-collapse min-w-[600px] sm:min-w-full">
-                    <thead className="bg-white/5 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
-                      <tr>
-                        <th className="px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Data / Hora</th>
-                        <th className="px-6 py-5">Ativo Patrimonial</th>
-                        <th className="px-6 py-5 text-right pr-10">Status Transição</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {recentActivity.length === 0 ? (
-                        <tr>
-                          <td colSpan={3} className="px-6 py-20 text-center text-muted-foreground italic text-sm">
-                            Nenhum registro de atividade nas últimas 24h
+                    group.setAttribute('data-scroll', status);
+                  }
+                }}
+              >
+                <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
+                  <thead className="bg-white/5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                    <tr>
+                      <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Data / Horário</th>
+                      <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Ativo Identificado</th>
+                      <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Operador Responsável</th>
+                      <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Status Transição</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {recentLogs.map((log) => {
+                      const profileName = Array.isArray(log.profiles) ? (log.profiles as any)[0]?.full_name : (log.profiles as any)?.full_name;
+                      const productModel = Array.isArray(log.products) ? (log.products as any)[0]?.model : (log.products as any)?.model;
+                      const productSerial = Array.isArray(log.products) ? (log.products as any)[0]?.internal_serial : (log.products as any)?.internal_serial;
+                      const statusInfo = statusConfig[log.new_status as keyof typeof statusConfig];
+
+                      return (
+                        <tr key={log.id} className="hover:bg-white/[0.02] transition-colors group">
+                          <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                            <div className="flex flex-col">
+                              <span className="text-white font-bold text-[11px] sm:text-xs">{new Date(log.created_at).toLocaleDateString("pt-BR")}</span>
+                              <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
+                                {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                            <div className="flex flex-col">
+                              <span className="font-bold text-white text-[11px] sm:text-xs uppercase italic group-hover:text-primary transition-colors">{productModel || "N/A"}</span>
+                              <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground bg-white/5 w-fit px-1.5 py-0.5 rounded border border-white/5 mt-0.5">{productSerial || "N/A"}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center text-[9px] sm:text-[10px] font-black text-primary border border-primary/20 shadow-inner">
+                                {profileName?.substring(0, 1).toUpperCase() || "?"}
+                              </div>
+                              <span className="text-[11px] sm:text-xs font-bold text-white/80 group-hover:text-white transition-colors">{profileName || "Sistema Automatizado"}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
+                            <span className={cn(
+                              "inline-flex px-2 sm:px-2.5 py-1 rounded-md text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-sm border",
+                              statusInfo?.color || 'bg-white/5 border-white/10 text-white'
+                            )}>
+                              {statusInfo?.label || log.new_status}
+                            </span>
                           </td>
                         </tr>
-                      ) : (
-                        recentActivity.map((log) => (
-                          <tr key={log.id} className="group hover:bg-white/[0.02] transition-colors">
-                            <td className="px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
-                              <div className="flex flex-col">
-                                <span className="text-white font-bold text-xs">{new Date(log.created_at).toLocaleDateString("pt-BR")}</span>
-                                <span className="font-mono text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
-                                  {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-5 whitespace-nowrap">
-                              <div className="flex items-center gap-4">
-                                <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-inner group-hover:scale-110 transition-transform">
-                                  <Box className="h-4 w-4" />
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-white font-black text-xs uppercase italic tracking-tight group-hover:text-primary transition-colors">
-                                    {log.products?.brand || "N/A"} {log.products?.model || "N/A"}
-                                  </span>
-                                  <span className="font-mono text-[9px] text-muted-foreground uppercase opacity-60">
-                                    {log.products?.internal_serial || "N/A"}
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-5 text-right whitespace-nowrap pr-10">
-                              <span className="inline-flex px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] font-black uppercase tracking-widest shadow-sm">
-                                {log.new_status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
+          </div>
 
-            {/* Performance Chart Placeholder */}
-            <div className="glass-card p-4 sm:p-6 border-white/5 bg-neutral-900/40">
-              <div className="mb-6">
-                <h3 className="text-lg font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-primary" />
-                  Performance
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">Métricas de produtividade diária</p>
-              </div>
-              <div className="h-[200px] sm:h-[300px] w-full flex items-end justify-between gap-2 px-2">
-                {[40, 70, 45, 90, 60, 80, 55].map((h, i) => (
-                  <div key={i} className="w-full bg-primary/20 rounded-t-lg relative group overflow-hidden" style={{ height: `${h}%` }}>
-                    <div className="absolute bottom-0 left-0 w-full bg-primary/50 h-0 transition-all duration-500 group-hover:h-full" />
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between mt-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                <span>Seg</span>
-                <span>Ter</span>
-                <span>Qua</span>
-                <span>Qui</span>
-                <span>Sex</span>
-                <span>Sáb</span>
-                <span>Dom</span>
-              </div>
-              <div className="mt-4 pt-4 border-t border-white/5 text-center">
-                <p className="text-xs text-muted-foreground">Tempo Médio de Processamento: <span className="text-emerald-500 font-bold">{leadTime.avg}</span> ({leadTime.status})</p>
+          {/* Quick Actions / Notifications */}
+          <div className="space-y-6">
+            <div className="glass-card p-6 bg-gradient-to-br from-neutral-900/50 to-black/50 border-white/5">
+              <h3 className="text-lg font-black text-white uppercase tracking-tight mb-6 opacity-30">Notificações</h3>
+              <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+                <div className="h-12 w-12 rounded-full bg-white/5 flex items-center justify-center text-muted-foreground/20">
+                  <Activity className="h-6 w-6" />
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/30 leading-relaxed italic">Nenhum evento crítico<br />detectado pelo sistema</p>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </MainLayout>
   );
 }
