@@ -1,8 +1,8 @@
-# Ademicom
+# Ambicom
 
-![Ademicom Logo](https://via.placeholder.com/150) <!-- Substitua por um logo real se disponível -->
+![Ambicom Logo](https://via.placeholder.com/150) <!-- Substitua por um logo real se disponível -->
 
-Uma plataforma moderna e intuitiva para gerenciamento de inventário, controle de clientes e geração de relatórios automatizados. O **Ademicom** foi desenvolvido para otimizar processos logísticos e operacionais, integrando tecnologias de ponta para oferecer uma experiência premium.
+Uma plataforma moderna e intuitiva para gerenciamento de inventário, controle de clientes e geração de relatórios automatizados. O **Ambicom** foi desenvolvido para otimizar processos logísticos e operacionais, integrando tecnologias de ponta para oferecer uma experiência premium.
 
 ## 🚀 Funcionalidades Principais
 
@@ -27,7 +27,7 @@ Siga os passos abaixo para rodar o projeto localmente:
 
 1. **Clone o repositório:**
    ```bash
-   git clone https://github.com/Ronickbr/Ademicom.git
+   git clone https://github.com/Ronickbr/Ambicom.git
    ```
 
 2. **Instale as dependências:**
