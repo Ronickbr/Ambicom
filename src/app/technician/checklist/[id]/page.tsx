@@ -216,21 +216,23 @@ export default function TechnicianChecklist() {
                                         "flex items-center justify-between p-4 sm:p-6 rounded-2xl border transition-all duration-300 text-left group",
                                         checklistData[item.id]
                                             ? "bg-primary/5 border-primary/40 shadow-[0_0_20px_rgba(14,165,233,0.1)]"
-                                            : "bg-foreground/5 border-border/10 hover:border-border/20"
+                                            : "bg-foreground/5 border-border/20 hover:border-border/40 hover:bg-foreground/10"
                                     )}
                                 >
                                     <div className="flex items-center gap-4 sm:gap-6">
                                         <div className={cn(
                                             "h-8 w-8 rounded-xl border-2 flex items-center justify-center transition-all duration-500 shrink-0",
-                                            checklistData[item.id] ? "bg-primary border-primary rotate-0 scale-110 shadow-lg shadow-primary/20" : "border-border/20 rotate-45 scale-90"
+                                            checklistData[item.id]
+                                                ? "bg-primary border-primary rotate-0 scale-110 shadow-lg shadow-primary/20"
+                                                : "border-muted-foreground/30 bg-background/50 rotate-45 scale-90 group-hover:border-muted-foreground/50 group-hover:bg-background/80"
                                         )}>
-                                            {checklistData[item.id] && <CheckCircle className="h-5 w-5 text-foreground" />}
+                                            {checklistData[item.id] && <CheckCircle className="h-5 w-5 text-primary-foreground" />}
                                         </div>
                                         <div>
-                                            <div className={cn("text-base sm:text-lg font-black tracking-tight transition-colors italic uppercase", checklistData[item.id] ? "text-primary" : "text-foreground/80")}>
+                                            <div className={cn("text-base sm:text-lg font-black tracking-tight transition-colors italic uppercase", checklistData[item.id] ? "text-primary" : "text-foreground/90")}>
                                                 {item.label}
                                             </div>
-                                            <div className="text-[10px] font-black uppercase text-muted-foreground/40 tracking-widest mt-0.5">{item.category}</div>
+                                            <div className="text-[10px] font-black uppercase text-muted-foreground/70 tracking-widest mt-0.5">{item.category}</div>
                                         </div>
                                     </div>
                                     {checklistData[item.id] && (
