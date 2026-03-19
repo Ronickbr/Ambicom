@@ -17,7 +17,8 @@ import {
     Ban,
     Check,
     Barcode,
-    Camera
+    Camera,
+    Trash2
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -425,6 +426,44 @@ export default function OrdersPage() {
         }
     };
 
+    const handleDeleteOrder = async (order: Order) => {
+        if (!confirm("Deseja realmente EXCLUIR este pedido permanentemente? Os produtos voltarão ao estoque e a ação é irreversível.")) return;
+
+        setIsSaving(true);
+        try {
+            const { error: productError } = await supabase
+                .from("products")
+                .update({ order_id: null, status: "EM ESTOQUE" })
+                .eq("order_id", order.id);
+
+            if (productError) throw productError;
+
+            const { error: itemsError } = await supabase
+                .from("order_items")
+                .delete()
+                .eq("order_id", order.id);
+
+            if (itemsError) throw itemsError;
+
+            const { error: orderError } = await supabase
+                .from("orders")
+                .delete()
+                .eq("id", order.id);
+
+            if (orderError) throw orderError;
+
+            toast.success("Pedido excluído com sucesso!");
+            if (selectedOrder?.id === order.id) {
+                setShowDetailsModal(false);
+            }
+            fetchOrders();
+        } catch (error) {
+            toast.error("Erro ao excluir pedido");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleFinalizeOrder = async (order: Order) => {
         // Enforce verification for PENDENTE orders
         const totalItems = order.order_items?.length || 0;
@@ -632,6 +671,18 @@ export default function OrdersPage() {
                                                             >
                                                                 <FileDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                                             </button>
+                                                            {canCreateOrder && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteOrder(order);
+                                                                    }}
+                                                                    className="h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center text-muted-foreground hover:bg-red-500/10 rounded-xl transition-all hover:text-red-500 border border-transparent hover:border-red-500/20"
+                                                                    title="Excluir Pedido"
+                                                                >
+                                                                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                                                </button>
+                                                            )}
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -1093,6 +1144,17 @@ export default function OrdersPage() {
                                     >
                                         <Ban className="h-5 w-5" />
                                         Cancelar Envio
+                                    </button>
+                                )}
+
+                                {canCreateOrder && (
+                                    <button
+                                        onClick={() => handleDeleteOrder(selectedOrder)}
+                                        disabled={isSaving}
+                                        className="flex-[0.5] sm:flex-none sm:w-14 h-14 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl transition-all border border-red-500/20 flex items-center justify-center disabled:opacity-50"
+                                        title="Excluir Pedido Permanentemente"
+                                    >
+                                        <Trash2 className="h-5 w-5" />
                                     </button>
                                 )}
 
