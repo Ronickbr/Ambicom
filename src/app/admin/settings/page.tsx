@@ -119,8 +119,8 @@ export default function AdminSettingsPage() {
             <div className="max-w-4xl mx-auto space-y-10 pb-12">
                 {/* Header Section */}
                 <div>
-                    <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Configurações do <span className="text-primary not-italic font-light">Sistema</span></h1>
-                    <p className="text-muted-foreground font-medium text-sm sm:text-base mt-2 opacity-70 italic">Gerenciamento global de parâmetros e sequenciamento.</p>
+                    <h1 className="text-3xl sm:text-5xl font-black tracking-tighter uppercase italic">Configurações do <span className="text-primary not-italic font-light">Sistema</span></h1>
+                    <p className="text-muted-foreground font-medium text-sm sm:text-base mt-2 opacity-70 italic">Gerenciamento global de parâmetros e opções do sistema.</p>
                 </div>
 
                 <div className="grid gap-8">
@@ -128,7 +128,7 @@ export default function AdminSettingsPage() {
                     <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 flex gap-4">
                         <ShieldAlert className="h-6 w-6 text-amber-500 shrink-0" />
                         <div className="space-y-1">
-                            <h3 className="text-sm font-black text-white uppercase tracking-tight">Zona Crítica</h3>
+                            <h3 className="text-sm font-black text-foreground uppercase tracking-tight">Zona Crítica</h3>
                             <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 Alterações nestes parâmetros afetam diretamente a geração de novos IDs e a integridade de rastreabilidade. Proceda com cautela.
                             </p>
@@ -136,13 +136,13 @@ export default function AdminSettingsPage() {
                     </div>
 
                     {/* Sequence Setting Card */}
-                    <form onSubmit={handleSave} className="glass-card p-8 bg-neutral-900/40 border-white/5 space-y-8">
-                        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
+                    <form onSubmit={handleSave} className="glass-card bg-card/40 border-border/10 space-y-8">
+                        <div className="flex items-center gap-4 border-b border-border/10 pb-6">
                             <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
                                 <Hash className="h-6 w-6" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black text-white uppercase tracking-tight">Sequenciamento de ID Ambicom</h3>
+                                <h3 className="text-lg font-black uppercase tracking-tight">Sequenciamento de ID Ambicom</h3>
                                 <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-widest">Defina o número inicial para novos ativos</p>
                             </div>
                         </div>
@@ -158,7 +158,7 @@ export default function AdminSettingsPage() {
                                         type="number"
                                         min="1"
                                         required
-                                        className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl pl-10 pr-6 text-2xl font-mono font-black text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none shadow-inner transition-all"
+                                        className="w-full h-16 bg-background/50 border border-border/50 rounded-2xl pl-10 pr-6 text-2xl font-mono font-black text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none shadow-inner transition-all"
                                         value={sequenceStart}
                                         onChange={(e) => setSequenceStart(e.target.value)}
                                     />
@@ -168,18 +168,18 @@ export default function AdminSettingsPage() {
                                 </p>
                             </div>
 
-                            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-4">
+                            <div className="bg-foreground/5 border border-border/10 rounded-2xl p-6 space-y-4">
                                 <div className="flex items-center gap-2">
                                     <Info className="h-3.5 w-3.5 text-primary" />
-                                    <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Como Funciona</h4>
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest">Como Funciona</h4>
                                 </div>
                                 <div className="space-y-3">
                                     <div className="flex gap-3">
-                                        <div className="h-4 w-4 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">1</div>
+                                        <div className="h-4 w-4 rounded-full bg-foreground/10 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">1</div>
                                         <p className="text-[10px] text-muted-foreground">Se definir <strong>500</strong> e não houver registros, o primeiro ID será <strong>00500-{new Date().getFullYear()}</strong>.</p>
                                     </div>
                                     <div className="flex gap-3">
-                                        <div className="h-4 w-4 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">2</div>
+                                        <div className="h-4 w-4 rounded-full bg-foreground/10 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">2</div>
                                         <p className="text-[10px] text-muted-foreground">Se já houver o ID <strong>00510-{new Date().getFullYear()}</strong> e você mudar para <strong>100</strong>, o próximo será <strong>00511-{new Date().getFullYear()}</strong> para evitar duplicidade.</p>
                                     </div>
                                 </div>
@@ -187,13 +187,13 @@ export default function AdminSettingsPage() {
                         </div>
 
                         {/* Order Note Sequence Setting Card */}
-                        <div className="pt-8 border-t border-white/5 space-y-8">
-                            <div className="flex items-center gap-4 border-b border-white/5 pb-6">
+                        <div className="pt-8 border-t border-border/10 space-y-8">
+                            <div className="flex items-center gap-4 border-b border-border/10 pb-6">
                                 <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
                                     <ClipboardList className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-black text-white uppercase tracking-tight">Sequenciamento de Notas de Pedido</h3>
+                                    <h3 className="text-lg font-black uppercase tracking-tight">Sequenciamento de Notas de Pedido</h3>
                                     <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-widest">Defina o número inicial para novas notas</p>
                                 </div>
                             </div>
@@ -209,7 +209,7 @@ export default function AdminSettingsPage() {
                                             type="number"
                                             min="1"
                                             required
-                                            className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 text-2xl font-mono font-black text-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 outline-none shadow-inner transition-all"
+                                            className="w-full h-16 bg-background/50 border border-border/50 rounded-2xl pl-12 pr-6 text-2xl font-mono font-black text-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 outline-none shadow-inner transition-all"
                                             value={orderSequenceStart}
                                             onChange={(e) => setOrderSequenceStart(e.target.value)}
                                         />
@@ -219,14 +219,14 @@ export default function AdminSettingsPage() {
                                     </p>
                                 </div>
 
-                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-4">
+                                <div className="bg-foreground/5 border border-border/10 rounded-2xl p-6 space-y-4">
                                     <div className="flex items-center gap-2">
                                         <Info className="h-3.5 w-3.5 text-amber-500" />
-                                        <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Observação</h4>
+                                        <h4 className="text-[10px] font-black uppercase tracking-widest">Observação</h4>
                                     </div>
                                     <div className="space-y-3">
                                         <div className="flex gap-3">
-                                            <div className="h-4 w-4 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">!</div>
+                                            <div className="h-4 w-4 rounded-full bg-foreground/10 flex items-center justify-center text-[8px] font-bold shrink-0 mt-0.5">!</div>
                                             <p className="text-[10px] text-muted-foreground italic">Este valor define o ponto de partida do contador de notas. Se houver notas com números superiores, o sistema continuará do maior valor encontrado.</p>
                                         </div>
                                     </div>
@@ -234,10 +234,10 @@ export default function AdminSettingsPage() {
                             </div>
                         </div>
 
-                        <div className="pt-6 border-t border-white/5 flex justify-end">
+                        <div className="pt-6 border-t border-border/10 flex justify-end">
                             <button
                                 disabled={isSaving}
-                                className="h-16 px-10 rounded-2xl bg-primary text-white hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] transition-all disabled:opacity-50 shadow-xl shadow-primary/20 border-t border-white/20 flex items-center justify-center gap-3"
+                                className="h-16 px-10 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] transition-all disabled:opacity-50 shadow-xl shadow-primary/20 flex items-center justify-center gap-3"
                             >
                                 {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
                                 Salvar Configurações

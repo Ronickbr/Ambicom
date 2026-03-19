@@ -97,14 +97,14 @@ export default function TechnicianPage() {
                             </div>
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Operações de Campo</span>
                         </div>
-                        <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Fila <span className="text-primary not-italic font-light">Técnica</span></h1>
+                        <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-foreground uppercase italic">Fila <span className="text-primary not-italic font-light">Técnica</span></h1>
                         <p className="text-muted-foreground font-medium text-[10px] sm:text-sm mt-1 opacity-70 italic px-1">Ativos aguardando inspeção, checklist e validação técnica.</p>
                     </div>
-                    <div className="glass-card flex items-center gap-4 py-4 px-8 border-white/5 bg-neutral-900/50 shadow-inner w-full md:w-auto justify-between md:justify-start">
+                    <div className="glass-card flex items-center gap-4 py-4 px-8 border-border/10 bg-card/50 shadow-inner w-full md:w-auto justify-between md:justify-start">
                         <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20 shadow-sm"><Clock className="h-5 w-5" /></div>
                         <div>
                             <div className="text-[9px] uppercase font-black text-muted-foreground tracking-widest leading-none mb-1">SLA Médio</div>
-                            <div className="text-lg font-black text-white italic tracking-widest">4.5 <span className="text-[10px] not-italic font-medium opacity-50">h/unidade</span></div>
+                            <div className="text-lg font-black text-foreground italic tracking-widest">4.5 <span className="text-[10px] not-italic font-medium opacity-50">h/unidade</span></div>
                         </div>
                     </div>
                 </div>
@@ -118,11 +118,11 @@ export default function TechnicianPage() {
                             placeholder="Localizar ativo por Serial..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full rounded-2xl border border-white/10 bg-neutral-900/50 py-3 sm:py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all text-white shadow-inner backdrop-blur-sm placeholder:text-muted-foreground/30 font-medium"
+                            className="w-full rounded-2xl border border-border/20 bg-card/50 py-3 sm:py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all text-foreground shadow-inner backdrop-blur-sm placeholder:text-muted-foreground/30 font-medium"
                         />
                     </div>
                     <div className="flex gap-3 w-full md:w-auto">
-                        <button className="flex-1 md:flex-none px-8 h-14 bg-neutral-900/50 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-widest text-white flex items-center justify-center gap-3 hover:bg-white/5 transition-all shadow-inner">
+                        <button className="flex-1 md:flex-none px-8 h-14 bg-card/50 rounded-2xl border border-border/20 text-[10px] font-black uppercase tracking-widest text-foreground flex items-center justify-center gap-3 hover:bg-foreground/5 transition-all shadow-inner">
                             <Filter className="h-4 w-4 text-primary" />
                             Filtros Avançados
                         </button>
@@ -130,11 +130,11 @@ export default function TechnicianPage() {
                 </div>
 
                 {filteredProducts.length > 0 ? (
-                    <div className="glass-card overflow-hidden rounded-2xl border border-white/10 shadow-2xl p-0">
+                    <div className="glass-card overflow-hidden rounded-2xl border border-border/20 shadow-2xl p-0">
                         <div className="relative group/table" data-scroll="right">
                             {/* Horizontal Scroll Indicators */}
                             <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
                             <div
                                 className="overflow-x-auto scrollbar-hide"
@@ -155,9 +155,9 @@ export default function TechnicianPage() {
                                 }}
                             >
                                 <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
-                                    <thead className="bg-white/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                                    <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
                                         <tr>
-                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Ativo / Identificação</th>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Ativo / Identificação</th>
                                             <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Marca / Fabricante</th>
                                             <th className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">Status Lab</th>
                                             <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Entrada</th>
@@ -171,21 +171,21 @@ export default function TechnicianPage() {
                                                 className="group hover:bg-white/[0.02] transition-all cursor-pointer"
                                                 onClick={() => navigate(`/technician/checklist/${product.id}`)}
                                             >
-                                                <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
                                                     <div className="flex items-center gap-3 sm:gap-4">
-                                                        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-all border border-amber-500/10 shadow-inner">
+                                                        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-foreground transition-all border border-amber-500/10 shadow-inner">
                                                             <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="font-black text-white text-[13px] sm:text-base group-hover:text-primary transition-colors leading-tight uppercase italic truncate max-w-[120px] sm:max-w-none">{product.model}</span>
-                                                            <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground uppercase mt-0.5 tracking-widest bg-white/5 w-fit px-1.5 py-0.5 rounded border border-white/5">
+                                                            <span className="font-black text-foreground text-[13px] sm:text-base group-hover:text-primary transition-colors leading-tight uppercase italic truncate max-w-[120px] sm:max-w-none">{product.model}</span>
+                                                            <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground uppercase mt-0.5 tracking-widest bg-foreground/5 w-fit px-1.5 py-0.5 rounded border border-border/10">
                                                                 {product.internal_serial}
                                                             </span>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
-                                                    <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-hover:text-white transition-colors">
+                                                    <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-hover:text-foreground transition-colors">
                                                         {product.brand}
                                                     </span>
                                                 </td>
@@ -196,13 +196,13 @@ export default function TechnicianPage() {
                                                 </td>
                                                 <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
                                                     <div className="flex flex-col">
-                                                        <span className="text-[11px] sm:text-xs font-bold text-white/80">{new Date(product.created_at).toLocaleDateString("pt-BR")}</span>
+                                                        <span className="text-[11px] sm:text-xs font-bold text-foreground/80">{new Date(product.created_at).toLocaleDateString("pt-BR")}</span>
                                                         <span className="text-[9px] sm:text-[10px] text-muted-foreground/40 font-mono tracking-tighter uppercase">{new Date(product.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
                                                     <button
-                                                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all border border-primary/20 shadow-lg active:scale-90 ml-auto"
+                                                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all border border-primary/20 shadow-lg active:scale-90 ml-auto"
                                                     >
                                                         <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                                                     </button>
@@ -215,12 +215,12 @@ export default function TechnicianPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="glass-card flex flex-col items-center justify-center py-32 text-center border-dashed border border-white/5 bg-neutral-900/20">
-                        <div className="h-24 w-24 rounded-full bg-white/5 flex items-center justify-center mb-8 relative">
+                    <div className="glass-card flex flex-col items-center justify-center py-32 text-center border-dashed border border-border/10 bg-card/20">
+                        <div className="h-24 w-24 rounded-full bg-foreground/5 flex items-center justify-center mb-8 relative">
                             <CheckCircle2 className="h-10 w-10 text-emerald-500/50" />
                             <div className="absolute inset-0 rounded-full border-2 border-emerald-500/20 animate-pulse" />
                         </div>
-                        <h3 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter">Fila Zerada</h3>
+                        <h3 className="text-3xl font-black text-foreground mb-3 uppercase tracking-tighter">Fila Zerada</h3>
                         <p className="text-muted-foreground max-w-sm mx-auto text-sm leading-relaxed italic opacity-70">
                             Excelente trabalho. Não existem ativos pendentes de inspeção técnica no momento.
                         </p>

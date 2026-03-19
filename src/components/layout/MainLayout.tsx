@@ -11,10 +11,13 @@ import {
     LogOut,
     Menu,
     X,
-    Settings
+    Settings,
+    Sun,
+    Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useTheme } from "@/components/providers/ThemeProvider";
 import { logger } from "@/lib/logger";
 import { DebugPanel } from "@/components/DebugPanel";
 
@@ -42,6 +45,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     const userRole = profile?.role || "TECNICO";
     const filteredNavigation = navigation.filter(item => item.roles.includes(userRole));
 
+    const { theme, setTheme } = useTheme();
+
     const [showRecovery, setShowRecovery] = useState(false);
 
     useEffect(() => {
@@ -58,7 +63,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         return (
             <>
                 <DebugPanel />
-                <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
+                <div className="min-h-screen bg-background flex items-center justify-center p-4">
                     <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
                         <div className="relative">
                             <div className="absolute inset-0 rounded-full bg-primary/20 blur-3xl animate-pulse" />
@@ -106,7 +111,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 )}>
                     <img src="/logo.png" alt="Logo" className="h-8 w-8 rounded-lg bg-primary/20 p-1 shrink-0" />
                     {!isSidebarCollapsed && (
-                        <span className="text-xl font-bold tracking-tight text-white truncate animate-in fade-in duration-300">Ambicom</span>
+                        <span className="text-xl font-bold tracking-tight text-foreground truncate animate-in fade-in duration-300">Ambicom</span>
                     )}
                 </div>
 
@@ -119,9 +124,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 </button>
 
                 {/* User Profile Summary */}
-                <div className={cn("border-b border-white/5 transition-all duration-300", isSidebarCollapsed ? "p-2" : "p-4")}>
+                <div className={cn("border-b border-border/10 transition-all duration-300", isSidebarCollapsed ? "p-2" : "p-4")}>
                     <div className={cn(
-                        "bg-white/5 rounded-xl flex items-center border border-white/5 transition-all duration-300",
+                        "bg-foreground/5 rounded-xl flex items-center border border-border/10 transition-all duration-300",
                         isSidebarCollapsed ? "p-2 justify-center" : "p-3 gap-3"
                     )}>
                         <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
@@ -129,7 +134,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                         </div>
                         {!isSidebarCollapsed && (
                             <div className="flex flex-col overflow-hidden animate-in fade-in duration-300">
-                                <span className="text-xs font-bold text-white truncate">{profile?.full_name || "Usuário"}</span>
+                                <span className="text-xs font-bold text-foreground truncate">{profile?.full_name || "Usuário"}</span>
                                 <span className="text-[8px] font-bold text-primary uppercase tracking-tighter opacity-80">{profile?.role}</span>
                             </div>
                         )}
@@ -148,8 +153,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                                     "flex items-center rounded-lg transition-all duration-200 group",
                                     isSidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5",
                                     isActive
-                                        ? "bg-primary text-white shadow-lg shadow-primary/20"
-                                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                        : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
                                 )}
                             >
                                 <item.icon className={cn("h-4 w-4 shrink-0 transition-transform group-hover:scale-110", isActive && "animate-pulse")} />
@@ -160,7 +165,22 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                         );
                     })}
                 </nav>
-                <div className={cn("absolute bottom-4 w-full transition-all duration-300", isSidebarCollapsed ? "px-2" : "px-4")}>
+                <div className={cn("absolute bottom-4 w-full transition-all duration-300 flex flex-col gap-2", isSidebarCollapsed ? "px-2" : "px-4")}>
+                    <button
+                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        className={cn(
+                            "flex items-center rounded-lg font-medium text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground group w-full",
+                            isSidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2"
+                        )}
+                        title={isSidebarCollapsed ? "Alternar Tema" : ""}
+                    >
+                        {theme === 'dark' ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
+                        {!isSidebarCollapsed && (
+                            <span className="text-sm truncate animate-in slide-in-from-left-1 duration-300">
+                                {theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
+                            </span>
+                        )}
+                    </button>
                     <button
                         onClick={handleSignOut}
                         className={cn(
@@ -196,14 +216,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             {/* Mobile Menu Backdrop */}
             {isMobileMenuOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+                    className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm lg:hidden"
                     onClick={() => setIsMobileMenuOpen(false)}
                 />
             )}
 
             {/* Mobile Drawer */}
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 w-64 transform bg-card/95 backdrop-blur-xl transition-transform duration-300 ease-in-out lg:hidden flex flex-col shadow-2xl border-r border-white/10",
+                "fixed inset-y-0 left-0 z-50 w-64 transform bg-card/95 backdrop-blur-xl transition-transform duration-300 ease-in-out lg:hidden flex flex-col shadow-2xl border-r border-border/10",
                 isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
             )}>
                 <div className="flex h-16 items-center justify-between px-6 border-b border-border">
@@ -224,8 +244,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                                     className={cn(
                                         "flex items-center gap-4 rounded-xl px-4 py-4 text-base font-bold transition-all active:scale-95",
                                         isActive
-                                            ? "bg-primary text-white shadow-lg shadow-primary/20"
-                                            : "text-muted-foreground hover:bg-white/5 hover:text-white border border-transparent hover:border-white/5"
+                                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                            : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground border border-transparent hover:border-border/10"
                                     )}
                                 >
                                     <item.icon className="h-5 w-5" />
@@ -235,7 +255,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                         })}
                     </nav>
                 </div>
-                <div className="p-4 border-t border-white/5">
+                <div className="p-4 border-t border-border/10 flex flex-col gap-2">
+                    <button
+                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-foreground/5 transition-all border border-transparent hover:border-border/10"
+                    >
+                        {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                        {theme === 'dark' ? 'Mudar para Tema Claro' : 'Mudar para Tema Escuro'}
+                    </button>
                     <button
                         onClick={() => {
                             setIsMobileMenuOpen(false);

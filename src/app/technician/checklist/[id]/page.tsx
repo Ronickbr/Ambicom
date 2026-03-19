@@ -182,7 +182,7 @@ export default function TechnicianChecklist() {
                     Voltar para Fila
                 </button>
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sm:gap-8 border-b border-white/5 pb-8 sm:pb-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sm:gap-8 border-b border-border/10 pb-8 sm:pb-10">
                     <div className="space-y-2">
                         <div className="flex items-center gap-3 mb-1">
                             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
@@ -190,15 +190,15 @@ export default function TechnicianChecklist() {
                             </div>
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Evidência Técnica</span>
                         </div>
-                        <h1 className="text-2xl sm:text-4xl font-black tracking-tighter text-white uppercase italic leading-none">
+                        <h1 className="text-2xl sm:text-4xl font-black tracking-tighter text-foreground uppercase italic leading-none">
                             Validação de <span className="text-primary not-italic font-light tracking-normal">Checklist</span>
                         </h1>
-                        <p className="text-muted-foreground font-medium text-xs sm:text-sm italic opacity-70">Auditoria técnica do ativo: <span className="text-white font-mono not-italic">{product?.internal_serial}</span></p>
+                        <p className="text-muted-foreground font-medium text-xs sm:text-sm italic opacity-70">Auditoria técnica do ativo: <span className="text-foreground font-mono not-italic">{product?.internal_serial}</span></p>
                     </div>
-                    <div className="glass-card bg-neutral-900 border-white/10 p-4 sm:p-6 flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center shadow-2xl w-full md:w-auto min-w-[240px]">
+                    <div className="glass-card bg-card border-border/20 p-4 sm:p-6 flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center shadow-2xl w-full md:w-auto min-w-[240px]">
                         <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-0 md:mb-1 opacity-50 text-right">Especificação</span>
                         <div className="text-right">
-                            <div className="font-black text-lg sm:text-xl text-white tracking-tight uppercase italic mb-0 md:mb-1">{product?.model}</div>
+                            <div className="font-black text-lg sm:text-xl text-foreground tracking-tight uppercase italic mb-0 md:mb-1">{product?.model}</div>
                             <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{product?.brand}</div>
                         </div>
                     </div>
@@ -216,18 +216,18 @@ export default function TechnicianChecklist() {
                                         "flex items-center justify-between p-4 sm:p-6 rounded-2xl border transition-all duration-300 text-left group",
                                         checklistData[item.id]
                                             ? "bg-primary/5 border-primary/40 shadow-[0_0_20px_rgba(14,165,233,0.1)]"
-                                            : "bg-white/5 border-white/5 hover:border-white/10"
+                                            : "bg-foreground/5 border-border/10 hover:border-border/20"
                                     )}
                                 >
                                     <div className="flex items-center gap-4 sm:gap-6">
                                         <div className={cn(
                                             "h-8 w-8 rounded-xl border-2 flex items-center justify-center transition-all duration-500 shrink-0",
-                                            checklistData[item.id] ? "bg-primary border-primary rotate-0 scale-110 shadow-lg shadow-primary/20" : "border-white/10 rotate-45 scale-90"
+                                            checklistData[item.id] ? "bg-primary border-primary rotate-0 scale-110 shadow-lg shadow-primary/20" : "border-border/20 rotate-45 scale-90"
                                         )}>
-                                            {checklistData[item.id] && <CheckCircle className="h-5 w-5 text-white" />}
+                                            {checklistData[item.id] && <CheckCircle className="h-5 w-5 text-foreground" />}
                                         </div>
                                         <div>
-                                            <div className={cn("text-base sm:text-lg font-black tracking-tight transition-colors italic uppercase", checklistData[item.id] ? "text-primary" : "text-white/80")}>
+                                            <div className={cn("text-base sm:text-lg font-black tracking-tight transition-colors italic uppercase", checklistData[item.id] ? "text-primary" : "text-foreground/80")}>
                                                 {item.label}
                                             </div>
                                             <div className="text-[10px] font-black uppercase text-muted-foreground/40 tracking-widest mt-0.5">{item.category}</div>
@@ -246,16 +246,16 @@ export default function TechnicianChecklist() {
                             {!isAddingField ? (
                                 <button
                                     onClick={() => setIsAddingField(true)}
-                                    className="flex items-center justify-center gap-3 p-4 rounded-2xl border border-dashed border-white/20 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                                    className="flex items-center justify-center gap-3 p-4 rounded-2xl border border-dashed border-border/40 hover:border-primary/50 hover:bg-primary/5 transition-all group"
                                 >
                                     <Plus className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
                                     <span className="text-sm font-black uppercase tracking-widest text-muted-foreground group-hover:text-primary">Adicionar Novo Campo</span>
                                 </button>
                             ) : (
-                                <div className="glass-card bg-neutral-900 border-primary/30 p-6 rounded-2xl space-y-4 animate-in zoom-in-95 duration-200 shadow-2xl">
-                                    <div className="flex items-center justify-between pb-2 border-b border-white/5 mb-2">
+                                <div className="glass-card bg-card border-primary/30 p-6 rounded-2xl space-y-4 animate-in zoom-in-95 duration-200 shadow-2xl">
+                                    <div className="flex items-center justify-between pb-2 border-b border-border/10 mb-2">
                                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Novo Requisito Técnico</span>
-                                        <button onClick={() => setIsAddingField(false)} className="text-muted-foreground hover:text-white transition-colors">
+                                        <button onClick={() => setIsAddingField(false)} className="text-muted-foreground hover:text-foreground transition-colors">
                                             <X className="h-4 w-4" />
                                         </button>
                                     </div>
@@ -268,7 +268,7 @@ export default function TechnicianChecklist() {
                                                 value={newFieldLabel}
                                                 onChange={(e) => setNewFieldLabel(e.target.value)}
                                                 placeholder="Ex: Verificar vedação da porta..."
-                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:font-medium placeholder:text-muted-foreground/30 italic"
+                                                className="w-full bg-card/40 border border-border/20 rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:font-medium placeholder:text-muted-foreground/30 italic"
                                             />
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
@@ -277,7 +277,7 @@ export default function TechnicianChecklist() {
                                                 <select
                                                     value={newFieldCategory}
                                                     onChange={(e) => setNewFieldCategory(e.target.value)}
-                                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
+                                                    className="w-full bg-card/40 border border-border/20 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-foreground focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
                                                 >
                                                     <option value="Funcional">Funcional</option>
                                                     <option value="Estético">Estético</option>
@@ -290,7 +290,7 @@ export default function TechnicianChecklist() {
                                                 <button
                                                     onClick={handleAddField}
                                                     disabled={isSavingField}
-                                                    className="w-full h-[46px] rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100 shadow-[0_0_20px_rgba(14,165,233,0.3)] flex items-center justify-center gap-2"
+                                                    className="w-full h-[46px] rounded-xl bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100 shadow-[0_0_20px_rgba(14,165,233,0.3)] flex items-center justify-center gap-2"
                                                 >
                                                     {isSavingField ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
                                                     Confirmar
@@ -305,7 +305,7 @@ export default function TechnicianChecklist() {
 
                     <div className="lg:col-span-2 space-y-6 sm:space-y-8">
                         {/* Observations */}
-                        <div className="glass-card bg-neutral-900/40 space-y-4 p-6 sm:p-8 border-white/5">
+                        <div className="glass-card bg-card/40 space-y-4 p-6 sm:p-8 border-border/10">
                             <div className="flex items-center gap-3">
                                 <AlertTriangle className="h-4 w-4 text-primary" />
                                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Observações do Laudo</label>
@@ -314,7 +314,7 @@ export default function TechnicianChecklist() {
                                 value={obs}
                                 onChange={(e) => setObs(e.target.value)}
                                 placeholder="Insira detalhes técnicos adicionais ou identifique anomalias não listadas..."
-                                className="w-full h-48 rounded-2xl border border-white/5 bg-black/40 p-6 text-sm text-white placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all shadow-inner resize-none"
+                                className="w-full h-48 rounded-2xl border border-border/10 bg-card/40 p-6 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all shadow-inner resize-none"
                             />
                         </div>
 
@@ -340,7 +340,7 @@ export default function TechnicianChecklist() {
                             </button>
                             <button
                                 onClick={() => navigate(-1)}
-                                className="px-8 h-14 sm:h-auto rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-[0.2em] transition-all text-muted-foreground hover:text-white"
+                                className="px-8 h-14 sm:h-auto rounded-xl border border-border/10 bg-foreground/5 hover:bg-foreground/10 text-[10px] font-black uppercase tracking-[0.2em] transition-all text-muted-foreground hover:text-foreground"
                             >
                                 Cancelar
                             </button>

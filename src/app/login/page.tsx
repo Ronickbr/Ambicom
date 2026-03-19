@@ -41,7 +41,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
             {/* Background Effects */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
                 <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
@@ -52,10 +52,10 @@ export default function LoginPage() {
             <div className="w-full max-w-md space-y-8 relative">
                 {/* Logo Section */}
                 <div className="text-center space-y-2">
-                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 border border-white/10 shadow-2xl mb-4 overflow-hidden">
+                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-foreground/5 border border-border/20 shadow-2xl mb-4 overflow-hidden">
                         <img src="/logo.png" alt="Ambicom" className="h-full w-full object-cover p-2" />
                     </div>
-                    <h1 className="text-4xl font-extrabold text-white tracking-tighter">
+                    <h1 className="text-4xl font-extrabold text-foreground tracking-tighter">
                         Ambicom
                     </h1>
                     <p className="text-muted-foreground text-sm font-medium tracking-wide">
@@ -64,7 +64,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Login Card */}
-                <div className="glass-card p-6 sm:p-8 border-white/10 shadow-2xl relative group overflow-hidden bg-neutral-950/50 backdrop-blur-xl">
+                <div className="glass-card p-6 sm:p-8 border-border/20 shadow-2xl relative group overflow-hidden bg-card/50 backdrop-blur-xl">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                     <form onSubmit={handleLogin} className="space-y-6">
@@ -80,7 +80,7 @@ export default function LoginPage() {
                                         required
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all text-sm shadow-inner"
+                                        className="w-full bg-foreground/5 border border-border/20 rounded-xl py-3 pl-10 pr-4 text-foreground placeholder:text-foreground/20 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all text-sm shadow-inner"
                                         placeholder="seu.email@ambicom.com.br"
                                     />
                                 </div>
@@ -97,7 +97,7 @@ export default function LoginPage() {
                                         required
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all text-sm shadow-inner"
+                                        className="w-full bg-foreground/5 border border-border/20 rounded-xl py-3 pl-10 pr-4 text-foreground placeholder:text-foreground/20 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all text-sm shadow-inner"
                                         placeholder="••••••••"
                                     />
                                 </div>
@@ -107,7 +107,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
                         >
                             {isLoading ? (
                                 <>
@@ -123,10 +123,10 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    <div className="mt-8 pt-6 border-t border-white/5 text-center">
+                    <div className="mt-8 pt-6 border-t border-border/10 text-center">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-relaxed">
                             Acesso restrito a colaboradores autorizados da Ambicom.<br />
-                            Suporte técnico: <span className="text-white">TI@ambicom.com.br</span>
+                            Suporte técnico: <span className="text-foreground">TI@ambicom.com.br</span>
                         </p>
                     </div>
                 </div>
@@ -134,9 +134,9 @@ export default function LoginPage() {
                 {/* Test Access Section */}
                 <div className="pt-4 space-y-4">
                     <div className="flex items-center gap-3 px-2">
-                        <div className="h-px flex-1 bg-white/5" />
+                        <div className="h-px flex-1 bg-foreground/5" />
                         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] whitespace-nowrap">Ambiente de Teste</span>
-                        <div className="h-px flex-1 bg-white/5" />
+                        <div className="h-px flex-1 bg-foreground/5" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -147,10 +147,10 @@ export default function LoginPage() {
                                 setPassword("Nick@11031987");
                                 toast.info("Credenciais de ADMIN carregadas");
                             }}
-                            className="flex flex-col items-center justify-center p-4 rounded-xl bg-white/5 border border-white/5 hover:border-primary/30 hover:bg-primary/5 transition-all group active:scale-95"
+                            className="flex flex-col items-center justify-center p-4 rounded-xl bg-foreground/5 border border-border/10 hover:border-primary/30 hover:bg-primary/5 transition-all group active:scale-95"
                         >
                             <ShieldCheck className="h-5 w-5 text-primary mb-1 group-hover:scale-110 transition-transform" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-wider">Admin</span>
+                            <span className="text-[10px] font-black text-foreground uppercase tracking-wider">Admin</span>
                         </button>
 
                         <button
@@ -160,10 +160,10 @@ export default function LoginPage() {
                                 setPassword("gestor@1103");
                                 toast.info("Credenciais de GESTOR carregadas");
                             }}
-                            className="flex flex-col items-center justify-center p-4 rounded-xl bg-white/5 border border-white/5 hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group active:scale-95"
+                            className="flex flex-col items-center justify-center p-4 rounded-xl bg-foreground/5 border border-border/10 hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group active:scale-95"
                         >
                             <Zap className="h-5 w-5 text-emerald-500 mb-1 group-hover:scale-110 transition-transform" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-wider">Gestor</span>
+                            <span className="text-[10px] font-black text-foreground uppercase tracking-wider">Gestor</span>
                         </button>
 
                         <button
@@ -173,10 +173,10 @@ export default function LoginPage() {
                                 setPassword("supervisor@1103");
                                 toast.info("Credenciais de SUPERVISOR carregadas");
                             }}
-                            className="flex flex-col items-center justify-center p-4 rounded-xl bg-white/5 border border-white/5 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all group active:scale-95"
+                            className="flex flex-col items-center justify-center p-4 rounded-xl bg-foreground/5 border border-border/10 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all group active:scale-95"
                         >
                             <ShieldCheck className="h-5 w-5 text-amber-500 mb-1 group-hover:scale-110 transition-transform" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-wider">Supervisor</span>
+                            <span className="text-[10px] font-black text-foreground uppercase tracking-wider">Supervisor</span>
                         </button>
 
                         <button
@@ -186,10 +186,10 @@ export default function LoginPage() {
                                 setPassword("Tecnico@1103");
                                 toast.info("Credenciais de TÉCNICO carregadas");
                             }}
-                            className="flex flex-col items-center justify-center p-4 rounded-xl bg-white/5 border border-white/5 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all group active:scale-95"
+                            className="flex flex-col items-center justify-center p-4 rounded-xl bg-foreground/5 border border-border/10 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all group active:scale-95"
                         >
                             <Zap className="h-5 w-5 text-blue-500 mb-1 group-hover:scale-110 transition-transform" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-wider">Técnico</span>
+                            <span className="text-[10px] font-black text-foreground uppercase tracking-wider">Técnico</span>
                         </button>
                     </div>
 
@@ -202,7 +202,7 @@ export default function LoginPage() {
                 <div className="text-center">
                     <button
                         onClick={() => navigate("/")}
-                        className="text-xs text-muted-foreground hover:text-white transition-colors uppercase tracking-widest font-bold opacity-50 hover:opacity-100"
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest font-bold opacity-50 hover:opacity-100"
                     >
                         Voltar para a página inicial
                     </button>

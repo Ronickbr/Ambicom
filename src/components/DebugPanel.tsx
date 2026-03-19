@@ -31,17 +31,17 @@ export function DebugPanel() {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-neutral-900 border border-white/10 w-full max-w-4xl h-[80vh] rounded-xl flex flex-col shadow-2xl">
-                <div className="flex items-center justify-between p-4 border-b border-white/10 bg-black/20">
-                    <h3 className="font-bold text-white flex items-center gap-2">
+        <div className="fixed inset-0 z-[9999] bg-background/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-card border border-border/20 w-full max-w-4xl h-[80vh] rounded-xl flex flex-col shadow-2xl">
+                <div className="flex items-center justify-between p-4 border-b border-border/20 bg-background/20">
+                    <h3 className="font-bold text-foreground flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"/>
                         System Debugger
                     </h3>
                     <div className="flex gap-2">
                         <button 
                             onClick={() => setLogs([...logger.getLogs()])}
-                            className="p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors"
+                            className="p-2 hover:bg-foreground/10 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                             title="Refresh"
                         >
                             <RefreshCw className="h-4 w-4" />
@@ -51,7 +51,7 @@ export function DebugPanel() {
                                 logger.clearLogs();
                                 setLogs([]);
                             }}
-                            className="p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors"
+                            className="p-2 hover:bg-foreground/10 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                             title="Clear"
                         >
                             <Trash2 className="h-4 w-4" />
@@ -61,7 +61,7 @@ export function DebugPanel() {
                                 const text = logs.map(l => `[${l.timestamp}] [${l.level.toUpperCase()}] ${l.message} ${JSON.stringify(l.data || '')}`).join('\n');
                                 navigator.clipboard.writeText(text);
                             }}
-                            className="p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors"
+                            className="p-2 hover:bg-foreground/10 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                             title="Copy to Clipboard"
                         >
                             <Copy className="h-4 w-4" />
@@ -79,7 +79,7 @@ export function DebugPanel() {
                         <div className="text-muted-foreground text-center py-10">No logs recorded yet.</div>
                     ) : (
                         logs.map((log, i) => (
-                            <div key={i} className="flex gap-2 hover:bg-white/5 p-1 rounded">
+                            <div key={i} className="flex gap-2 hover:bg-foreground/5 p-1 rounded">
                                 <span className="text-muted-foreground shrink-0 w-32">{log.timestamp.split('T')[1].split('.')[0]}</span>
                                 <span className={`font-bold shrink-0 w-16 ${
                                     log.level === 'error' ? 'text-red-500' :

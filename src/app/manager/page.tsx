@@ -151,11 +151,11 @@ export default function ManagerDashboard() {
                             </div>
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Business Intelligence</span>
                         </div>
-                        <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Visão <span className="text-primary not-italic font-light">Gerencial</span></h1>
+                        <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-foreground uppercase italic">Visão <span className="text-primary not-italic font-light">Gerencial</span></h1>
                         <p className="text-muted-foreground font-medium text-xs sm:text-sm mt-1 opacity-70 italic">Análise de fluxo, gargalos e performance operacional.</p>
                     </div>
                     <div className="flex gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-                        <button className="h-12 px-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-white transition-all whitespace-nowrap">
+                        <button className="h-12 px-6 bg-foreground/5 hover:bg-foreground/10 border border-border/20 rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-foreground transition-all whitespace-nowrap">
                             <Calendar className="h-4 w-4 text-primary" />
                             Esta Semana
                         </button>
@@ -179,7 +179,7 @@ export default function ManagerDashboard() {
                                     error: 'Erro ao gerar PDF',
                                 });
                             }}
-                            className="h-12 px-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-white transition-all whitespace-nowrap"
+                            className="h-12 px-6 bg-foreground/5 hover:bg-foreground/10 border border-border/20 rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-foreground transition-all whitespace-nowrap"
                         >
                             <FileDown className="h-4 w-4 text-primary" />
                             PDF
@@ -203,7 +203,7 @@ export default function ManagerDashboard() {
                                     error: 'Erro ao gerar relatório',
                                 });
                             }}
-                            className="h-12 px-6 bg-primary hover:bg-primary/90 text-white rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
+                            className="h-12 px-6 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                         >
                             <Download className="h-4 w-4" />
                             Excel
@@ -213,7 +213,7 @@ export default function ManagerDashboard() {
 
                 {/* KPI Grid */}
                 <div className="grid gap-4 sm:gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-                    <div className="glass-card p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
+                    <div className="glass-card p-6 bg-card/40 border-border/10 relative overflow-hidden group hover:border-primary/30 transition-all">
                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                             <Package className="h-24 w-24 text-primary" />
                         </div>
@@ -221,17 +221,17 @@ export default function ManagerDashboard() {
                             <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
                                 <Package className="h-6 w-6" />
                             </div>
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground/40 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground/40 bg-foreground/5 px-2 py-1 rounded-lg border border-border/20">
                                 Realtime
                             </span>
                         </div>
                         <div className="space-y-1 relative z-10">
                             <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Volume Total</p>
-                            <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.total}</h3>
+                            <h3 className="text-2xl sm:text-4xl font-black text-foreground tracking-tighter">{stats.total}</h3>
                         </div>
                     </div>
 
-                    <div className="glass-card p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
+                    <div className="glass-card p-6 bg-card/40 border-border/10 relative overflow-hidden group hover:border-primary/30 transition-all">
                         <div className="flex items-center justify-between mb-4">
                             <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
                                 <Clock className="h-6 w-6" />
@@ -239,11 +239,11 @@ export default function ManagerDashboard() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Cadastro</p>
-                            <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.cadastro}</h3>
+                            <h3 className="text-2xl sm:text-4xl font-black text-foreground tracking-tighter">{stats.cadastro}</h3>
                         </div>
                     </div>
 
-                    <div className="glass-card p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
+                    <div className="glass-card p-6 bg-card/40 border-border/10 relative overflow-hidden group hover:border-primary/30 transition-all">
                         <div className="flex items-center justify-between mb-4">
                             <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
                                 <Activity className="h-6 w-6" />
@@ -251,11 +251,11 @@ export default function ManagerDashboard() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Avaliação</p>
-                            <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.avaliacao}</h3>
+                            <h3 className="text-2xl sm:text-4xl font-black text-foreground tracking-tighter">{stats.avaliacao}</h3>
                         </div>
                     </div>
 
-                    <div className="glass-card p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
+                    <div className="glass-card p-6 bg-card/40 border-border/10 relative overflow-hidden group hover:border-primary/30 transition-all">
                         <div className="flex items-center justify-between mb-4">
                             <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
                                 <Box className="h-6 w-6" />
@@ -263,11 +263,11 @@ export default function ManagerDashboard() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Estoque</p>
-                            <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.estoque}</h3>
+                            <h3 className="text-2xl sm:text-4xl font-black text-foreground tracking-tighter">{stats.estoque}</h3>
                         </div>
                     </div>
 
-                    <div className="glass-card p-6 bg-neutral-900/40 border-white/5 relative overflow-hidden group hover:border-primary/30 transition-all">
+                    <div className="glass-card p-6 bg-card/40 border-border/10 relative overflow-hidden group hover:border-primary/30 transition-all">
                         <div className="flex items-center justify-between mb-4">
                             <div className="h-12 w-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20">
                                 <CheckCircle2 className="h-6 w-6" />
@@ -275,22 +275,22 @@ export default function ManagerDashboard() {
                         </div>
                         <div className="space-y-1">
                             <p className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] leading-none mb-1">Vendidos</p>
-                            <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter">{stats.vendidos}</h3>
+                            <h3 className="text-2xl sm:text-4xl font-black text-foreground tracking-tighter">{stats.vendidos}</h3>
                         </div>
                     </div>
                 </div>
 
                 <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
                     {/* Recent Logs Table */}
-                    <div className="lg:col-span-2 glass-card p-0 border-white/5 bg-neutral-900/20 overflow-hidden">
-                        <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                            <h3 className="text-lg font-black text-white uppercase tracking-tight">Trilha de Auditoria</h3>
-                            <button className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-white transition-colors">Ver Completo</button>
+                    <div className="lg:col-span-2 glass-card p-0 border-border/10 bg-card/20 overflow-hidden">
+                        <div className="p-6 border-b border-border/10 flex items-center justify-between">
+                            <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Trilha de Auditoria</h3>
+                            <button className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-foreground transition-colors">Ver Completo</button>
                         </div>
                         <div className="relative group/table" data-scroll="right">
                             {/* Horizontal Scroll Indicators */}
                             <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
                             <div
                                 className="overflow-x-auto scrollbar-hide"
@@ -311,9 +311,9 @@ export default function ManagerDashboard() {
                                 }}
                             >
                                 <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
-                                    <thead className="bg-white/5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                                    <thead className="bg-foreground/5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
                                         <tr>
-                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Data / Horário</th>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Data / Horário</th>
                                             <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Ativo Identificado</th>
                                             <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Operador Responsável</th>
                                             <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Status Transição</th>
@@ -328,9 +328,9 @@ export default function ManagerDashboard() {
 
                                             return (
                                                 <tr key={log.id} className="hover:bg-white/[0.02] transition-colors group">
-                                                    <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                    <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
                                                         <div className="flex flex-col">
-                                                            <span className="text-white font-bold text-[11px] sm:text-xs">{new Date(log.created_at).toLocaleDateString("pt-BR")}</span>
+                                                            <span className="text-foreground font-bold text-[11px] sm:text-xs">{new Date(log.created_at).toLocaleDateString("pt-BR")}</span>
                                                             <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground group-hover:text-primary transition-colors">
                                                                 {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
                                                             </span>
@@ -338,8 +338,8 @@ export default function ManagerDashboard() {
                                                     </td>
                                                     <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
                                                         <div className="flex flex-col">
-                                                            <span className="font-bold text-white text-[11px] sm:text-xs uppercase italic group-hover:text-primary transition-colors">{productModel || "N/A"}</span>
-                                                            <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground bg-white/5 w-fit px-1.5 py-0.5 rounded border border-white/5 mt-0.5">{productSerial || "N/A"}</span>
+                                                            <span className="font-bold text-foreground text-[11px] sm:text-xs uppercase italic group-hover:text-primary transition-colors">{productModel || "N/A"}</span>
+                                                            <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground bg-foreground/5 w-fit px-1.5 py-0.5 rounded border border-border/10 mt-0.5">{productSerial || "N/A"}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
@@ -347,13 +347,13 @@ export default function ManagerDashboard() {
                                                             <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center text-[9px] sm:text-[10px] font-black text-primary border border-primary/20 shadow-inner">
                                                                 {profileName?.substring(0, 1).toUpperCase() || "?"}
                                                             </div>
-                                                            <span className="text-[11px] sm:text-xs font-bold text-white/80 group-hover:text-white transition-colors">{profileName || "Sistema Automatizado"}</span>
+                                                            <span className="text-[11px] sm:text-xs font-bold text-foreground/80 group-hover:text-foreground transition-colors">{profileName || "Sistema Automatizado"}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
                                                         <span className={cn(
                                                             "inline-flex px-2 sm:px-2.5 py-1 rounded-md text-[8px] sm:text-[9px] font-black uppercase tracking-widest shadow-sm border",
-                                                            statusInfo?.color || 'bg-white/5 border-white/10 text-white'
+                                                            statusInfo?.color || 'bg-foreground/5 border-border/20 text-foreground'
                                                         )}>
                                                             {statusInfo?.label || log.new_status}
                                                         </span>
@@ -369,10 +369,10 @@ export default function ManagerDashboard() {
 
                     {/* Quick Actions / Notifications */}
                     <div className="space-y-6">
-                        <div className="glass-card p-6 bg-gradient-to-br from-neutral-900/50 to-black/50 border-white/5">
-                            <h3 className="text-lg font-black text-white uppercase tracking-tight mb-6 opacity-30">Notificações</h3>
+                        <div className="glass-card p-6 bg-gradient-to-br from-card/50 to-background/50 border-border/10">
+                            <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-6 opacity-30">Notificações</h3>
                             <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-                                <div className="h-12 w-12 rounded-full bg-white/5 flex items-center justify-center text-muted-foreground/20">
+                                <div className="h-12 w-12 rounded-full bg-foreground/5 flex items-center justify-center text-muted-foreground/20">
                                     <Activity className="h-6 w-6" />
                                 </div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/30 leading-relaxed italic">Nenhum evento crítico<br />detectado pelo sistema</p>

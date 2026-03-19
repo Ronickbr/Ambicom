@@ -1,6 +1,34 @@
 @import "tailwindcss";
 
 :root {
+  --background: #f8fafc;
+  --foreground: #020617;
+  --card: #ffffff;
+  --card-foreground: #020617;
+  --popover: #ffffff;
+  --popover-foreground: #020617;
+  --primary: #197142;
+  --primary-foreground: #ffffff;
+  --secondary: #b0c145;
+  --secondary-foreground: #ffffff;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #0ea5e9;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #197142;
+  --radius: 0.75rem;
+
+  /* Glassmorphism primitives */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: 12px;
+}
+
+.dark {
   --background: #050505;
   --foreground: #f0f0f0;
   --card: rgba(255, 255, 255, 0.03);

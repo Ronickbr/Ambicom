@@ -36,6 +36,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { handleError } from "@/lib/errors";
 
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Product, ProductLog } from "@/lib/types";
@@ -188,8 +189,7 @@ export default function InventoryPage() {
             setProducts((data as InventoryProduct[]) || []);
             setTotalCount(count || 0);
         } catch (error) {
-            const err = error as Error;
-            toast.error("Erro ao carregar estoque", { description: err.message });
+            handleError(error, "Erro ao carregar estoque");
         } finally {
             setIsLoading(false);
         }
@@ -221,8 +221,8 @@ export default function InventoryPage() {
                 .order("created_at", { ascending: false });
             if (error) throw error;
             setHistory((data as ProductLog[]) || []);
-        } catch {
-            toast.error("Falha ao carregar histórico");
+        } catch (error) {
+            handleError(error, "Falha ao carregar histórico");
         } finally {
             setIsLoadingHistory(false);
         }
@@ -282,8 +282,7 @@ export default function InventoryPage() {
             setEditingProduct(null);
             fetchInventory();
         } catch (error) {
-            const err = error as Error;
-            toast.error("Erro na atualização", { description: err.message });
+            handleError(error, "Erro na atualização");
         } finally {
             setIsSaving(false);
         }
@@ -299,8 +298,7 @@ export default function InventoryPage() {
             setDeletingProduct(null);
             fetchInventory();
         } catch (error) {
-            const err = error as Error;
-            toast.error("Erro ao remover", { description: err.message });
+            handleError(error, "Erro ao remover");
         } finally {
             setIsSaving(false);
         }
@@ -335,20 +333,20 @@ export default function InventoryPage() {
             <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-12">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
                     <div>
-                        <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic leading-none">
+                        <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-foreground uppercase italic leading-none">
                             Controle de <span className="text-primary tracking-normal font-light not-italic">Inventário</span>
                         </h1>
                         <p className="text-muted-foreground font-medium text-[10px] sm:text-sm mt-2 opacity-70 italic px-1">Monitoramento em tempo real de ativos e equipamentos industriais.</p>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6">
-                        <div className="flex items-center gap-4 bg-neutral-900/50 border border-white/5 rounded-2xl px-6 py-3 shadow-inner justify-between sm:justify-start">
+                        <div className="flex items-center gap-4 bg-card/50 border border-border/10 rounded-2xl px-6 py-3 shadow-inner justify-between sm:justify-start">
                             <Box className="h-5 w-5 text-primary" />
                             <div className="flex flex-col">
                                 <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Total Ativos</span>
-                                <span className="text-sm font-black text-white">{products.length} Unidades</span>
+                                <span className="text-sm font-black text-foreground">{products.length} Unidades</span>
                             </div>
                         </div>
-                        <div className="flex items-center justify-center bg-white/5 rounded-xl p-1 border border-white/10 shadow-lg">
+                        <div className="flex items-center justify-center bg-foreground/5 rounded-xl p-1 border border-border/20 shadow-lg">
                             {selectedIds.size > 0 && (
                                 <button
                                     onClick={async () => {
@@ -356,7 +354,7 @@ export default function InventoryPage() {
                                         const selectedProducts = products.filter(p => selectedIds.has(p.id));
                                         await printLabels(selectedProducts);
                                     }}
-                                    className="h-10 px-4 bg-primary text-white rounded-lg flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 animate-in zoom-in mr-1"
+                                    className="h-10 px-4 bg-primary text-primary-foreground rounded-lg flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 animate-in zoom-in mr-1"
                                 >
                                     <Barcode className="h-4 w-4" />
                                     Imprimir ({selectedIds.size})
@@ -364,15 +362,15 @@ export default function InventoryPage() {
                             )}
                             <button
                                 onClick={() => handleExport('PDF')}
-                                className="p-2.5 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-all active:scale-90 flex-1 sm:flex-none flex justify-center"
+                                className="p-2.5 hover:bg-foreground/10 rounded-lg text-muted-foreground hover:text-foreground transition-all active:scale-90 flex-1 sm:flex-none flex justify-center"
                                 title="Exportar PDF Geral"
                             >
                                 <FileDown className="h-5 w-5" />
                             </button>
-                            <div className="w-px h-6 bg-white/10 mx-1" />
+                            <div className="w-px h-6 bg-foreground/10 mx-1" />
                             <button
                                 onClick={() => handleExport('EXCEL')}
-                                className="p-2.5 hover:bg-white/10 rounded-lg text-emerald-500 hover:text-emerald-400 transition-all active:scale-90 flex-1 sm:flex-none flex justify-center"
+                                className="p-2.5 hover:bg-foreground/10 rounded-lg text-emerald-500 hover:text-emerald-400 transition-all active:scale-90 flex-1 sm:flex-none flex justify-center"
                                 title="Exportar Excel"
                             >
                                 <Download className="h-5 w-5" />
@@ -381,7 +379,7 @@ export default function InventoryPage() {
                     </div>
                 </div>
 
-                <div className="bg-neutral-900/40 p-2 rounded-2xl border border-white/5 mx-2 sm:mx-0 space-y-2">
+                <div className="bg-card/40 p-2 rounded-2xl border border-border/10 mx-2 sm:mx-0 space-y-2">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="md:col-span-2 relative group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -390,7 +388,7 @@ export default function InventoryPage() {
                                 placeholder="Rastrear por ID, Marca, Modelo, Tipo ou Serial..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full h-12 sm:h-14 bg-transparent border-none rounded-xl pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all text-white"
+                                className="w-full h-12 sm:h-14 bg-transparent border-none rounded-xl pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all text-foreground"
                             />
                         </div>
                         <div className="relative">
@@ -398,11 +396,11 @@ export default function InventoryPage() {
                             <select
                                 value={statusFilter}
                                 onChange={e => setStatusFilter(e.target.value)}
-                                className="w-full h-12 sm:h-14 bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 text-sm appearance-none focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer text-white font-bold"
+                                className="w-full h-12 sm:h-14 bg-foreground/5 border border-border/20 rounded-xl pl-10 pr-4 text-sm appearance-none focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer text-foreground font-bold"
                             >
-                                <option value="ALL" className="bg-neutral-900">Todos os Status</option>
+                                <option value="ALL" className="bg-card">Todos os Status</option>
                                 {Object.entries(statusConfig).map(([val, conf]) => (
-                                    <option key={val} value={val} className="bg-neutral-900">{conf.label}</option>
+                                    <option key={val} value={val} className="bg-card">{conf.label}</option>
                                 ))}
                             </select>
                         </div>
@@ -410,7 +408,7 @@ export default function InventoryPage() {
                             onClick={() => setShowFilters(!showFilters)}
                             className={cn(
                                 "flex items-center justify-center gap-2 h-12 sm:h-14 rounded-xl border transition-all text-xs font-black uppercase tracking-widest",
-                                showFilters ? "bg-primary text-white border-primary" : "bg-white/5 border-white/10 text-muted-foreground"
+                                showFilters ? "bg-primary text-primary-foreground border-primary" : "bg-foreground/5 border-border/20 text-muted-foreground"
                             )}
                         >
                             <Filter className="h-4 w-4" />
@@ -419,9 +417,9 @@ export default function InventoryPage() {
                     </div>
 
                     {showFilters && (
-                        <div className="border-t border-white/5 animate-in slide-in-from-top-2 duration-300">
+                        <div className="border-t border-border/10 animate-in slide-in-from-top-2 duration-300">
                             {/* Filter Management Bar */}
-                            <div className="flex items-center gap-2 px-4 py-3 bg-white/[0.02] border-b border-white/5">
+                            <div className="flex items-center gap-2 px-4 py-3 bg-white/[0.02] border-b border-border/10">
                                 <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mr-2">Configurar Visibilidade:</span>
                                 <div className="flex flex-wrap gap-2">
                                     {ALL_FILTERS.map(f => {
@@ -437,7 +435,7 @@ export default function InventoryPage() {
                                                     "px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-wider transition-all border",
                                                     isVisible
                                                         ? "bg-primary/20 text-primary border-primary/30"
-                                                        : "bg-white/5 text-muted-foreground border-white/10 opacity-50 hover:opacity-100"
+                                                        : "bg-foreground/5 text-muted-foreground border-border/20 opacity-50 hover:opacity-100"
                                                 )}
                                             >
                                                 {isVisible ? <CheckCircle className="inline h-2.5 w-2.5 mr-1" /> : <XCircle className="inline h-2.5 w-2.5 mr-1" />}
@@ -455,11 +453,11 @@ export default function InventoryPage() {
                                         <select
                                             value={brandFilter}
                                             onChange={e => setBrandFilter(e.target.value)}
-                                            className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
+                                            className="w-full h-12 bg-foreground/5 border border-border/20 rounded-xl px-4 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
                                         >
-                                            <option value="ALL" className="bg-neutral-900">Todas as Marcas</option>
+                                            <option value="ALL" className="bg-card">Todas as Marcas</option>
                                             {availableBrands.map(b => (
-                                                <option key={b} value={b} className="bg-neutral-900">{b}</option>
+                                                <option key={b} value={b} className="bg-card">{b}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -470,11 +468,11 @@ export default function InventoryPage() {
                                         <select
                                             value={voltageFilter}
                                             onChange={e => setVoltageFilter(e.target.value)}
-                                            className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
+                                            className="w-full h-12 bg-foreground/5 border border-border/20 rounded-xl px-4 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
                                         >
-                                            <option value="ALL" className="bg-neutral-900">Todas as Voltagens</option>
+                                            <option value="ALL" className="bg-card">Todas as Voltagens</option>
                                             {availableVoltages.map(v => (
-                                                <option key={v} value={v} className="bg-neutral-900">{v}</option>
+                                                <option key={v} value={v} className="bg-card">{v}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -485,11 +483,11 @@ export default function InventoryPage() {
                                         <select
                                             value={typeFilter}
                                             onChange={e => setTypeFilter(e.target.value)}
-                                            className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
+                                            className="w-full h-12 bg-foreground/5 border border-border/20 rounded-xl px-4 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
                                         >
-                                            <option value="ALL" className="bg-neutral-900">Todos os Tipos</option>
+                                            <option value="ALL" className="bg-card">Todos os Tipos</option>
                                             {availableTypes.map(t => (
-                                                <option key={t} value={t} className="bg-neutral-900">{t}</option>
+                                                <option key={t} value={t} className="bg-card">{t}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -500,11 +498,11 @@ export default function InventoryPage() {
                                         <select
                                             value={classFilter}
                                             onChange={e => setClassFilter(e.target.value)}
-                                            className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
+                                            className="w-full h-12 bg-foreground/5 border border-border/20 rounded-xl px-4 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold"
                                         >
-                                            <option value="ALL" className="bg-neutral-900">Todas as Classes</option>
+                                            <option value="ALL" className="bg-card">Todas as Classes</option>
                                             {availableClasses.map(c => (
-                                                <option key={c} value={c} className="bg-neutral-900">{c}</option>
+                                                <option key={c} value={c} className="bg-card">{c}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -516,11 +514,11 @@ export default function InventoryPage() {
                                             <select
                                                 value={gasFilter}
                                                 onChange={e => setGasFilter(e.target.value)}
-                                                className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold flex-1"
+                                                className="w-full h-12 bg-foreground/5 border border-border/20 rounded-xl px-4 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer font-bold flex-1"
                                             >
-                                                <option value="ALL" className="bg-neutral-900">Todos os Gases</option>
+                                                <option value="ALL" className="bg-card">Todos os Gases</option>
                                                 {availableGases.map(g => (
-                                                    <option key={g} value={g} className="bg-neutral-900">{g}</option>
+                                                    <option key={g} value={g} className="bg-card">{g}</option>
                                                 ))}
                                             </select>
                                             <button
@@ -533,7 +531,7 @@ export default function InventoryPage() {
                                                     setStatusFilter("ALL");
                                                     setSearchTerm("");
                                                 }}
-                                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all group/clear"
+                                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-foreground transition-all group/clear"
                                                 title="Limpar Filtros"
                                             >
                                                 <Trash2 className="h-4 w-4 group-active/clear:scale-90 transition-transform" />
@@ -556,11 +554,11 @@ export default function InventoryPage() {
                     </div>
                 ) : products.length > 0 ? (
                     <div className="space-y-4">
-                        <div className="glass-card overflow-hidden border-white/10 shadow-2xl bg-neutral-900/30 p-0 rounded-2xl">
+                        <div className="glass-card overflow-hidden border-border/20 shadow-2xl bg-card/30 p-0 rounded-2xl">
                             <div className="relative group/table" data-scroll="right">
                                 {/* Horizontal Scroll Indicators */}
                                 <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-                                <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                                <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
                                 <div
                                     className="overflow-x-auto scrollbar-hide"
@@ -581,17 +579,17 @@ export default function InventoryPage() {
                                     }}
                                 >
                                     <table className="w-full text-left border-collapse min-w-[700px] sm:min-w-full">
-                                        <thead className="bg-white/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                                        <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
                                             <tr>
                                                 <th className="px-4 py-6 text-center w-12">
                                                     <input
                                                         type="checkbox"
                                                         checked={products.length > 0 && selectedIds.size === products.length}
                                                         onChange={toggleSelectAll}
-                                                        className="h-4 w-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/30 cursor-pointer"
+                                                        className="h-4 w-4 rounded border-border/40 bg-foreground/5 text-primary focus:ring-primary/30 cursor-pointer"
                                                     />
                                                 </th>
-                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Equipamento</th>
+                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Equipamento</th>
                                                 <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Especificações</th>
                                                 <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Rastreabilidade</th>
                                                 <th className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">Status</th>
@@ -617,16 +615,16 @@ export default function InventoryPage() {
                                                                 type="checkbox"
                                                                 checked={isSelected}
                                                                 onChange={() => toggleSelect(p.id)}
-                                                                className="h-4 w-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/30 cursor-pointer"
+                                                                className="h-4 w-4 rounded border-border/40 bg-foreground/5 text-primary focus:ring-primary/30 cursor-pointer"
                                                             />
                                                         </td>
-                                                        <td className="px-4 sm:px-6 py-4 sm:py-6 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                        <td className="px-4 sm:px-6 py-4 sm:py-6 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
                                                             <div className="flex items-center gap-3 sm:gap-4">
-                                                                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-primary/50 group-hover:bg-primary/5 transition-all shadow-inner shrink-0">
+                                                                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-foreground/5 flex items-center justify-center border border-border/20 group-hover:border-primary/50 group-hover:bg-primary/5 transition-all shadow-inner shrink-0">
                                                                     <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                                                                 </div>
                                                                 <div className="min-w-0">
-                                                                    <p className="font-black text-white text-sm sm:text-base group-hover:text-primary transition-colors tracking-tight uppercase italic leading-tight truncate max-w-[120px] sm:max-w-none">{p.brand} {p.model}</p>
+                                                                    <p className="font-black text-foreground text-sm sm:text-base group-hover:text-primary transition-colors tracking-tight uppercase italic leading-tight truncate max-w-[120px] sm:max-w-none">{p.brand} {p.model}</p>
                                                                     <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
                                                                         <span className="text-[8px] sm:text-[9px] font-black text-primary uppercase tracking-widest bg-primary/5 px-1 sm:px-1.5 py-0.5 rounded border border-primary/10 shadow-sm shrink-0">{p.voltage || "BIVOLT"}</span>
                                                                         <span className="text-[8px] sm:text-[9px] font-mono text-muted-foreground/60 uppercase truncate">S/N: {p.internal_serial}</span>
@@ -636,17 +634,17 @@ export default function InventoryPage() {
                                                         </td>
                                                         <td className="px-4 sm:px-6 py-4 sm:py-6 whitespace-nowrap">
                                                             <div className="flex flex-col gap-1">
-                                                                <span className="text-white font-bold text-[10px] sm:text-[11px] uppercase tracking-tight">{p.product_type || "N/A"}</span>
+                                                                <span className="text-foreground font-bold text-[10px] sm:text-[11px] uppercase tracking-tight">{p.product_type || "N/A"}</span>
                                                                 <div className="flex items-center gap-1.5 focus:outline-none">
                                                                     <span className="text-[8px] font-black text-muted-foreground uppercase opacity-40">{p.refrigerant_gas || "S/GÁS"}</span>
-                                                                    <div className="h-1 w-1 rounded-full bg-white/10" />
+                                                                    <div className="h-1 w-1 rounded-full bg-foreground/10" />
                                                                     <span className="text-[8px] font-black text-muted-foreground uppercase opacity-40">{p.market_class || "STAND."}</span>
                                                                 </div>
                                                             </div>
                                                         </td>
                                                         <td className="px-4 sm:px-6 py-4 sm:py-6 whitespace-nowrap">
                                                             <div className="flex flex-col">
-                                                                <span className="text-white font-mono font-bold text-[10px] sm:text-xs">S/N: {p.internal_serial}</span>
+                                                                <span className="text-foreground font-mono font-bold text-[10px] sm:text-xs">S/N: {p.internal_serial}</span>
                                                                 <span className="text-[8px] sm:text-[9px] text-muted-foreground/40 font-mono uppercase tracking-tight">ORIG: {p.original_serial || "N/A"}</span>
                                                             </div>
                                                         </td>
@@ -668,7 +666,7 @@ export default function InventoryPage() {
                                                             <div className="flex items-center justify-end gap-1 sm:gap-2">
                                                                 <button
                                                                     onClick={() => fetchHistory(p)}
-                                                                    className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-muted-foreground hover:bg-primary/20 hover:text-primary transition-all border border-white/10 shadow-inner group/btn"
+                                                                    className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-foreground/5 text-muted-foreground hover:bg-primary/20 hover:text-primary transition-all border border-border/20 shadow-inner group/btn"
                                                                     title="Detalhes e Histórico"
                                                                 >
                                                                     <HistoryIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 group-hover/btn:scale-110 transition-transform" />
@@ -677,14 +675,14 @@ export default function InventoryPage() {
                                                                     <>
                                                                         <button
                                                                             onClick={() => setEditingProduct({ ...p })}
-                                                                            className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-muted-foreground hover:bg-white hover:text-black transition-all border border-white/10 shadow-inner group/btn"
+                                                                            className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-foreground/5 text-muted-foreground hover:bg-white hover:text-black transition-all border border-border/20 shadow-inner group/btn"
                                                                             title="Editar Ativo"
                                                                         >
                                                                             <Edit2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 group-hover/btn:scale-110 transition-transform" />
                                                                         </button>
                                                                         <button
                                                                             onClick={() => setDeletingProduct(p)}
-                                                                            className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-white/5 text-muted-foreground hover:bg-red-500/20 hover:text-red-500 transition-all border border-white/10 shadow-inner group/btn"
+                                                                            className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-foreground/5 text-muted-foreground hover:bg-red-500/20 hover:text-red-500 transition-all border border-border/20 shadow-inner group/btn"
                                                                             title="Remover Registro"
                                                                         >
                                                                             <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 group-hover/btn:scale-110 transition-transform" />
@@ -702,25 +700,25 @@ export default function InventoryPage() {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 border border-white/5 rounded-2xl bg-neutral-900/50 shadow-lg">
+                        <div className="flex items-center justify-between p-4 border border-border/10 rounded-2xl bg-card/50 shadow-lg">
                             <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-                                Mostrando <span className="text-white font-bold">{products.length}</span> de <span className="text-white font-bold">{totalCount}</span> registros
+                                Mostrando <span className="text-foreground font-bold">{products.length}</span> de <span className="text-foreground font-bold">{totalCount}</span> registros
                             </span>
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => setPage(p => Math.max(0, p - 1))}
                                     disabled={page === 0}
-                                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/5"
+                                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-border/10"
                                 >
                                     <ChevronLeft className="h-4 w-4" />
                                 </button>
-                                <span className="text-[10px] font-black text-white px-4 bg-white/5 h-10 flex items-center rounded-xl border border-white/5 uppercase tracking-widest">
+                                <span className="text-[10px] font-black text-foreground px-4 bg-foreground/5 h-10 flex items-center rounded-xl border border-border/10 uppercase tracking-widest">
                                     Pág {page + 1}
                                 </span>
                                 <button
                                     onClick={() => setPage(p => p + 1)}
                                     disabled={(page + 1) * PAGE_SIZE >= totalCount}
-                                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/5"
+                                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-border/10"
                                 >
                                     <ChevronRight className="h-4 w-4" />
                                 </button>
@@ -728,26 +726,26 @@ export default function InventoryPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="h-[50vh] flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-white/5 rounded-[3rem] bg-white/[0.01] relative overflow-hidden group">
+                    <div className="h-[50vh] flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-border/10 rounded-[3rem] bg-white/[0.01] relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <Box className="h-20 w-20 text-white/5 mb-8 animate-bounce transition-all duration-1000" />
-                        <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Nenhum Registro Localizado</h3>
+                        <Box className="h-20 w-20 text-foreground/5 mb-8 animate-bounce transition-all duration-1000" />
+                        <h3 className="text-3xl font-black uppercase tracking-tighter text-foreground">Nenhum Registro Localizado</h3>
                         <p className="text-muted-foreground italic text-sm mt-3 max-w-sm mx-auto leading-relaxed">
                             {searchTerm ? "O filtro atual não retornou resultados aproximados. Tente simplificar sua pesquisa." : "Sua base de inventário está vazia. Inicie cadastrando novos equipamentos."}
                         </p>
                     </div>
                 )}                          {/* Modal de Edição */}
                 {editingProduct && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/95 backdrop-blur-2xl animate-in fade-in duration-300">
-                        <div className="glass-card w-full max-w-xl p-6 sm:p-10 border-white/10 shadow-4xl space-y-6 sm:space-y-10 bg-neutral-900 relative overflow-y-auto max-h-[95vh]">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-background/95 backdrop-blur-2xl animate-in fade-in duration-300">
+                        <div className="glass-card w-full max-w-xl p-6 sm:p-10 border-border/20 shadow-4xl space-y-6 sm:space-y-10 bg-card relative overflow-y-auto max-h-[95vh]">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
 
                             <div className="flex justify-between items-start relative z-10">
                                 <div>
-                                    <h2 className="text-4xl font-black uppercase tracking-tighter text-white mb-1">Atualizar Ativo</h2>
+                                    <h2 className="text-4xl font-black uppercase tracking-tighter text-foreground mb-1">Atualizar Ativo</h2>
                                     <p className="text-[10px] font-black text-primary tracking-[0.4em] uppercase opacity-80">{editingProduct.internal_serial}</p>
                                 </div>
-                                <button onClick={() => setEditingProduct(null)} className="h-12 w-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-neutral-800 transition-all border border-white/10 text-white shadow-lg"><X className="h-6 w-6" /></button>
+                                <button onClick={() => setEditingProduct(null)} className="h-12 w-12 rounded-2xl bg-foreground/5 flex items-center justify-center hover:bg-neutral-800 transition-all border border-border/20 text-foreground shadow-lg"><X className="h-6 w-6" /></button>
                             </div>
 
                             <form onSubmit={handleUpdate} className="space-y-8 relative z-10">
@@ -762,7 +760,7 @@ export default function InventoryPage() {
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Fabricante / Marca</label>
                                                 <input
                                                     required
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
                                                     value={editingProduct.brand || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, brand: e.target.value })}
                                                 />
@@ -771,7 +769,7 @@ export default function InventoryPage() {
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Modelo Comercial</label>
                                                 <input
                                                     required
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
                                                     value={editingProduct.model || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, model: e.target.value })}
                                                 />
@@ -780,7 +778,7 @@ export default function InventoryPage() {
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Serial Original</label>
                                                 <input
                                                     required
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-primary font-mono font-black focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none transition-all tracking-widest text-sm"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-primary font-mono font-black focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none transition-all tracking-widest text-sm"
                                                     value={editingProduct.original_serial || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, original_serial: e.target.value })}
                                                 />
@@ -788,7 +786,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">PNC / ML</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
                                                     value={editingProduct.pnc_ml || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, pnc_ml: e.target.value })}
                                                 />
@@ -796,7 +794,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Código Comercial</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
                                                     value={editingProduct.commercial_code || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, commercial_code: e.target.value })}
                                                 />
@@ -804,7 +802,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Tipo de Produto</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
                                                     value={editingProduct.product_type || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, product_type: e.target.value })}
                                                 />
@@ -812,7 +810,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Cor</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
                                                     value={editingProduct.color || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, color: e.target.value })}
                                                 />
@@ -820,7 +818,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Classe / Mercado</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
                                                     value={editingProduct.market_class || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, market_class: e.target.value })}
                                                 />
@@ -829,7 +827,7 @@ export default function InventoryPage() {
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Fabricação</label>
                                                 <input
                                                     type="date"
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
                                                     value={editingProduct.manufacturing_date ? new Date(editingProduct.manufacturing_date).toISOString().split('T')[0] : ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, manufacturing_date: e.target.value })}
                                                 />
@@ -846,7 +844,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Voltagem</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.voltage || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, voltage: e.target.value })}
                                                 />
@@ -854,7 +852,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Corrente (A)</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.electric_current || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, electric_current: e.target.value })}
                                                 />
@@ -862,7 +860,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Frequência</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.frequency || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, frequency: e.target.value })}
                                                 />
@@ -870,7 +868,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Potência Degelo</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.defrost_power || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, defrost_power: e.target.value })}
                                                 />
@@ -887,7 +885,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Gás</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.refrigerant_gas || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, refrigerant_gas: e.target.value })}
                                                 />
@@ -895,7 +893,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Carga Gás</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.gas_charge || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, gas_charge: e.target.value })}
                                                 />
@@ -903,7 +901,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Compressor</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.compressor || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, compressor: e.target.value })}
                                                 />
@@ -911,7 +909,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Vol. Freezer</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.volume_freezer || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, volume_freezer: e.target.value })}
                                                 />
@@ -919,7 +917,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Vol. Refrig.</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.volume_refrigerator || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, volume_refrigerator: e.target.value })}
                                                 />
@@ -927,7 +925,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Vol. Total</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.volume_total || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, volume_total: e.target.value })}
                                                 />
@@ -935,7 +933,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Capac. Congel.</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.freezing_capacity || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, freezing_capacity: e.target.value })}
                                                 />
@@ -943,7 +941,7 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Pressão (H/L)</label>
                                                 <input
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs"
                                                     value={editingProduct.pressure_high_low || ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, pressure_high_low: e.target.value })}
                                                 />
@@ -951,12 +949,12 @@ export default function InventoryPage() {
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1">Status Ativo</label>
                                                 <select
-                                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs appearance-none cursor-pointer"
+                                                    className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-xs appearance-none cursor-pointer"
                                                     value={editingProduct.status}
                                                     onChange={e => setEditingProduct({ ...editingProduct, status: e.target.value as any })}
                                                 >
                                                     {Object.entries(statusConfig).map(([val, conf]) => (
-                                                        <option key={val} value={val} className="bg-neutral-900">{conf.label}</option>
+                                                        <option key={val} value={val} className="bg-card">{conf.label}</option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -968,13 +966,13 @@ export default function InventoryPage() {
                                     <button
                                         type="button"
                                         onClick={() => setEditingProduct(null)}
-                                        className="h-14 rounded-2xl border border-white/10 text-muted-foreground font-black uppercase tracking-widest text-[10px] hover:bg-white/5 hover:text-white transition-all shadow-lg shadow-black/20"
+                                        className="h-14 rounded-2xl border border-border/20 text-muted-foreground font-black uppercase tracking-widest text-[10px] hover:bg-foreground/5 hover:text-foreground transition-all shadow-lg shadow-black/20"
                                     >
                                         Cancelar
                                     </button>
                                     <button
                                         disabled={isSaving}
-                                        className="h-14 rounded-2xl bg-primary text-white hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] transition-all disabled:opacity-50 shadow-xl shadow-primary/20 border-t border-white/20 flex items-center justify-center gap-3 active:scale-95"
+                                        className="h-14 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] transition-all disabled:opacity-50 shadow-xl shadow-primary/20 border-t border-border/40 flex items-center justify-center gap-3 active:scale-95"
                                     >
                                         {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
                                         Atualizar Ativo
@@ -987,28 +985,28 @@ export default function InventoryPage() {
 
                 {/* Modal de Exclusão */}
                 {deletingProduct && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-6 bg-black/98 backdrop-blur-3xl animate-in zoom-in-95 duration-300">
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-6 bg-background/98 backdrop-blur-3xl animate-in zoom-in-95 duration-300">
                         <div className="glass-card w-full max-w-md p-8 sm:p-12 border-red-500/30 shadow-4xl text-center space-y-8 sm:space-y-10 bg-neutral-950 relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
                             <div className="h-24 w-24 rounded-3xl bg-red-500/10 flex items-center justify-center mx-auto ring-8 ring-red-500/5 rotate-12 group-hover:rotate-0 transition-transform"><AlertCircle className="h-12 w-12 text-red-500" /></div>
                             <div className="space-y-4">
-                                <h2 className="text-3xl font-black uppercase tracking-tighter text-white">Excluir Permanente?</h2>
+                                <h2 className="text-3xl font-black uppercase tracking-tighter text-foreground">Excluir Permanente?</h2>
                                 <p className="text-sm text-muted-foreground italic leading-relaxed px-4 opacity-70">
-                                    Esta ação é irreversível e irá apagar todos os vínculos e logs do ativo <span className="text-white font-black underline decoration-red-500/50 underline-offset-4">{deletingProduct.internal_serial}</span>.
+                                    Esta ação é irreversível e irá apagar todos os vínculos e logs do ativo <span className="text-foreground font-black underline decoration-red-500/50 underline-offset-4">{deletingProduct.internal_serial}</span>.
                                 </p>
                             </div>
                             <div className="flex flex-col gap-4">
                                 <button
                                     onClick={handleDelete}
                                     disabled={isSaving}
-                                    className="h-16 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-red-500/30 transition-all active:scale-95 flex items-center justify-center gap-3"
+                                    className="h-16 rounded-2xl bg-red-500 hover:bg-red-600 text-foreground font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-red-500/30 transition-all active:scale-95 flex items-center justify-center gap-3"
                                 >
                                     {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5" />}
                                     Confirmar Destruição
                                 </button>
                                 <button
                                     onClick={() => setDeletingProduct(null)}
-                                    className="h-12 text-muted-foreground hover:text-white font-black text-[10px] uppercase transition-all tracking-[0.3em]"
+                                    className="h-12 text-muted-foreground hover:text-foreground font-black text-[10px] uppercase transition-all tracking-[0.3em]"
                                 >
                                     Manter Registro Seguro
                                 </button>
@@ -1019,8 +1017,8 @@ export default function InventoryPage() {
 
                 {/* Detalhes do Produto & Histórico */}
                 {selectedProduct && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/95 backdrop-blur-2xl animate-in fade-in duration-300">
-                        <div className="glass-card w-full max-w-5xl p-6 sm:p-10 border-white/10 shadow-5xl max-h-[95vh] flex flex-col bg-neutral-900 absolute overflow-hidden">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/95 backdrop-blur-2xl animate-in fade-in duration-300">
+                        <div className="glass-card w-full max-w-5xl p-6 sm:p-10 border-border/20 shadow-5xl max-h-[95vh] flex flex-col bg-card absolute overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
 
                             <div className="flex justify-between items-start mb-8 relative z-10">
@@ -1029,14 +1027,14 @@ export default function InventoryPage() {
                                         <Box className="h-6 w-6 sm:h-9 sm:w-9" />
                                     </div>
                                     <div>
-                                        <h2 className="text-2xl sm:text-4xl font-black uppercase tracking-tighter text-white leading-none mb-1">
+                                        <h2 className="text-2xl sm:text-4xl font-black uppercase tracking-tighter text-foreground leading-none mb-1">
                                             {selectedProduct.brand} {selectedProduct.model}
                                         </h2>
                                         <div className="flex items-center gap-3">
                                             <p className="text-[9px] sm:text-[10px] font-black text-primary tracking-[0.3em] uppercase opacity-70">Rastreabilidade Terminal • {selectedProduct.internal_serial}</p>
                                             <div className={cn(
                                                 "px-2 py-0.5 rounded text-[8px] font-bold uppercase border",
-                                                statusConfig[selectedProduct.status as keyof typeof statusConfig]?.color || "border-white/10 text-white"
+                                                statusConfig[selectedProduct.status as keyof typeof statusConfig]?.color || "border-border/20 text-foreground"
                                             )}>
                                                 {selectedProduct.status}
                                             </div>
@@ -1050,13 +1048,13 @@ export default function InventoryPage() {
                                                 onClick={() => {
                                                     setEditingProduct({ ...selectedProduct });
                                                 }}
-                                                className="h-10 px-4 rounded-xl bg-white/5 text-xs font-bold hover:bg-white/10 transition-all border border-white/10 text-white"
+                                                className="h-10 px-4 rounded-xl bg-foreground/5 text-xs font-bold hover:bg-foreground/10 transition-all border border-border/20 text-foreground"
                                             >
                                                 Editar Ativo
                                             </button>
                                         </div>
                                     )}
-                                    <button onClick={() => setSelectedProduct(null)} className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-neutral-800 transition-all border border-white/10 text-white shadow-lg">
+                                    <button onClick={() => setSelectedProduct(null)} className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-foreground/5 flex items-center justify-center hover:bg-neutral-800 transition-all border border-border/20 text-foreground shadow-lg">
                                         <X className="h-5 w-5 sm:h-6 sm:w-6" />
                                     </button>
                                 </div>
@@ -1080,7 +1078,7 @@ export default function InventoryPage() {
 
                                                 return (
                                                     <div
-                                                        className="group relative w-full max-w-md aspect-[3/4] rounded-3xl bg-black/40 border border-white/10 overflow-hidden cursor-zoom-in active:scale-95 transition-all shadow-2xl"
+                                                        className="group relative w-full max-w-md aspect-[3/4] rounded-3xl bg-card/40 border border-border/20 overflow-hidden cursor-zoom-in active:scale-95 transition-all shadow-2xl"
                                                         onClick={() => photo && setFullImageUrl(photo)}
                                                     >
                                                         {photo ? (
@@ -1092,7 +1090,7 @@ export default function InventoryPage() {
                                                                 />
                                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
                                                                     <span className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-2">{label}</span>
-                                                                    <p className="text-[10px] text-white/60 font-medium italic">Clique para zoom de alta definição</p>
+                                                                    <p className="text-[10px] text-foreground/60 font-medium italic">Clique para zoom de alta definição</p>
                                                                 </div>
                                                             </>
                                                         ) : (
@@ -1128,16 +1126,16 @@ export default function InventoryPage() {
                                                 { label: "PNC / ML", value: selectedProduct.pnc_ml, icon: Barcode },
                                                 { label: "Fabricação", value: selectedProduct.manufacturing_date ? new Date(selectedProduct.manufacturing_date).toLocaleDateString() : "-", icon: ChevronRight },
                                             ].map((spec, i) => (
-                                                <div key={i} className="bg-white/[0.03] p-3 rounded-xl border border-white/5 group hover:border-primary/20 transition-all">
+                                                <div key={i} className="bg-white/[0.03] p-3 rounded-xl border border-border/10 group hover:border-primary/20 transition-all">
                                                     <span className="text-[8px] font-black text-muted-foreground uppercase block mb-1">{spec.label}</span>
-                                                    <span className="text-[10px] font-bold text-white uppercase truncate">{spec.value || "N/A"}</span>
+                                                    <span className="text-[10px] font-bold text-foreground uppercase truncate">{spec.value || "N/A"}</span>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
 
                                     {/* Coluna 2: Último Laudo Técnico / Checklist */}
-                                    <div className="space-y-6 lg:border-x lg:border-white/5 lg:px-8">
+                                    <div className="space-y-6 lg:border-x lg:border-border/10 lg:px-8">
                                         <div className="flex items-center gap-2 mb-4">
                                             <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                                             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Resultados de Triagem</h3>
@@ -1148,7 +1146,7 @@ export default function InventoryPage() {
                                             const techLog = history.find(l => l.new_status === 'TECNICO' || l.data?.checklist);
                                             if (!techLog || !techLog.data?.checklist) {
                                                 return (
-                                                    <div className="h-32 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl opacity-40">
+                                                    <div className="h-32 flex flex-col items-center justify-center border border-dashed border-border/20 rounded-2xl opacity-40">
                                                         <ClipboardList className="h-6 w-6 mb-2" />
                                                         <span className="text-[9px] font-bold uppercase tracking-wider text-center px-4">Sem dados de checklist disponíveis</span>
                                                     </div>
@@ -1176,7 +1174,7 @@ export default function InventoryPage() {
                                                         ))}
                                                     </div>
                                                     {techLog.data?.observations && (
-                                                        <div className="mt-4 p-4 rounded-xl bg-neutral-950 border border-white/5 italic">
+                                                        <div className="mt-4 p-4 rounded-xl bg-neutral-950 border border-border/10 italic">
                                                             <p className="text-[10px] text-muted-foreground leading-relaxed">
                                                                 &ldquo;{techLog.data.observations}&rdquo;
                                                             </p>
@@ -1194,16 +1192,16 @@ export default function InventoryPage() {
                                             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Histórico de Fluxo</h3>
                                         </div>
 
-                                        <div className="relative pl-6 border-l border-white/10 space-y-8">
+                                        <div className="relative pl-6 border-l border-border/20 space-y-8">
                                             {history.map((log, i) => (
                                                 <div key={log.id} className="relative group/log">
                                                     <div className={cn(
-                                                        "absolute -left-[1.95rem] top-1 h-3 w-3 rounded-full border-2 bg-neutral-900 z-10 transition-all group-hover/log:scale-125",
-                                                        i === 0 ? "border-primary shadow-[0_0_8px_rgba(14,165,233,0.5)]" : "border-white/20"
+                                                        "absolute -left-[1.95rem] top-1 h-3 w-3 rounded-full border-2 bg-card z-10 transition-all group-hover/log:scale-125",
+                                                        i === 0 ? "border-primary shadow-[0_0_8px_rgba(14,165,233,0.5)]" : "border-border/40"
                                                     )} />
                                                     <div className="space-y-1">
                                                         <div className="flex justify-between gap-4">
-                                                            <span className="text-[10px] font-black text-white uppercase tracking-tight truncate">
+                                                            <span className="text-[10px] font-black text-foreground uppercase tracking-tight truncate">
                                                                 {i === 0 ? "Status Atual: " : "Alterado para: "}
                                                                 <span className="text-primary">{log.new_status}</span>
                                                             </span>
@@ -1235,12 +1233,12 @@ export default function InventoryPage() {
 
             {/* Photo Zoom Modal */}
             {fullImageUrl && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-2xl animate-in fade-in duration-300">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/95 backdrop-blur-2xl animate-in fade-in duration-300">
                     <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
-                        <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-2xl p-1.5 backdrop-blur-xl">
+                        <div className="flex items-center gap-1 bg-foreground/5 border border-border/20 rounded-2xl p-1.5 backdrop-blur-xl">
                             <button
                                 onClick={() => setZoom(prev => Math.min(prev + 0.5, 5))}
-                                className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white transition-all"
+                                className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-foreground/10 text-foreground transition-all"
                                 title="Zoom In"
                             >
                                 <ZoomIn className="h-5 w-5" />
@@ -1250,14 +1248,14 @@ export default function InventoryPage() {
                                     setZoom(1);
                                     setPosition({ x: 0, y: 0 });
                                 }}
-                                className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white transition-all"
+                                className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-foreground/10 text-foreground transition-all"
                                 title="Reset"
                             >
                                 <RotateCcw className="h-5 w-5" />
                             </button>
                             <button
                                 onClick={() => setZoom(prev => Math.max(prev - 0.5, 1))}
-                                className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-white transition-all"
+                                className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-foreground/10 text-foreground transition-all"
                                 title="Zoom Out"
                             >
                                 <ZoomOut className="h-5 w-5" />
@@ -1269,7 +1267,7 @@ export default function InventoryPage() {
                                 setZoom(1);
                                 setPosition({ x: 0, y: 0 });
                             }}
-                            className="h-12 w-12 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-lg"
+                            className="h-12 w-12 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-foreground transition-all shadow-lg"
                         >
                             <X className="h-6 w-6" />
                         </button>
@@ -1306,9 +1304,9 @@ export default function InventoryPage() {
                         />
 
                         {zoom === 1 && (
-                            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-full backdrop-blur-md opacity-50">
-                                <Move className="h-4 w-4 text-white" />
-                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Use o scroll ou botões para analisar detalhes</span>
+                            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-2 px-6 py-3 bg-foreground/5 border border-border/20 rounded-full backdrop-blur-md opacity-50">
+                                <Move className="h-4 w-4 text-foreground" />
+                                <span className="text-[10px] font-black text-foreground uppercase tracking-widest">Use o scroll ou botões para analisar detalhes</span>
                             </div>
                         )}
                     </div>

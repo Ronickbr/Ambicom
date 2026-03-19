@@ -179,14 +179,14 @@ export default function ApprovalsPage() {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
                     <div>
-                        <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-white uppercase italic">Central de <span className="text-primary not-italic font-light">Revisão</span></h1>
+                        <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-foreground uppercase italic">Central de <span className="text-primary not-italic font-light">Revisão</span></h1>
                         <p className="text-muted-foreground font-medium text-[10px] sm:text-sm mt-1 opacity-70 italic px-1">Validação de qualidade, triagem técnica e liberação de ativos.</p>
                     </div>
-                    <div className="glass-card flex items-center gap-4 py-3 px-6 sm:py-4 sm:px-8 border-white/5 bg-neutral-900/50 shadow-inner w-full md:w-auto">
+                    <div className="glass-card flex items-center gap-4 py-3 px-6 sm:py-4 sm:px-8 border-border/10 bg-card/50 shadow-inner w-full md:w-auto">
                         <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20 shadow-sm shrink-0"><Clock className="h-5 w-5" /></div>
                         <div>
                             <div className="text-[9px] uppercase font-black text-muted-foreground tracking-widest leading-none mb-1">Fila Atual</div>
-                            <div className="text-base sm:text-lg font-black text-white italic tracking-widest">{products.length} <span className="text-[10px] not-italic font-medium opacity-50">itens pendentes</span></div>
+                            <div className="text-base sm:text-lg font-black text-foreground italic tracking-widest">{products.length} <span className="text-[10px] not-italic font-medium opacity-50">itens pendentes</span></div>
                         </div>
                     </div>
                 </div>
@@ -200,17 +200,17 @@ export default function ApprovalsPage() {
                             placeholder="Buscar por Modelo, Serial ou Marca..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full rounded-2xl border border-white/10 bg-neutral-900/50 py-3 sm:py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all text-white shadow-inner backdrop-blur-sm placeholder:text-muted-foreground/30 font-medium"
+                            className="w-full rounded-2xl border border-border/20 bg-card/50 py-3 sm:py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all text-foreground shadow-inner backdrop-blur-sm placeholder:text-muted-foreground/30 font-medium"
                         />
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
-                        <button className="flex-1 sm:flex-none px-4 sm:px-8 h-12 sm:h-14 bg-neutral-900/50 rounded-2xl border border-white/10 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-white flex items-center justify-center gap-2 sm:gap-3 hover:bg-white/5 transition-all shadow-inner whitespace-nowrap">
+                        <button className="flex-1 sm:flex-none px-4 sm:px-8 h-12 sm:h-14 bg-card/50 rounded-2xl border border-border/20 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-foreground flex items-center justify-center gap-2 sm:gap-3 hover:bg-foreground/5 transition-all shadow-inner whitespace-nowrap">
                             <Filter className="h-4 w-4 text-primary" />
                             Marca
                         </button>
                         <button
                             onClick={() => toast.info("Histórico em desenvolvimento")}
-                            className="flex-1 sm:flex-none px-4 sm:px-8 h-12 sm:h-14 bg-neutral-900/50 rounded-2xl border border-white/10 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-white flex items-center justify-center gap-2 sm:gap-3 hover:bg-white/5 transition-all shadow-inner whitespace-nowrap"
+                            className="flex-1 sm:flex-none px-4 sm:px-8 h-12 sm:h-14 bg-card/50 rounded-2xl border border-border/20 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-foreground flex items-center justify-center gap-2 sm:gap-3 hover:bg-foreground/5 transition-all shadow-inner whitespace-nowrap"
                         >
                             <HistoryIcon className="h-3.5 w-3.5 text-primary" />
                             Histórico
@@ -222,10 +222,10 @@ export default function ApprovalsPage() {
                     <div className="relative group/table" data-scroll="right">
                         {/* Horizontal Scroll Indicators */}
                         <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-neutral-900/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
                         <div
-                            className="overflow-x-auto scrollbar-hide glass-card border-white/5 bg-neutral-900/30 shadow-2xl rounded-2xl"
+                            className="overflow-x-auto scrollbar-hide glass-card border-border/10 bg-card/30 shadow-2xl rounded-2xl"
                             onScroll={(e) => {
                                 const target = e.currentTarget;
                                 const group = target.parentElement;
@@ -243,9 +243,9 @@ export default function ApprovalsPage() {
                             }}
                         >
                             <table className="w-full text-left border-collapse min-w-[900px] sm:min-w-full">
-                                <thead className="bg-white/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
+                                <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
                                     <tr>
-                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-neutral-900/95 z-40 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Serial / Identificação</th>
+                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Serial / Identificação</th>
                                         <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Produto / Modelo</th>
                                         <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Marca / Fabricante</th>
                                         <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Status Técnico</th>
@@ -265,18 +265,18 @@ export default function ApprovalsPage() {
                                                 onClick={() => setSelectedProduct(product)}
                                                 className="group hover:bg-white/[0.03] transition-colors cursor-pointer"
                                             >
-                                                <td className="px-4 sm:px-6 py-6 whitespace-nowrap sticky left-0 bg-neutral-900/95 group-hover:bg-neutral-800/95 transition-colors z-30 border-r border-white/5 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
-                                                    <span className="font-mono text-[10px] sm:text-[11px] bg-white/5 px-2.5 py-1.5 rounded-xl text-primary border border-primary/10 group-hover:bg-primary group-hover:text-white transition-all uppercase tracking-widest font-black">
+                                                <td className="px-4 sm:px-6 py-6 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                    <span className="font-mono text-[10px] sm:text-[11px] bg-foreground/5 px-2.5 py-1.5 rounded-xl text-primary border border-primary/10 group-hover:bg-primary group-hover:text-primary-foreground transition-all uppercase tracking-widest font-black">
                                                         {product.internal_serial}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 sm:px-6 py-6 whitespace-nowrap">
-                                                    <span className="font-black text-[13px] sm:text-base text-white uppercase italic tracking-tight group-hover:text-primary transition-colors">
+                                                    <span className="font-black text-[13px] sm:text-base text-foreground uppercase italic tracking-tight group-hover:text-primary transition-colors">
                                                         {product.model}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 sm:px-6 py-6 whitespace-nowrap">
-                                                    <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] group-hover:text-white">
+                                                    <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] group-hover:text-foreground">
                                                         {product.brand}
                                                     </span>
                                                 </td>
@@ -286,7 +286,7 @@ export default function ApprovalsPage() {
                                                             <span className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1.5">
                                                                 {checkedCount}/{itemsCount} OK
                                                             </span>
-                                                            <div className="h-1 sm:h-1.5 w-full bg-black/40 rounded-full overflow-hidden p-[1px] border border-white/5">
+                                                            <div className="h-1 sm:h-1.5 w-full bg-card/40 rounded-full overflow-hidden p-[1px] border border-border/10">
                                                                 <div
                                                                     className={cn(
                                                                         "h-full rounded-full transition-all duration-1000",
@@ -304,7 +304,7 @@ export default function ApprovalsPage() {
                                                         <button
                                                             onClick={() => handleAction(product.id, "APPROVE")}
                                                             disabled={!!isProcessing}
-                                                            className="h-9 sm:h-11 px-4 sm:px-6 bg-white text-black hover:bg-primary hover:text-white rounded-lg sm:rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-lg group/btn overflow-hidden relative min-w-[100px] sm:min-w-[120px]"
+                                                            className="h-9 sm:h-11 px-4 sm:px-6 bg-white text-black hover:bg-primary hover:text-primary-foreground rounded-lg sm:rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-lg group/btn overflow-hidden relative min-w-[100px] sm:min-w-[120px]"
                                                         >
                                                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
                                                             {isProcessing === product.id ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" /> : <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4" />}
@@ -313,7 +313,7 @@ export default function ApprovalsPage() {
                                                         <button
                                                             onClick={() => handleAction(product.id, "REJECT")}
                                                             disabled={!!isProcessing}
-                                                            className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg sm:rounded-xl bg-red-500/10 text-red-500 border border-red-500/10 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center active:scale-95 group/reject"
+                                                            className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg sm:rounded-xl bg-red-500/10 text-red-500 border border-red-500/10 hover:bg-red-500 hover:text-foreground transition-all flex items-center justify-center active:scale-95 group/reject"
                                                             title="Rejeitar"
                                                         >
                                                             <XCircle className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -328,12 +328,12 @@ export default function ApprovalsPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="glass-card flex flex-col items-center justify-center py-32 text-center border-dashed border border-white/5 bg-neutral-900/20">
-                        <div className="h-24 w-24 rounded-full bg-white/5 flex items-center justify-center mb-8 relative">
+                    <div className="glass-card flex flex-col items-center justify-center py-32 text-center border-dashed border border-border/10 bg-card/20">
+                        <div className="h-24 w-24 rounded-full bg-foreground/5 flex items-center justify-center mb-8 relative">
                             <FileSearch className="h-10 w-10 text-muted-foreground/20" />
                             <div className="absolute inset-0 rounded-full border-2 border-primary/10 border-t-primary animate-spin" style={{ animationDuration: '8s' }} />
                         </div>
-                        <h3 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter">Fila de Revisão Limpa</h3>
+                        <h3 className="text-3xl font-black text-foreground mb-3 uppercase tracking-tighter">Fila de Revisão Limpa</h3>
                         <p className="text-muted-foreground max-w-sm mx-auto text-sm leading-relaxed italic opacity-70">
                             Não existem novas inspeções técnicas pendentes.
                         </p>
@@ -344,11 +344,11 @@ export default function ApprovalsPage() {
             {/* Detailed Product Modal */}
             {selectedProduct && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)} />
-                    <div className="glass-card w-full max-w-5xl bg-[#0a0a0a] border border-white/10 max-h-[95vh] overflow-y-auto relative z-10 animate-in zoom-in-95 duration-200">
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)} />
+                    <div className="glass-card w-full max-w-5xl bg-[#0a0a0a] border border-border/20 max-h-[95vh] overflow-y-auto relative z-10 animate-in zoom-in-95 duration-200">
                         <div className="p-4 sm:p-10 space-y-6 sm:space-y-8">
                             {/* Modal Header */}
-                            <div className="flex justify-between items-start gap-4 sm:gap-6 border-b border-white/5 pb-6 sm:pb-8">
+                            <div className="flex justify-between items-start gap-4 sm:gap-6 border-b border-border/10 pb-6 sm:pb-8">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-3">
                                         <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
@@ -356,16 +356,16 @@ export default function ApprovalsPage() {
                                         </div>
                                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Detalhamento Técnico</span>
                                     </div>
-                                    <h2 className="text-2xl sm:text-4xl font-black text-white uppercase italic tracking-tighter">
+                                    <h2 className="text-2xl sm:text-4xl font-black text-foreground uppercase italic tracking-tighter">
                                         {selectedProduct.model}
                                     </h2>
                                     <p className="text-muted-foreground text-xs uppercase font-black tracking-widest">
-                                        {selectedProduct.brand} • <span className="text-white/60 font-mono">{selectedProduct.internal_serial}</span>
+                                        {selectedProduct.brand} • <span className="text-foreground/60 font-mono">{selectedProduct.internal_serial}</span>
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setSelectedProduct(null)}
-                                    className="h-10 w-10 rounded-full border border-white/10 flex items-center justify-center text-muted-foreground hover:bg-white/5 hover:text-white transition-all"
+                                    className="h-10 w-10 rounded-full border border-border/20 flex items-center justify-center text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-all"
                                 >
                                     <XCircle className="h-5 w-5" />
                                 </button>
@@ -387,7 +387,7 @@ export default function ApprovalsPage() {
 
                                         return (
                                             <div
-                                                className="group relative w-full max-w-md aspect-[3/4] rounded-3xl bg-black/40 border border-white/10 overflow-hidden cursor-zoom-in active:scale-95 transition-all shadow-2xl"
+                                                className="group relative w-full max-w-md aspect-[3/4] rounded-3xl bg-card/40 border border-border/20 overflow-hidden cursor-zoom-in active:scale-95 transition-all shadow-2xl"
                                                 onClick={() => photo && setFullImageUrl(photo)}
                                             >
                                                 {photo ? (
@@ -399,7 +399,7 @@ export default function ApprovalsPage() {
                                                         />
                                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
                                                             <span className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-2">{label}</span>
-                                                            <p className="text-[10px] text-white/60 font-medium italic">Clique para zoom de alta definição</p>
+                                                            <p className="text-[10px] text-foreground/60 font-medium italic">Clique para zoom de alta definição</p>
                                                         </div>
                                                     </>
                                                 ) : (
@@ -432,8 +432,8 @@ export default function ApprovalsPage() {
                                             }
 
                                             return Object.entries(checklist).map(([id, ok]) => (
-                                                <div key={id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                                                    <span className="text-sm font-bold text-white/80 uppercase italic tracking-tight">{labels[id] || id}</span>
+                                                <div key={id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-border/10">
+                                                    <span className="text-sm font-bold text-foreground/80 uppercase italic tracking-tight">{labels[id] || id}</span>
                                                     <div className={cn(
                                                         "h-6 w-12 rounded-full flex items-center justify-center text-[8px] font-black uppercase tracking-widest border",
                                                         ok
@@ -464,9 +464,9 @@ export default function ApprovalsPage() {
                                             { label: "PNC/ML", value: selectedProduct.pnc_ml },
                                             { label: "Fabricação", value: selectedProduct.manufacturing_date },
                                         ].filter(item => item.value).map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center py-2 px-4 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors">
+                                            <div key={idx} className="flex justify-between items-center py-2 px-4 border-b border-border/10 last:border-0 hover:bg-white/[0.02] transition-colors">
                                                 <span className="text-[10px] font-black uppercase text-muted-foreground/60">{item.label}</span>
-                                                <span className="text-xs font-bold text-white">{item.value}</span>
+                                                <span className="text-xs font-bold text-foreground">{item.value}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -478,7 +478,7 @@ export default function ApprovalsPage() {
                                             <Search className="h-4 w-4 text-primary" />
                                             <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Observações</h3>
                                         </div>
-                                        <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/5 text-sm text-white/80 leading-relaxed italic min-h-[160px]">
+                                        <div className="p-6 rounded-2xl bg-white/[0.03] border border-border/10 text-sm text-foreground/80 leading-relaxed italic min-h-[160px]">
                                             {selectedProduct.product_logs?.find(l => l.data?.observations)?.data?.observations || "Nenhuma observação técnica registrada."}
                                         </div>
                                     </div>
@@ -486,7 +486,7 @@ export default function ApprovalsPage() {
                                     <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
                                         <div>
                                             <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Finalizado em</p>
-                                            <p className="text-sm font-black text-white italic">
+                                            <p className="text-sm font-black text-foreground italic">
                                                 {(() => {
                                                     const dateStr = selectedProduct.product_logs?.find(l => l.data?.technician_timestamp)?.data?.technician_timestamp;
                                                     return dateStr ? new Date(dateStr).toLocaleString("pt-BR") : "Data não registrada";
@@ -499,11 +499,11 @@ export default function ApprovalsPage() {
                             </div>
 
                             {/* Modal Actions */}
-                            <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row gap-4">
+                            <div className="pt-8 border-t border-border/10 flex flex-col sm:flex-row gap-4">
                                 <button
                                     onClick={() => handleAction(selectedProduct.id, "APPROVE")}
                                     disabled={!!isProcessing}
-                                    className="flex-1 h-16 bg-white text-black hover:bg-primary hover:text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-4 active:scale-95 shadow-xl relative overflow-hidden group/btn"
+                                    className="flex-1 h-16 bg-white text-black hover:bg-primary hover:text-primary-foreground rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-4 active:scale-95 shadow-xl relative overflow-hidden group/btn"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
                                     {isProcessing === selectedProduct.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
@@ -512,7 +512,7 @@ export default function ApprovalsPage() {
                                 <button
                                     onClick={() => handleAction(selectedProduct.id, "REJECT")}
                                     disabled={!!isProcessing}
-                                    className="px-10 h-16 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-4 font-black text-xs uppercase tracking-[0.2em] active:scale-95"
+                                    className="px-10 h-16 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-foreground transition-all flex items-center justify-center gap-4 font-black text-xs uppercase tracking-[0.2em] active:scale-95"
                                 >
                                     <XCircle className="h-6 w-6" />
                                     Rejeitar
@@ -524,10 +524,10 @@ export default function ApprovalsPage() {
             )}
             {/* Full Image Zoom Modal */}
             {fullImageUrl && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-xl p-4 animate-in fade-in duration-200">
                     <button
                         onClick={() => setFullImageUrl(null)}
-                        className="absolute top-6 right-6 h-12 w-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all z-10"
+                        className="absolute top-6 right-6 h-12 w-12 rounded-full bg-foreground/10 flex items-center justify-center text-foreground hover:bg-foreground/20 transition-all z-10"
                     >
                         <XCircle className="h-6 w-6" />
                     </button>

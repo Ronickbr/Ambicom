@@ -77,7 +77,7 @@ export function useScan() {
     setOcrLoading(true)
     try {
       const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || import.meta.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
-      const model = import.meta.env.VITE_OPENROUTER_MODEL || import.meta.env.NEXT_PUBLIC_OPENROUTER_MODEL || "x-ai/grok-4.1-fast";
+      const model = import.meta.env.VITE_OPENROUTER_MODEL || import.meta.env.NEXT_PUBLIC_OPENROUTER_MODEL || "google/gemini-1.5-flash";
 
       if (!apiKey) {
         throw new Error("API Key do OpenRouter não configurada.");
