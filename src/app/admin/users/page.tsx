@@ -35,6 +35,7 @@ export default function UsersManagementPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [editingId, setEditingId] = useState<string | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showPoliciesModal, setShowPoliciesModal] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
     // New User State
@@ -214,7 +215,7 @@ export default function UsersManagementPage() {
                         />
                     </div>
                     <div className="flex gap-3 w-full md:w-auto">
-                        <button className="flex-1 md:flex-none px-6 sm:px-8 h-12 sm:h-14 bg-card/50 rounded-2xl border border-border/20 text-[10px] font-black uppercase tracking-widest text-foreground flex items-center justify-center gap-3 hover:bg-foreground/5 transition-all shadow-inner">
+                        <button onClick={() => setShowPoliciesModal(true)} className="flex-1 md:flex-none px-6 sm:px-8 h-12 sm:h-14 bg-card/50 rounded-2xl border border-border/20 text-[10px] font-black uppercase tracking-widest text-foreground flex items-center justify-center gap-3 hover:bg-foreground/5 transition-all shadow-inner">
                             <Settings className="h-4 w-4 text-primary" />
                             Políticas
                         </button>
@@ -224,9 +225,7 @@ export default function UsersManagementPage() {
                 {/* Users Table */}
                 <div className="glass-card overflow-hidden rounded-2xl border border-border/20 shadow-2xl p-0">
                     <div className="relative group/table">
-                        {/* Horizontal Scroll Indicators */}
-                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 transition-opacity" />
-                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-100 group-has-[[data-scroll='right']]:opacity-100 transition-opacity" />
+
 
                         <div className="overflow-x-auto scrollbar-hide">
                             <table className="w-full text-left text-sm border-collapse min-w-[800px] sm:min-w-full">
@@ -242,7 +241,7 @@ export default function UsersManagementPage() {
                                 <tbody className="divide-y divide-white/5">
                                     {filteredUsers.map((u) => (
                                         <tr key={u.id} className="group hover:bg-white/[0.02] transition-colors">
-                                            <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-neutral-800 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                            <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
                                                 <div className="flex items-center gap-3 sm:gap-4">
                                                     <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-foreground/5 flex items-center justify-center border border-border/20 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all shrink-0">
                                                         <UserCircle className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -303,6 +302,59 @@ export default function UsersManagementPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Policies Modal */}
+                {showPoliciesModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl animate-in fade-in duration-500">
+                        <div className="glass-card w-full max-w-lg space-y-8 border-border/20 shadow-2xl p-10 bg-card/90 relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
+                            <div className="flex items-center justify-between relative">
+                                <div className="space-y-1">
+                                    <h2 className="text-2xl font-black text-foreground tracking-tight uppercase italic">Políticas de <span className="text-primary not-italic font-light">Acesso</span></h2>
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-black">Resumo das funções por cargo</p>
+                                </div>
+                                <button onClick={() => setShowPoliciesModal(false)} className="h-12 w-12 rounded-2xl bg-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all hover:bg-red-500/20 hover:text-red-500 border border-border/20">
+                                    <X className="h-6 w-6" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4 relative">
+                                <div className="p-4 rounded-xl bg-foreground/5 border border-border/10 space-y-2 hover:bg-foreground/10 transition-colors">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shadow-sm bg-red-500/10 text-red-400 border-red-500/20">ADMIN</span>
+                                        <h3 className="font-bold text-sm text-foreground uppercase italic">Administrador de Sistema</h3>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Acesso total. Pode configurar o sistema, gerenciar todos os usuários, visualizar todos os relatórios e definir regras de negócio.</p>
+                                </div>
+
+                                <div className="p-4 rounded-xl bg-foreground/5 border border-border/10 space-y-2 hover:bg-foreground/10 transition-colors">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shadow-sm bg-amber-500/10 text-amber-400 border-amber-500/20">GESTOR</span>
+                                        <h3 className="font-bold text-sm text-foreground uppercase italic">Gestor Logístico</h3>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Visão gerencial. Visualiza dados estratégicos, avaliações, painéis e pode gerenciar membros (exceto admins).</p>
+                                </div>
+
+                                <div className="p-4 rounded-xl bg-foreground/5 border border-border/10 space-y-2 hover:bg-foreground/10 transition-colors">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shadow-sm bg-sky-500/10 text-sky-400 border-sky-500/20">SUPERVISOR</span>
+                                        <h3 className="font-bold text-sm text-foreground uppercase italic">Supervisor de QA</h3>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Auditoria técnica. Pode aprovar ou rejeitar laudos, revisar inspeções e acompanhar a qualidade das operações.</p>
+                                </div>
+
+                                <div className="p-4 rounded-xl bg-foreground/5 border border-border/10 space-y-2 hover:bg-foreground/10 transition-colors">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shadow-sm bg-emerald-500/10 text-emerald-400 border-emerald-500/20">TECNICO</span>
+                                        <h3 className="font-bold text-sm text-foreground uppercase italic">Técnico Operacional</h3>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Acesso base. Responsável por realizar scans de produtos, cadastrar avaliações e gerar laudos em campo.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Create Profile Modal */}
                 {showAddModal && (
