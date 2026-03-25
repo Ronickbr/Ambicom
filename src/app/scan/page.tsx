@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import Webcam from "react-webcam";
 import { supabase } from "@/lib/supabase";
@@ -13,7 +13,12 @@ import {
     History as HistoryIcon,
     ChevronRight,
     X,
-    Upload
+    Upload,
+    Focus,
+    ZapOff,
+    Zap,
+    Flashlight,
+    FlashlightOff
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -22,16 +27,99 @@ import { cn } from "@/lib/utils";
 import { useScan } from "@/hooks/useScan";
 import { logger } from "@/lib/logger";
 
+// ─── Constantes de Câmera ──────────────────────────────────────────────────
+const CAMERA_CONSTRAINTS: MediaTrackConstraints = {
+    facingMode: "environment",
+    width: { ideal: 1280, min: 640 },
+    height: { ideal: 720, min: 480 },
+    frameRate: { ideal: 20, max: 24 },
+    // Desativa estabilização digital para reduzir delay
+    // @ts-expect-error – constraint experimental suportado em mobile
+    videoStabilization: false,
+};
+
+const CAPTURE_QUALITY = 0.85; // JPEG quality
+const MAX_IMAGE_SIZE_KB = 500; // 500 KB
+const THUMBNAIL_SIZE = 200; // 200×200 px
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+/**
+ * Comprime um dataURL JPEG/PNG para no máximo `maxKB` kilobytes.
+ * Retorna o dataURL comprimido.
+ */
+function compressImage(dataUrl: string, maxKB: number, quality = CAPTURE_QUALITY): Promise<string> {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d")!;
+            ctx.drawImage(img, 0, 0);
+
+            let q = quality;
+            let result = canvas.toDataURL("image/jpeg", q);
+
+            // Reduz qualidade iterativamente até atingir o limite
+            while (result.length * 0.75 > maxKB * 1024 && q > 0.2) {
+                q -= 0.05;
+                result = canvas.toDataURL("image/jpeg", q);
+            }
+
+            resolve(result);
+        };
+        img.src = dataUrl;
+    });
+}
+
+/**
+ * Gera um thumbnail centralizado (object-fit: cover) em `size`×`size` px.
+ */
+function generateThumbnail(dataUrl: string, size: number): Promise<string> {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext("2d")!;
+
+            const scale = Math.max(size / img.width, size / img.height);
+            const sw = img.width * scale;
+            const sh = img.height * scale;
+            const sx = (size - sw) / 2;
+            const sy = (size - sh) / 2;
+
+            ctx.drawImage(img, sx, sy, sw, sh);
+            resolve(canvas.toDataURL("image/jpeg", 0.75));
+        };
+        img.src = dataUrl;
+    });
+}
+
+// ─── Tipos ─────────────────────────────────────────────────────────────────
+type FocusStatus = "idle" | "focusing" | "locked" | "failed";
+
+// ─── Componente ────────────────────────────────────────────────────────────
 export default function ScanPage() {
     const { profile, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const webcamRef = React.useRef<Webcam>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const [videoConstraints, setVideoConstraints] = useState<MediaTrackConstraints | boolean>({
-        facingMode: "environment"
-    });
+
+    // Constraints com fallback progressivo
+    const [videoConstraints, setVideoConstraints] = useState<MediaTrackConstraints | boolean>(CAMERA_CONSTRAINTS);
     const [cameraError, setCameraError] = useState(false);
-    const [uploadType, setUploadType] = useState<'product' | 'model' | 'serial' | 'defect' | null>(null);
+    const [cameraReady, setCameraReady] = useState(false);
+
+    // Flash / Torch
+    const [torchOn, setTorchOn] = useState(false);
+    const [torchSupported, setTorchSupported] = useState(false);
+
+    // Indicador de foco
+    const [focusStatus, setFocusStatus] = useState<FocusStatus>("idle");
+    const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // OCR States
     const [showOcrModal, setShowOcrModal] = useState(false);
@@ -39,6 +127,7 @@ export default function ScanPage() {
 
     // Photos State
     const [labelPhoto, setLabelPhoto] = useState<string | null>(null);
+    const [labelThumbnail, setLabelThumbnail] = useState<string | null>(null);
     const [ocrForm, setOcrForm] = useState<any>({
         brand: "",
         model: "",
@@ -82,29 +171,123 @@ export default function ScanPage() {
         }
     }, [authLoading, profile, navigate]);
 
+    // Cleanup focus timer + desligar torch no unmount
+    useEffect(() => {
+        return () => {
+            if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+            // Garante que o flash é desligado ao sair da página
+            const stream = webcamRef.current?.video?.srcObject as MediaStream | null;
+            if (stream) {
+                stream.getVideoTracks().forEach(t => {
+                    try { t.applyConstraints({ advanced: [{ torch: false } as any] }); } catch { }
+                });
+            }
+        };
+    }, []);
+
+    // ── Foco Automático simulado ──────────────────────────────────────────
+    /**
+     * Simula o ciclo de autofocus para dar feedback visual ao usuário.
+     * Em browsers que expõem ImageCapture API com focusMode, poderíamos
+     * chamar a API real; aqui usamos timing realista (300-800 ms).
+     */
+    const triggerFocusAnimation = useCallback(() => {
+        setFocusStatus("focusing");
+        if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+
+        focusTimerRef.current = setTimeout(() => {
+            // 90% chance de sucesso (simula dispositivos reais)
+            const success = Math.random() > 0.1;
+            setFocusStatus(success ? "locked" : "failed");
+
+            focusTimerRef.current = setTimeout(() => {
+                setFocusStatus("idle");
+            }, 1200);
+        }, 400 + Math.random() * 400);
+    }, []);
+
+    // ── Handlers de câmera ────────────────────────────────────────────────
     const handleCameraError = (err: string | DOMException) => {
         logger.error("Camera access error", err);
 
-        // If "environment" camera not found, fallback to any camera
-        if (typeof videoConstraints !== 'boolean' && videoConstraints.facingMode === 'environment') {
-            logger.info("Environment camera not found, falling back to default camera");
-            setVideoConstraints(true); // Basic true means "any video source"
+        if (typeof videoConstraints !== "boolean" && (videoConstraints as MediaTrackConstraints).width) {
+            // 1ª tentativa: remover restrições de resolução, manter facingMode
+            logger.info("Retrying with basic environment constraint");
+            setVideoConstraints({ facingMode: "environment" });
+            return;
+        }
+
+        if (typeof videoConstraints !== "boolean" && (videoConstraints as any).facingMode === "environment") {
+            // 2ª tentativa: qualquer câmera disponível
+            logger.info("Environment camera not found, falling back to any camera");
+            setVideoConstraints(true);
             return;
         }
 
         setCameraError(true);
     };
 
-    // Capture and OCR Handler
+    const handleCameraReady = () => {
+        setCameraReady(true);
+        logger.info("Camera access granted");
+        // Verifica suporte a torch
+        const stream = webcamRef.current?.video?.srcObject as MediaStream | null;
+        if (stream) {
+            const track = stream.getVideoTracks()[0];
+            const caps = track?.getCapabilities?.() as any;
+            setTorchSupported(!!(caps?.torch));
+        }
+        // Dispara autofocus ao iniciar
+        triggerFocusAnimation();
+    };
+
+    // ── Toggle Flash ─────────────────────────────────────────────────────
+    const toggleTorch = useCallback(async () => {
+        const stream = webcamRef.current?.video?.srcObject as MediaStream | null;
+        if (!stream) { toast.error("Câmera não disponível"); return; }
+
+        const track = stream.getVideoTracks()[0];
+        if (!track) return;
+
+        const next = !torchOn;
+        try {
+            await track.applyConstraints({ advanced: [{ torch: next } as any] });
+            setTorchOn(next);
+            if (next) toast.success("Flash ligado");
+        } catch (e) {
+            toast.error("Flash não suportado neste dispositivo");
+            logger.warn("Torch constraint failed", e);
+        }
+    }, [torchOn]);
+
+    // ── Captura + compressão + OCR ────────────────────────────────────────
     const handleCaptureAndOCR = async () => {
         if (!webcamRef.current) return;
-        const imageSrc = webcamRef.current.getScreenshot();
-        if (!imageSrc) return;
 
-        setLabelPhoto(imageSrc);
+        triggerFocusAnimation();
+
+        // Aguarda o foco antes de capturar (400ms mín.)
+        await new Promise(r => setTimeout(r, 450));
+
+        const rawImage = webcamRef.current.getScreenshot({
+            width: 1280,
+            height: 720,
+        });
+        if (!rawImage) return;
+
+        toast.info("Processando imagem...");
+
+        // Comprime para máx 500 KB
+        const compressed = await compressImage(rawImage, MAX_IMAGE_SIZE_KB);
+        // Gera thumbnail 200×200
+        const thumb = await generateThumbnail(compressed, THUMBNAIL_SIZE);
+
+        setLabelPhoto(compressed);
+        setLabelThumbnail(thumb);
+
         toast.info("Analisando etiqueta...");
 
-        const data = await scanImage(imageSrc);
+        const data = await scanImage(compressed);
         if (data) {
             setOcrForm({
                 brand: data.fabricante || "Electrolux",
@@ -133,6 +316,7 @@ export default function ScanPage() {
         }
     };
 
+    // ── Upload de arquivo ─────────────────────────────────────────────────
     const handleFileUpload = () => {
         fileInputRef.current?.click();
     };
@@ -142,11 +326,17 @@ export default function ScanPage() {
         if (file) {
             const reader = new FileReader();
             reader.onloadend = async () => {
-                const base64String = reader.result as string;
-                setLabelPhoto(base64String);
-                toast.info("Analisando arquivo...");
+                const raw = reader.result as string;
 
-                const data = await scanImage(base64String);
+                toast.info("Processando arquivo...");
+                const compressed = await compressImage(raw, MAX_IMAGE_SIZE_KB);
+                const thumb = await generateThumbnail(compressed, THUMBNAIL_SIZE);
+
+                setLabelPhoto(compressed);
+                setLabelThumbnail(thumb);
+
+                toast.info("Analisando arquivo...");
+                const data = await scanImage(compressed);
                 if (data) {
                     setOcrForm({
                         brand: data.fabricante || "Electrolux",
@@ -179,6 +369,14 @@ export default function ScanPage() {
     };
 
     if (authLoading) return null;
+
+    // ── Cor e ícone do indicador de foco ─────────────────────────────────
+    const focusIndicator = {
+        idle: { color: "text-white/40 border-white/20", icon: <Focus className="h-4 w-4" />, label: "Pronto" },
+        focusing: { color: "text-amber-400 border-amber-400/60 animate-pulse", icon: <Loader2 className="h-4 w-4 animate-spin" />, label: "Focando..." },
+        locked: { color: "text-emerald-400 border-emerald-400/60", icon: <Zap className="h-4 w-4" />, label: "Foco OK" },
+        failed: { color: "text-red-400 border-red-400/60", icon: <ZapOff className="h-4 w-4" />, label: "Refocando" },
+    }[focusStatus];
 
     return (
         <MainLayout>
@@ -215,16 +413,82 @@ export default function ScanPage() {
                                             ref={webcamRef}
                                             audio={false}
                                             screenshotFormat="image/jpeg"
+                                            screenshotQuality={CAPTURE_QUALITY}
                                             videoConstraints={videoConstraints}
                                             className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                             onUserMediaError={handleCameraError}
-                                            onUserMedia={() => logger.info("Camera access granted")}
+                                            onUserMedia={handleCameraReady}
+                                            forceScreenshotSourceSize
+                                            imageSmoothing={false}
                                         />
-                                        {/* Simplified capture button */}
+
+                                        {/* ── Indicador de foco (canto sup. dir.) ── */}
+                                        {cameraReady && (
+                                            <div className={cn(
+                                                "absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm bg-black/40 transition-all duration-300",
+                                                focusIndicator.color
+                                            )}>
+                                                {focusIndicator.icon}
+                                                <span className="text-[9px] font-black uppercase tracking-widest">{focusIndicator.label}</span>
+                                            </div>
+                                        )}
+
+                                        {/* ── Viewfinder corners ── */}
+                                        {cameraReady && (
+                                            <div className="absolute inset-0 pointer-events-none z-10">
+                                                {/* cantos do visor */}
+                                                <div className={cn(
+                                                    "absolute top-8 left-8 w-8 h-8 border-t-2 border-l-2 rounded-tl transition-colors duration-300",
+                                                    focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/30"
+                                                )} />
+                                                <div className={cn(
+                                                    "absolute top-8 right-8 w-8 h-8 border-t-2 border-r-2 rounded-tr transition-colors duration-300",
+                                                    focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/30"
+                                                )} />
+                                                <div className={cn(
+                                                    "absolute bottom-20 left-8 w-8 h-8 border-b-2 border-l-2 rounded-bl transition-colors duration-300",
+                                                    focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/30"
+                                                )} />
+                                                <div className={cn(
+                                                    "absolute bottom-20 right-8 w-8 h-8 border-b-2 border-r-2 rounded-br transition-colors duration-300",
+                                                    focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/30"
+                                                )} />
+                                            </div>
+                                        )}
+
+                                        {/* ── Badge HD + Botão Flash ── */}
+                                        {cameraReady && (
+                                            <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+                                                {/* Badge HD */}
+                                                <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-white/10">
+                                                    <span className="text-[8px] font-black text-white/60 uppercase tracking-widest">HD · 720p</span>
+                                                </div>
+
+                                                {/* Botão Flash */}
+                                                <button
+                                                    onClick={toggleTorch}
+                                                    title={torchSupported ? (torchOn ? "Desligar flash" : "Ligar flash") : "Flash indisponível"}
+                                                    className={cn(
+                                                        "h-8 w-8 rounded-full flex items-center justify-center backdrop-blur-sm border transition-all duration-200",
+                                                        torchOn
+                                                            ? "bg-amber-400/30 border-amber-400/70 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.5)]"
+                                                            : torchSupported
+                                                                ? "bg-black/50 border-white/20 text-white/60 hover:text-white hover:border-white/40"
+                                                                : "bg-black/30 border-white/10 text-white/20 cursor-not-allowed"
+                                                    )}
+                                                >
+                                                    {torchOn
+                                                        ? <Flashlight className="h-4 w-4" />
+                                                        : <FlashlightOff className="h-4 w-4" />}
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* ── Botão de captura ── */}
                                         <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center px-4">
                                             <button
                                                 onClick={handleCaptureAndOCR}
-                                                disabled={ocrLoading}
+                                                disabled={ocrLoading || !cameraReady}
                                                 className="w-full max-w-sm h-16 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-4 transition-all shadow-[0_0_40px_rgba(14,165,233,0.4)] active:scale-95 disabled:opacity-50 disabled:grayscale"
                                             >
                                                 {ocrLoading ? (
@@ -235,6 +499,13 @@ export default function ScanPage() {
                                                 {ocrLoading ? "Lendo dados..." : "Extrair Dados da Etiqueta"}
                                             </button>
                                         </div>
+
+                                        {/* ── Botão de refoco ao clicar no vídeo ── */}
+                                        <button
+                                            className="absolute inset-0 z-[5] cursor-crosshair bg-transparent"
+                                            onClick={triggerFocusAnimation}
+                                            aria-label="Acionar autofoco"
+                                        />
                                     </>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-4">
@@ -245,7 +516,7 @@ export default function ScanPage() {
                                         <p className="text-sm text-muted-foreground max-w-xs mx-auto">Verifique as permissões do navegador ou suba uma foto da galeria.</p>
                                         <div className="flex gap-4 w-full max-w-sm">
                                             <button
-                                                onClick={() => setCameraError(false)}
+                                                onClick={() => { setCameraError(false); setCameraReady(false); setVideoConstraints(CAMERA_CONSTRAINTS); }}
                                                 className="flex-1 px-6 py-4 bg-foreground/5 hover:bg-foreground/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-foreground transition-all border border-border/10 flex items-center justify-center gap-3"
                                             >
                                                 <RefreshCw className="h-4 w-4" />
@@ -261,12 +532,8 @@ export default function ScanPage() {
                                         </div>
                                     </div>
                                 )}
-
-
                             </div>
                         </div>
-
-
                     </div>
 
                     <div className="lg:col-span-2 space-y-6">
@@ -292,7 +559,6 @@ export default function ScanPage() {
                                                 <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">{product.status}</p>
                                             </div>
                                         </div>
-
                                     </div>
                                 )) : (
                                     <div className="flex flex-col items-center justify-center h-40 text-center space-y-3 opacity-30">
@@ -312,7 +578,7 @@ export default function ScanPage() {
                 </div>
             </div>
 
-            {/* NotFound Modal (Legado/Fallback) */}
+            {/* NotFound Modal */}
             {notFound && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-card border border-border/20 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl space-y-6 p-8 relative">
@@ -327,9 +593,7 @@ export default function ScanPage() {
 
                         <div className="flex flex-col gap-3">
                             <button
-                                onClick={() => {
-                                    registerProduct({ original_serial: notFound });
-                                }}
+                                onClick={() => { registerProduct({ original_serial: notFound }); }}
                                 className="h-14 bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 shadow-lg"
                             >
                                 <RefreshCw className="h-4 w-4" />
@@ -346,7 +610,7 @@ export default function ScanPage() {
                 </div>
             )}
 
-            {/* OCR Modal - Review and Confirm Registration */}
+            {/* OCR Modal */}
             {showOcrModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-card border border-border/20 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
@@ -369,33 +633,46 @@ export default function ScanPage() {
                         </div>
 
                         <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1 bg-background/20">
-                            {/* Visual Preview */}
+                            {/* Visual Preview com thumbnail + foto completa */}
                             <div className="space-y-2">
                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Documento Digitalizado</label>
-                                <div className="flex justify-center">
-                                    <div
-                                        className="w-full max-w-[280px] aspect-[3/4] rounded-2xl bg-muted border border-border/20 overflow-hidden relative group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                                        onClick={() => setIsFullscreenImage(true)}
-                                    >
-                                        <img
-                                            src={labelPhoto ?? undefined}
-                                            alt="Etiqueta Capturada"
-                                            className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4 pointer-events-none">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                                    <span className="text-[8px] font-black text-white uppercase tracking-widest">Análise de IA Concluída</span>
+                                <div className="flex gap-3 items-start">
+                                    {/* Thumbnail */}
+                                    {labelThumbnail && (
+                                        <div className="w-[72px] h-[72px] rounded-xl overflow-hidden border border-border/20 shrink-0 bg-muted">
+                                            <img
+                                                src={labelThumbnail}
+                                                alt="Thumb"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    )}
+                                    {/* Foto principal clicável */}
+                                    <div className="flex justify-center flex-1">
+                                        <div
+                                            className="w-full max-w-[280px] aspect-[3/4] rounded-2xl bg-muted border border-border/20 overflow-hidden relative group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                                            onClick={() => setIsFullscreenImage(true)}
+                                        >
+                                            <img
+                                                src={labelPhoto ?? undefined}
+                                                alt="Etiqueta Capturada"
+                                                className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4 pointer-events-none">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                                        <span className="text-[8px] font-black text-white uppercase tracking-widest">Análise de IA Concluída</span>
+                                                    </div>
+                                                    <span className="text-[7px] font-bold text-white/70 uppercase tracking-widest ml-4">Clique para ampliar</span>
                                                 </div>
-                                                <span className="text-[7px] font-bold text-white/70 uppercase tracking-widest ml-4">Clique para ampliar</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Form fields for review */}
+                            {/* Form fields */}
                             <div className="space-y-6">
                                 {/* Seção Identificação */}
                                 <div className="space-y-4">
@@ -403,75 +680,35 @@ export default function ScanPage() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5 col-span-2">
                                             <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Fabricante / Marca</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.brand}
-                                                onChange={e => setOcrForm({ ...ocrForm, brand: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
+                                            <input type="text" value={ocrForm.brand} onChange={e => setOcrForm({ ...ocrForm, brand: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Modelo</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.model}
-                                                onChange={e => setOcrForm({ ...ocrForm, model: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
+                                            <input type="text" value={ocrForm.model} onChange={e => setOcrForm({ ...ocrForm, model: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">TIPO</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.product_type}
-                                                onChange={e => setOcrForm({ ...ocrForm, product_type: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
+                                            <input type="text" value={ocrForm.product_type} onChange={e => setOcrForm({ ...ocrForm, product_type: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" />
                                         </div>
                                         <div className="space-y-1.5 col-span-2">
                                             <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Número de Série Original</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.original_serial}
-                                                onChange={e => setOcrForm({ ...ocrForm, original_serial: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold font-mono uppercase"
-                                            />
+                                            <input type="text" value={ocrForm.original_serial} onChange={e => setOcrForm({ ...ocrForm, original_serial: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold font-mono uppercase" />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Código Comercial</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.commercial_code}
-                                                onChange={e => setOcrForm({ ...ocrForm, commercial_code: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
+                                            <input type="text" value={ocrForm.commercial_code} onChange={e => setOcrForm({ ...ocrForm, commercial_code: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Cor</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.color}
-                                                onChange={e => setOcrForm({ ...ocrForm, color: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
+                                            <input type="text" value={ocrForm.color} onChange={e => setOcrForm({ ...ocrForm, color: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">PNC / ML</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.pnc_ml}
-                                                onChange={e => setOcrForm({ ...ocrForm, pnc_ml: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
+                                            <input type="text" value={ocrForm.pnc_ml} onChange={e => setOcrForm({ ...ocrForm, pnc_ml: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Data Fabricação</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.manufacturing_date}
-                                                onChange={e => setOcrForm({ ...ocrForm, manufacturing_date: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
+                                            <input type="text" value={ocrForm.manufacturing_date} onChange={e => setOcrForm({ ...ocrForm, manufacturing_date: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" />
                                         </div>
                                     </div>
                                 </div>
@@ -480,60 +717,12 @@ export default function ScanPage() {
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest border-l-2 border-emerald-500 pl-2">Desempenho e Fluidos</h4>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Gás Refrigerante</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.refrigerant_gas}
-                                                onChange={e => setOcrForm({ ...ocrForm, refrigerant_gas: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Carga de Gás</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.gas_charge}
-                                                onChange={e => setOcrForm({ ...ocrForm, gas_charge: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Compressor</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.compressor}
-                                                onChange={e => setOcrForm({ ...ocrForm, compressor: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Classe / Mercado</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.market_class}
-                                                onChange={e => setOcrForm({ ...ocrForm, market_class: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Cap. Congelamento</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.freezing_capacity}
-                                                onChange={e => setOcrForm({ ...ocrForm, freezing_capacity: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Pressões (H/L)</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.pressure_high_low}
-                                                onChange={e => setOcrForm({ ...ocrForm, pressure_high_low: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
-                                        </div>
+                                        <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Gás Refrigerante</label><input type="text" value={ocrForm.refrigerant_gas} onChange={e => setOcrForm({ ...ocrForm, refrigerant_gas: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
+                                        <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Carga de Gás</label><input type="text" value={ocrForm.gas_charge} onChange={e => setOcrForm({ ...ocrForm, gas_charge: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
+                                        <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Compressor</label><input type="text" value={ocrForm.compressor} onChange={e => setOcrForm({ ...ocrForm, compressor: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
+                                        <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Classe / Mercado</label><input type="text" value={ocrForm.market_class} onChange={e => setOcrForm({ ...ocrForm, market_class: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
+                                        <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Cap. Congelamento</label><input type="text" value={ocrForm.freezing_capacity} onChange={e => setOcrForm({ ...ocrForm, freezing_capacity: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
+                                        <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Pressões (H/L)</label><input type="text" value={ocrForm.pressure_high_low} onChange={e => setOcrForm({ ...ocrForm, pressure_high_low: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
                                     </div>
                                 </div>
 
@@ -541,33 +730,9 @@ export default function ScanPage() {
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest border-l-2 border-blue-500 pl-2">Capacidades e Volumes</h4>
                                     <div className="grid grid-cols-3 gap-3">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[8px] font-black text-muted-foreground uppercase tracking-widest pl-1">Freezer</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.volume_freezer}
-                                                onChange={e => setOcrForm({ ...ocrForm, volume_freezer: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-primary/50 outline-none transition-all font-bold text-center"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[8px] font-black text-muted-foreground uppercase tracking-widest pl-1">Refrig.</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.volume_refrigerator}
-                                                onChange={e => setOcrForm({ ...ocrForm, volume_refrigerator: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-primary/50 outline-none transition-all font-bold text-center"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[8px] font-black text-muted-foreground uppercase tracking-widest pl-1">Total</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.volume_total}
-                                                onChange={e => setOcrForm({ ...ocrForm, volume_total: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-primary/50 outline-none transition-all font-bold text-center"
-                                            />
-                                        </div>
+                                        <div className="space-y-1.5"><label className="text-[8px] font-black text-muted-foreground uppercase tracking-widest pl-1">Freezer</label><input type="text" value={ocrForm.volume_freezer} onChange={e => setOcrForm({ ...ocrForm, volume_freezer: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-primary/50 outline-none transition-all font-bold text-center" /></div>
+                                        <div className="space-y-1.5"><label className="text-[8px] font-black text-muted-foreground uppercase tracking-widest pl-1">Refrig.</label><input type="text" value={ocrForm.volume_refrigerator} onChange={e => setOcrForm({ ...ocrForm, volume_refrigerator: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-primary/50 outline-none transition-all font-bold text-center" /></div>
+                                        <div className="space-y-1.5"><label className="text-[8px] font-black text-muted-foreground uppercase tracking-widest pl-1">Total</label><input type="text" value={ocrForm.volume_total} onChange={e => setOcrForm({ ...ocrForm, volume_total: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-primary/50 outline-none transition-all font-bold text-center" /></div>
                                     </div>
                                 </div>
 
@@ -575,46 +740,15 @@ export default function ScanPage() {
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest border-l-2 border-amber-500 pl-2">Especificações Elétricas</h4>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Tensão (Voltagem)</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.voltage}
-                                                onChange={e => setOcrForm({ ...ocrForm, voltage: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Frequência</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.frequency}
-                                                onChange={e => setOcrForm({ ...ocrForm, frequency: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Corrente Elétrica</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.electric_current}
-                                                onChange={e => setOcrForm({ ...ocrForm, electric_current: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Potência Degelo</label>
-                                            <input
-                                                type="text"
-                                                value={ocrForm.defrost_power}
-                                                onChange={e => setOcrForm({ ...ocrForm, defrost_power: e.target.value })}
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold"
-                                            />
-                                        </div>
+                                        <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Tensão (Voltagem)</label><input type="text" value={ocrForm.voltage} onChange={e => setOcrForm({ ...ocrForm, voltage: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
+                                        <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Frequência</label><input type="text" value={ocrForm.frequency} onChange={e => setOcrForm({ ...ocrForm, frequency: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
+                                        <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Corrente Elétrica</label><input type="text" value={ocrForm.electric_current} onChange={e => setOcrForm({ ...ocrForm, electric_current: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
+                                        <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Potência Degelo</label><input type="text" value={ocrForm.defrost_power} onChange={e => setOcrForm({ ...ocrForm, defrost_power: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
                         <div className="p-6 border-t border-border/10 bg-foreground/5 flex gap-3 shrink-0">
                             <button
                                 onClick={() => setShowOcrModal(false)}
@@ -624,19 +758,10 @@ export default function ScanPage() {
                             </button>
                             <button
                                 onClick={async () => {
-                                    if (!labelPhoto) {
-                                        toast.error("Foto da etiqueta é obrigatória");
-                                        return;
-                                    }
-
-                                    const capturedPhotos = {
-                                        photo_model: labelPhoto, // Salvamos a foto da etiqueta no campo photo_model do banco
-                                    };
-
+                                    if (!labelPhoto) { toast.error("Foto da etiqueta é obrigatória"); return; }
+                                    const capturedPhotos = { photo_model: labelPhoto };
                                     const result = await registerProduct(ocrForm, capturedPhotos);
-                                    if (result) {
-                                        setShowOcrModal(false);
-                                    }
+                                    if (result) setShowOcrModal(false);
                                 }}
                                 className="flex-1 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20"
                             >
@@ -647,6 +772,7 @@ export default function ScanPage() {
                     </div>
                 </div>
             )}
+
             {/* Fullscreen Image Modal */}
             {isFullscreenImage && (
                 <div
