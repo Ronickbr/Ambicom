@@ -40,23 +40,114 @@ const CAMERA_CONSTRAINTS: MediaTrackConstraints = {
 
 const CAPTURE_QUALITY = 0.85; // JPEG quality
 const MAX_IMAGE_SIZE_KB = 500; // 500 KB
-const THUMBNAIL_SIZE = 200; // 200×200 px
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 /**
- * Comprime um dataURL JPEG/PNG para no máximo `maxKB` kilobytes.
- * Retorna o dataURL comprimido.
+ * Lê o valor de Orientation do EXIF de um dataURL JPEG.
+ * Retorna 1 (sem rotação) caso não encontre ou não seja JPEG.
+ *
+ * Orientações EXIF → rotação necessária para upright:
+ *   1 = 0°   3 = 180°   6 = 90° CW   8 = 90° CCW
+ */
+function getExifOrientation(dataUrl: string): number {
+    if (!dataUrl.startsWith("data:image/jpeg")) return 1;
+
+    try {
+        const base64 = dataUrl.split(",")[1];
+        const bin = atob(base64);
+        const buf = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+
+        // Percorre segmentos JPEG procurando APP1 (0xFFE1 = EXIF)
+        let offset = 2; // pula SOI (FF D8)
+        while (offset < buf.length - 1) {
+            if (buf[offset] !== 0xFF) break;
+            const marker = buf[offset + 1];
+            const segLen = (buf[offset + 2] << 8) | buf[offset + 3];
+
+            if (marker === 0xE1) { // APP1
+                // Verifica magic "Exif\0\0"
+                const exifMagic = String.fromCharCode(...Array.from(buf.slice(offset + 4, offset + 10)));
+                if (exifMagic.startsWith("Exif")) {
+                    const tiffOffset = offset + 10;
+                    const isLE = buf[tiffOffset] === 0x49; // "II" = little-endian
+                    const read16 = (o: number) => isLE
+                        ? buf[tiffOffset + o] | (buf[tiffOffset + o + 1] << 8)
+                        : (buf[tiffOffset + o] << 8) | (buf[tiffOffset + o + 1]);
+                    const read32 = (o: number) => isLE
+                        ? buf[tiffOffset + o] | (buf[tiffOffset + o + 1] << 8) | (buf[tiffOffset + o + 2] << 16) | (buf[tiffOffset + o + 3] << 24)
+                        : (buf[tiffOffset + o] << 24) | (buf[tiffOffset + o + 1] << 16) | (buf[tiffOffset + o + 2] << 8) | buf[tiffOffset + o + 3];
+
+                    const ifdOffset = read32(4);
+                    const numEntries = read16(ifdOffset);
+                    for (let e = 0; e < numEntries; e++) {
+                        const eOff = ifdOffset + 2 + e * 12;
+                        const tag = read16(eOff);
+                        if (tag === 0x0112) { // Orientation tag
+                            return read16(eOff + 8);
+                        }
+                    }
+                }
+            }
+
+            // Marcadores sem segmento (SOI, EOI, RST)
+            if (marker === 0xD8 || marker === 0xD9 || (marker >= 0xD0 && marker <= 0xD7)) {
+                offset += 2;
+            } else {
+                offset += 2 + segLen;
+            }
+        }
+    } catch { /* silencia erros de parsing */ }
+    return 1;
+}
+
+/**
+ * Aplica a transformação correta no canvas baseada no valor de Orientation EXIF.
+ * Retorna { w, h } com as dimensões já ajustadas para o canvas.
+ */
+function applyExifRotation(
+    ctx: CanvasRenderingContext2D,
+    img: HTMLImageElement,
+    orientation: number,
+    canvas: HTMLCanvasElement
+): { w: number; h: number } {
+    const { width: iw, height: ih } = img;
+    const rotated = orientation === 6 || orientation === 8;
+
+    canvas.width = rotated ? ih : iw;
+    canvas.height = rotated ? iw : ih;
+
+    ctx.save();
+    switch (orientation) {
+        case 2: ctx.transform(-1, 0, 0, 1, iw, 0); break;  // flip H
+        case 3: ctx.transform(-1, 0, 0, -1, iw, ih); break;  // 180°
+        case 4: ctx.transform(1, 0, 0, -1, 0, ih); break;  // flip V
+        case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;  // 90° CCW + flip H
+        case 6: ctx.transform(0, 1, -1, 0, ih, 0); break;  // 90° CW
+        case 7: ctx.transform(0, -1, -1, 0, ih, iw); break;  // 90° CW + flip H
+        case 8: ctx.transform(0, -1, 1, 0, 0, iw); break;  // 90° CCW
+        // default (1): sem transformação
+    }
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
+
+    return { w: canvas.width, h: canvas.height };
+}
+
+/**
+ * Comprime um dataURL JPEG/PNG para no máximo `maxKB` kilobytes,
+ * corrigindo automaticamente a orientação EXIF.
  */
 function compressImage(dataUrl: string, maxKB: number, quality = CAPTURE_QUALITY): Promise<string> {
     return new Promise((resolve) => {
+        const orientation = getExifOrientation(dataUrl);
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
             const ctx = canvas.getContext("2d")!;
-            ctx.drawImage(img, 0, 0);
+
+            applyExifRotation(ctx, img, orientation, canvas);
 
             let q = quality;
             let result = canvas.toDataURL("image/jpeg", q);
@@ -73,30 +164,6 @@ function compressImage(dataUrl: string, maxKB: number, quality = CAPTURE_QUALITY
     });
 }
 
-/**
- * Gera um thumbnail centralizado (object-fit: cover) em `size`×`size` px.
- */
-function generateThumbnail(dataUrl: string, size: number): Promise<string> {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement("canvas");
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext("2d")!;
-
-            const scale = Math.max(size / img.width, size / img.height);
-            const sw = img.width * scale;
-            const sh = img.height * scale;
-            const sx = (size - sw) / 2;
-            const sy = (size - sh) / 2;
-
-            ctx.drawImage(img, sx, sy, sw, sh);
-            resolve(canvas.toDataURL("image/jpeg", 0.75));
-        };
-        img.src = dataUrl;
-    });
-}
 
 // ─── Tipos ─────────────────────────────────────────────────────────────────
 type FocusStatus = "idle" | "focusing" | "locked" | "failed";
@@ -127,7 +194,6 @@ export default function ScanPage() {
 
     // Photos State
     const [labelPhoto, setLabelPhoto] = useState<string | null>(null);
-    const [labelThumbnail, setLabelThumbnail] = useState<string | null>(null);
     const [ocrForm, setOcrForm] = useState<any>({
         brand: "",
         model: "",
@@ -279,18 +345,15 @@ export default function ScanPage() {
 
         // Comprime para máx 500 KB
         const compressed = await compressImage(rawImage, MAX_IMAGE_SIZE_KB);
-        // Gera thumbnail 200×200
-        const thumb = await generateThumbnail(compressed, THUMBNAIL_SIZE);
 
         setLabelPhoto(compressed);
-        setLabelThumbnail(thumb);
 
         toast.info("Analisando etiqueta...");
 
         const data = await scanImage(compressed);
         if (data) {
             setOcrForm({
-                brand: data.fabricante || "Electrolux",
+                brand: data.fabricante || "",
                 model: data.modelo || "",
                 original_serial: data.numero_serie || "",
                 commercial_code: data.codigo_comercial || "",
@@ -330,10 +393,8 @@ export default function ScanPage() {
 
                 toast.info("Processando arquivo...");
                 const compressed = await compressImage(raw, MAX_IMAGE_SIZE_KB);
-                const thumb = await generateThumbnail(compressed, THUMBNAIL_SIZE);
 
                 setLabelPhoto(compressed);
-                setLabelThumbnail(thumb);
 
                 toast.info("Analisando arquivo...");
                 const data = await scanImage(compressed);
@@ -632,40 +693,27 @@ export default function ScanPage() {
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1 bg-background/20">
-                            {/* Visual Preview com thumbnail + foto completa */}
+                        <div className="p-6 space-y-8 overflow-y-auto custom-scrollbar flex-1 bg-background/20">
+                            {/* Visual Preview */}
                             <div className="space-y-2">
                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Documento Digitalizado</label>
-                                <div className="flex gap-3 items-start">
-                                    {/* Thumbnail */}
-                                    {labelThumbnail && (
-                                        <div className="w-[72px] h-[72px] rounded-xl overflow-hidden border border-border/20 shrink-0 bg-muted">
-                                            <img
-                                                src={labelThumbnail}
-                                                alt="Thumb"
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
-                                    )}
-                                    {/* Foto principal clicável */}
-                                    <div className="flex justify-center flex-1">
-                                        <div
-                                            className="w-full max-w-[280px] aspect-[3/4] rounded-2xl bg-muted border border-border/20 overflow-hidden relative group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                                            onClick={() => setIsFullscreenImage(true)}
-                                        >
-                                            <img
-                                                src={labelPhoto ?? undefined}
-                                                alt="Etiqueta Capturada"
-                                                className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4 pointer-events-none">
-                                                <div className="flex flex-col gap-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                                        <span className="text-[8px] font-black text-white uppercase tracking-widest">Análise de IA Concluída</span>
-                                                    </div>
-                                                    <span className="text-[7px] font-bold text-white/70 uppercase tracking-widest ml-4">Clique para ampliar</span>
+                                <div className="flex justify-center">
+                                    <div
+                                        className="w-full max-w-[280px] aspect-[3/4] rounded-2xl bg-muted border border-border/20 overflow-hidden relative group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                                        onClick={() => setIsFullscreenImage(true)}
+                                    >
+                                        <img
+                                            src={labelPhoto ?? undefined}
+                                            alt="Etiqueta Capturada"
+                                            className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4 pointer-events-none">
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                                    <span className="text-[8px] font-black text-white uppercase tracking-widest">Análise de IA Concluída</span>
                                                 </div>
+                                                <span className="text-[7px] font-bold text-white/70 uppercase tracking-widest ml-4">Clique para ampliar</span>
                                             </div>
                                         </div>
                                     </div>
@@ -761,7 +809,12 @@ export default function ScanPage() {
                                     if (!labelPhoto) { toast.error("Foto da etiqueta é obrigatória"); return; }
                                     const capturedPhotos = { photo_model: labelPhoto };
                                     const result = await registerProduct(ocrForm, capturedPhotos);
-                                    if (result) setShowOcrModal(false);
+                                    if (result) {
+                                        setShowOcrModal(false);
+                                        // Imprime a etiqueta automaticamente após o cadastro bem-sucedido
+                                        const { printLabels } = await import("@/lib/export-utils");
+                                        await printLabels([result]);
+                                    }
                                 }}
                                 className="flex-1 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20"
                             >
