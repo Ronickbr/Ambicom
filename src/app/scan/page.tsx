@@ -39,7 +39,7 @@ const CAMERA_CONSTRAINTS: MediaTrackConstraints = {
 };
 
 const CAPTURE_QUALITY = 0.85; // JPEG quality
-const MAX_IMAGE_SIZE_KB = 500; // 500 KB
+const MAX_IMAGE_SIZE_KB = 1024; // 1024 KB
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 

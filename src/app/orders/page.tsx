@@ -48,9 +48,7 @@ export default function OrdersPage() {
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [clients, setClients] = useState<Client[]>([]);
-    const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
     const [selectedClient, setSelectedClient] = useState("");
-    const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [scanInput, setScanInput] = useState("");
     const [verifiedSerials, setVerifiedSerials] = useState<string[]>([]);
@@ -58,8 +56,9 @@ export default function OrdersPage() {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [isFetchingDetails, setIsFetchingDetails] = useState(false);
-    const [productSearchTerm, setProductSearchTerm] = useState("");
-    const [productSizeFilter, setProductSizeFilter] = useState("");
+    const [mountingOrderItems, setMountingOrderItems] = useState<{ product: Product; unitPrice: number }[]>([]);
+    const [mountingScanInput, setMountingScanInput] = useState("");
+    const [showMountingCamera, setShowMountingCamera] = useState(false);
 
     // Camera Scanning States
     const { scanImage, ocrLoading } = useScan();
@@ -77,10 +76,10 @@ export default function OrdersPage() {
                 // Ensure DOM element is ready
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                const element = document.getElementById("reader");
+                const element = document.getElementById(showMountingCamera ? "mounting-reader" : "reader");
                 if (!element) return;
 
-                html5QrCode = new Html5Qrcode("reader");
+                html5QrCode = new Html5Qrcode(showMountingCamera ? "mounting-reader" : "reader");
                 const config = {
                     fps: 10,
                     qrbox: { width: 250, height: 250 },
@@ -102,8 +101,13 @@ export default function OrdersPage() {
                         cameraId,
                         config,
                         (decodedText) => {
-                            handleScanCode(decodedText);
-                            setShowCamera(false);
+                            if (showMountingCamera) {
+                                handleScanMountingCode(decodedText);
+                                setShowMountingCamera(false);
+                            } else {
+                                handleScanCode(decodedText);
+                                setShowCamera(false);
+                            }
                         },
                         (errorMessage) => { }
                     );
@@ -113,8 +117,13 @@ export default function OrdersPage() {
                         { facingMode: "environment" },
                         config,
                         (decodedText) => {
-                            handleScanCode(decodedText);
-                            setShowCamera(false);
+                            if (showMountingCamera) {
+                                handleScanMountingCode(decodedText);
+                                setShowMountingCamera(false);
+                            } else {
+                                handleScanCode(decodedText);
+                                setShowCamera(false);
+                            }
                         },
                         (errorMessage) => { }
                     );
@@ -142,7 +151,7 @@ export default function OrdersPage() {
             }
         };
 
-        if (showCamera) {
+        if (showCamera || showMountingCamera) {
             startScanner();
         }
 
@@ -151,7 +160,7 @@ export default function OrdersPage() {
                 html5QrCode.stop().catch(e => { /* silent stop */ });
             }
         };
-    }, [showCamera]);
+    }, [showCamera, showMountingCamera]);
 
     const handleScanCode = (code: string) => {
         if (!selectedOrder || !code) return;
@@ -174,6 +183,63 @@ export default function OrdersPage() {
             }
         } else {
             toast.error("Produto não pertence a este pedido!");
+        }
+    };
+
+    const handleScanMountingCode = (code: string) => {
+        handleScanMountingProduct(code);
+    };
+
+    const handleScanMountingProduct = async (code: string) => {
+        if (!selectedClient || !code) {
+            if (!selectedClient) toast.error("Selecione um cliente primeiro.");
+            return;
+        }
+
+        const input = code.trim().toUpperCase();
+
+        // Prevent duplicates in current mounting list
+        if (mountingOrderItems.some(item =>
+            item.product.internal_serial?.toUpperCase() === input ||
+            item.product.original_serial?.toUpperCase() === input
+        )) {
+            toast.warning("Produto já adicionado a este pedido!");
+            setMountingScanInput("");
+            return;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from("products")
+                .select("*")
+                .or(`internal_serial.eq."${input}",original_serial.eq."${input}"`)
+                .eq("status", "EM ESTOQUE")
+                .is("order_id", null)
+                .single();
+
+            if (error || !data) {
+                toast.error("Produto não encontrado ou indisponível.");
+                return;
+            }
+
+            const product = data as Product;
+            const client = clients.find(c => c.id === selectedClient);
+            let unitPrice = 0;
+
+            if (client) {
+                if (product.size === 'Pequeno') unitPrice = client.price_small || 0;
+                else if (product.size === 'Médio') unitPrice = client.price_medium || 0;
+                else if (product.size === 'Grande') unitPrice = client.price_large || 0;
+            }
+
+            setMountingOrderItems(prev => [...prev, { product, unitPrice }]);
+            setMountingScanInput("");
+            toast.success("Produto adicionado!", {
+                description: `${product.brand} ${product.model} - R$ ${unitPrice.toFixed(2)}`
+            });
+        } catch (err) {
+            logger.error("Erro ao buscar produto:", err);
+            toast.error("Erro ao buscar produto.");
         }
     };
 
@@ -258,7 +324,7 @@ export default function OrdersPage() {
 
     const handleExportExcel = async () => {
         const { exportToExcel } = await import("@/lib/export-utils");
-        const data = filteredOrders.map(o => ({
+        const data = orders.map(o => ({
             "ID Pedido": o.id,
             "Cliente": o.clients?.name || "N/A",
             "Status": o.status,
@@ -269,48 +335,53 @@ export default function OrdersPage() {
 
     const prepareNewOrder = async () => {
         setShowAddModal(true);
-        setProductSearchTerm("");
-        setProductSizeFilter("");
+        setMountingOrderItems([]);
+        setMountingScanInput("");
         const { data: cData } = await supabase.from("clients").select("*");
         setClients((cData as Client[]) || []);
-        const { data: pData } = await supabase.from("products").select("*").eq("status", "EM ESTOQUE").is("order_id", null);
-        setAvailableProducts((pData as Product[]) || []);
     };
 
     const handleCreateOrder = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedClient || selectedProducts.length === 0) {
-            toast.error("Selecione um cliente e pelo menos um produto.");
+        if (!selectedClient || mountingOrderItems.length === 0) {
+            toast.error("Selecione um cliente e adicione pelo menos um produto.");
             return;
         }
 
         setIsSaving(true);
         try {
+            const totalAmount = mountingOrderItems.reduce((acc, item) => acc + item.unitPrice, 0);
+
             const { data: orderData, error: orderError } = await supabase
                 .from("orders")
                 .insert([{
                     client_id: selectedClient,
                     status: "PENDENTE",
+                    total_amount: totalAmount
                 }])
                 .select()
                 .single();
 
             if (orderError) throw orderError;
 
-            // 2. Link products to order in products table (optional, but code uses it)
+            const orderId = (orderData as Order).id;
+            const productIds = mountingOrderItems.map(item => item.product.id);
+
+            // 2. Link products to order in products table
             const { error: productError } = await supabase
                 .from("products")
                 .update({
-                    order_id: (orderData as Order).id
+                    order_id: orderId
                 })
-                .in("id", selectedProducts);
+                .in("id", productIds);
 
             if (productError) throw productError;
 
-            // 3. Insert into order_items table (required for details view)
-            const orderItems = selectedProducts.map(productId => ({
-                order_id: (orderData as Order).id,
-                product_id: productId
+            // 3. Insert into order_items table
+            const orderItems = mountingOrderItems.map(item => ({
+                order_id: orderId,
+                product_id: item.product.id,
+                unit_price: item.unitPrice
             }));
 
             const { error: itemsError } = await supabase
@@ -320,11 +391,11 @@ export default function OrdersPage() {
             if (itemsError) throw itemsError;
 
             toast.success("Pedido criado com sucesso!", {
-                description: `${selectedProducts.length} produtos foram vinculados.`
+                description: `${productIds.length} produtos foram vinculados.`
             });
             setShowAddModal(false);
             setSelectedClient("");
-            setSelectedProducts([]);
+            setMountingOrderItems([]);
             fetchOrders();
         } catch (error) {
             const err = error as Error;
@@ -779,122 +850,119 @@ export default function OrdersPage() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
+                                <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-1 ml-1">
-                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">2. Selecionar Itens para Remessa</label>
-                                        <span className="text-[10px] font-black px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">{selectedProducts.length} ITENS</span>
+                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">2. Adicionar Itens via Scanner</label>
+                                        <span className="text-[10px] font-black px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">{mountingOrderItems.length} ITENS ADICIONADOS</span>
                                     </div>
 
-                                    {/* Product Filters */}
-                                    <div className="flex gap-2">
-                                        <div className="relative group flex-1">
-                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                            <input
-                                                type="text"
-                                                placeholder="Filtrar por marca, modelo ou serial..."
-                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl pl-10 h-11 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all text-foreground font-medium"
-                                                value={productSearchTerm}
-                                                onChange={(e) => setProductSearchTerm(e.target.value)}
-                                            />
+                                    {/* Interface de Scanner para Montagem */}
+                                    <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 sm:p-6 space-y-4">
+                                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowMountingCamera(!showMountingCamera)}
+                                                className={cn(
+                                                    "h-14 w-full sm:w-14 rounded-2xl flex items-center justify-center transition-all border shrink-0",
+                                                    showMountingCamera ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                                                )}
+                                            >
+                                                {showMountingCamera ? <X className="h-6 w-6" /> : <Camera className="h-6 w-6" />}
+                                            </button>
+                                            <div className="flex-1 w-full">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Aguardando Escaneamento para Montagem...</p>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={mountingScanInput}
+                                                        onChange={(e) => setMountingScanInput(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                handleScanMountingProduct(mountingScanInput);
+                                                            }
+                                                        }}
+                                                        placeholder="Escaneie ou digite o ID Interno..."
+                                                        className="w-full h-14 bg-card/40 border border-border/20 rounded-xl px-6 text-sm text-foreground placeholder:text-muted-foreground/30 focus:border-primary/50 transition-all outline-none"
+                                                    />
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden sm:block">
+                                                        <span className="text-[8px] font-bold text-muted-foreground/30 bg-foreground/5 px-2 py-1 rounded">ENTER</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <select
-                                            value={productSizeFilter}
-                                            onChange={(e) => setProductSizeFilter(e.target.value)}
-                                            className="bg-background border border-border/20 rounded-xl px-3 h-11 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all text-foreground font-medium w-[140px]"
-                                        >
-                                            <option value="" className="bg-background text-muted-foreground">Tamanhos (Todos)</option>
-                                            <option value="Pequeno" className="bg-background text-foreground">Pequeno</option>
-                                            <option value="Médio" className="bg-background text-foreground">Médio</option>
-                                            <option value="Grande" className="bg-background text-foreground">Grande</option>
-                                        </select>
+
+                                        {showMountingCamera && (
+                                            <div className="relative aspect-video rounded-xl overflow-hidden border border-border/20 animate-in fade-in zoom-in-95 duration-300">
+                                                <div id="mounting-reader" className="w-full"></div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowMountingCamera(false)}
+                                                    className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-background/60 text-foreground flex items-center justify-center backdrop-blur-xl border border-border/20 active:scale-90 transition-all"
+                                                >
+                                                    <X className="h-6 w-6" />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className="border border-border/20 rounded-2xl bg-card/40 p-3 max-h-72 overflow-y-auto space-y-2 custom-scrollbar shadow-inner backdrop-blur-sm">
-                                        {(() => {
-                                            const filtered = availableProducts.filter(p => {
-                                                const searchMatch = !productSearchTerm ? true : (() => {
-                                                    const search = productSearchTerm.toLowerCase();
-                                                    return (
-                                                        p.brand?.toLowerCase().includes(search) ||
-                                                        p.model?.toLowerCase().includes(search) ||
-                                                        p.internal_serial?.toLowerCase().includes(search) ||
-                                                        p.original_serial?.toLowerCase().includes(search) ||
-                                                        p.product_type?.toLowerCase().includes(search) ||
-                                                        p.market_class?.toLowerCase().includes(search) ||
-                                                        p.refrigerant_gas?.toLowerCase().includes(search) ||
-                                                        p.voltage?.toLowerCase().includes(search) ||
-                                                        p.size?.toLowerCase().includes(search)
-                                                    );
-                                                })();
-
-                                                const sizeMatch = !productSizeFilter ? true : p.size === productSizeFilter;
-
-                                                return searchMatch && sizeMatch;
-                                            });
-
-                                            if (filtered.length === 0) {
-                                                return (
-                                                    <div className="flex flex-col items-center justify-center p-12 text-center space-y-4 opacity-50">
-                                                        <div className="h-16 w-16 rounded-full bg-foreground/5 flex items-center justify-center">
-                                                            <Package className="h-8 w-8 text-muted-foreground" />
-                                                        </div>
-                                                        <p className="text-xs text-muted-foreground italic leading-relaxed font-medium">
-                                                            {productSearchTerm ? "Nenhum item corresponde ao filtro." : "Nenhum item disponível no momento."}
-                                                            <br />Aguarde a liberação gerencial no inventário.
-                                                        </p>
-                                                    </div>
-                                                );
-                                            }
-
-                                            return filtered.map(p => (
-                                                <label key={p.id} className={cn("flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer group/item", selectedProducts.includes(p.id) ? "bg-primary/10 border-primary/50 shadow-lg" : "hover:bg-foreground/5 border-border/10 bg-white/[0.02]")}>
-                                                    <div className="relative flex items-center justify-center">
-                                                        <input
-                                                            type="checkbox"
-                                                            className="h-6 w-6 rounded-lg border-border/20 bg-foreground/5 text-primary focus:ring-primary accent-primary cursor-pointer"
-                                                            checked={selectedProducts.includes(p.id)}
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) setSelectedProducts([...selectedProducts, p.id]);
-                                                                else setSelectedProducts(selectedProducts.filter(id => id !== p.id));
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between gap-4">
-                                                            <p className="font-bold text-sm text-foreground truncate group-hover/item:text-primary transition-colors">{p.brand} {p.model}</p>
-                                                            <span className="font-mono text-[10px] px-2 py-0.5 bg-foreground/5 rounded text-primary border border-primary/20 font-black uppercase tracking-tighter shadow-sm flex-shrink-0">
-                                                                {p.internal_serial}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">{p.product_type || "Equipamento"}</p>
-                                                            {p.size && (
-                                                                <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 ml-1">{p.size}</span>
-                                                            )}
-                                                            <div className="flex items-center gap-1.5 ml-auto">
-                                                                {p.market_class && (
-                                                                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-primary/5 border border-primary/10 text-primary/60 font-bold uppercase tracking-tighter">{p.market_class}</span>
-                                                                )}
-                                                                {p.voltage && (
-                                                                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-foreground/5 border border-border/20 text-foreground/40 font-bold">{p.voltage}</span>
-                                                                )}
-                                                                {p.refrigerant_gas && (
-                                                                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/5 border border-blue-500/10 text-blue-400/60 font-bold">{p.refrigerant_gas}</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </label>
-                                            ));
-                                        })()}
+                                    {/* Tabela de Itens Escaneados */}
+                                    <div className="border border-border/20 rounded-2xl bg-card/40 overflow-hidden shadow-inner backdrop-blur-sm">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-xs border-collapse">
+                                                <thead className="bg-foreground/5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-border/10">
+                                                    <tr>
+                                                        <th className="px-4 py-3">Model</th>
+                                                        <th className="px-4 py-3">ID Interno</th>
+                                                        <th className="px-4 py-3">Tamanho</th>
+                                                        <th className="px-4 py-3">Preço Unit.</th>
+                                                        <th className="px-4 py-3 text-right">Ação</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-white/5">
+                                                    {mountingOrderItems.map((item, index) => (
+                                                        <tr key={`${item.product.id}-${index}`} className="hover:bg-white/[0.02] transition-colors">
+                                                            <td className="px-4 py-3 font-bold text-foreground italic uppercase">{item.product.model}</td>
+                                                            <td className="px-4 py-3 font-mono text-primary font-black">{item.product.internal_serial}</td>
+                                                            <td className="px-4 py-3 font-bold text-emerald-500 uppercase">{item.product.size || "-"}</td>
+                                                            <td className="px-4 py-3 font-bold text-foreground">R$ {item.unitPrice.toFixed(2)}</td>
+                                                            <td className="px-4 py-3 text-right">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setMountingOrderItems(prev => prev.filter((_, i) => i !== index))}
+                                                                    className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500 transition-all"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                    {mountingOrderItems.length === 0 && (
+                                                        <tr>
+                                                            <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground italic opacity-50 font-medium">
+                                                                Nenhum produto adicionado. Use o scanner acima.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                                {mountingOrderItems.length > 0 && (
+                                                    <tfoot className="bg-foreground/5 border-t border-border/10">
+                                                        <tr>
+                                                            <td colSpan={3} className="px-4 py-3 text-right font-black text-[9px] uppercase tracking-widest text-muted-foreground">Total Estimado:</td>
+                                                            <td className="px-4 py-3 font-black text-sm text-primary">R$ {mountingOrderItems.reduce((acc, item) => acc + item.unitPrice, 0).toFixed(2)}</td>
+                                                            <td></td>
+                                                        </tr>
+                                                    </tfoot>
+                                                )}
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="flex gap-4 pt-4">
                                     <button
                                         type="submit"
-                                        disabled={isSaving || availableProducts.length === 0 || selectedProducts.length === 0}
+                                        disabled={isSaving || mountingOrderItems.length === 0}
                                         className="flex-[2] h-16 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:brightness-110 active:scale-95 disabled:grayscale disabled:opacity-50 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 border-t border-border/20"
                                     >
                                         {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Download className="h-6 w-6" />}
@@ -997,6 +1065,10 @@ export default function OrdersPage() {
                                                         <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">ID Único (UUID)</p>
                                                         <p className="text-muted-foreground font-mono text-[10px] break-all">{selectedOrder.id}</p>
                                                     </div>
+                                                    <div className="pt-4 border-t border-border/10">
+                                                        <p className="text-[9px] font-black text-primary uppercase tracking-widest mb-1">Valor Total do Pedido</p>
+                                                        <p className="text-2xl font-black text-foreground italic">R$ {selectedOrder.total_amount?.toFixed(2) || "0.00"}</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1097,6 +1169,7 @@ export default function OrdersPage() {
                                                                     <th className="px-4 sm:px-6 py-4">ID Interno</th>
                                                                     <th className="px-4 sm:px-6 py-4">S/N Original</th>
                                                                     <th className="px-4 sm:px-6 py-4">Marca</th>
+                                                                    <th className="px-4 sm:px-6 py-4">Preço Unit.</th>
                                                                     <th className="px-4 sm:px-6 py-4 text-right">Conferência</th>
                                                                 </tr>
                                                             </thead>
@@ -1109,6 +1182,7 @@ export default function OrdersPage() {
                                                                             <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-primary font-black uppercase tracking-widest">{item.products?.internal_serial || "N/A"}</td>
                                                                             <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-muted-foreground/40">{item.products?.original_serial || "N/A"}</td>
                                                                             <td className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{item.products?.brand || "N/A"}</td>
+                                                                            <td className="px-4 sm:px-6 py-4 font-bold text-foreground">R$ {item.unit_price?.toFixed(2) || "0.00"}</td>
                                                                             <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                                                                                 {isVerified ? (
                                                                                     <span className="inline-flex items-center gap-1.5 text-emerald-500 font-black text-[9px] uppercase tracking-wider bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">

@@ -18,7 +18,7 @@ export default function ClientsPage() {
 
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [clientForm, setClientForm] = useState({ name: "", tax_id: "", email: "", phone: "", address: "" });
+  const [clientForm, setClientForm] = useState({ name: "", tax_id: "", email: "", phone: "", address: "", price_small: 0, price_medium: 0, price_large: 0 });
   const [isSaving, setIsSaving] = useState(false);
 
   const canEdit = profile?.role === "GESTOR" || profile?.role === "ADMIN";
@@ -100,11 +100,14 @@ export default function ClientsPage() {
         tax_id: client.tax_id || "",
         email: client.email || "",
         phone: client.phone || "",
-        address: client.address || ""
+        address: client.address || "",
+        price_small: client.price_small || 0,
+        price_medium: client.price_medium || 0,
+        price_large: client.price_large || 0
       });
     } else {
       setEditingClient(null);
-      setClientForm({ name: "", tax_id: "", email: "", phone: "", address: "" });
+      setClientForm({ name: "", tax_id: "", email: "", phone: "", address: "", price_small: 0, price_medium: 0, price_large: 0 });
     }
     setShowModal(true);
   };
@@ -129,7 +132,10 @@ export default function ClientsPage() {
             email: clientForm.email,
             phone: clientForm.phone,
             address: clientForm.address,
-            tax_id: clientForm.tax_id
+            tax_id: clientForm.tax_id,
+            price_small: clientForm.price_small,
+            price_medium: clientForm.price_medium,
+            price_large: clientForm.price_large
           }]);
 
         if (error) throw error;
@@ -219,6 +225,7 @@ export default function ClientsPage() {
                     <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Código</th>
                     <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Contato Principal</th>
                     <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Localização</th>
+                    <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Tabela de Preços (P/M/G)</th>
                     <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Ações</th>
                   </tr>
                 </thead>
@@ -281,6 +288,19 @@ export default function ClientsPage() {
                           <div className="flex items-center gap-2 text-muted-foreground text-[9px] sm:text-[10px] font-black bg-foreground/5 w-fit px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-border/10 shadow-inner uppercase">
                             <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary opacity-70" />
                             {client.address ? (client.address.length > 25 ? client.address.substring(0, 25) + '...' : client.address) : "Sem Endereço"}
+                          </div>
+                        </td>
+                        <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                          <div className="flex gap-2">
+                            <span className="text-[10px] font-black px-2 py-1 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20" title="Pequeno">
+                              P: R${client.price_small?.toFixed(2)}
+                            </span>
+                            <span className="text-[10px] font-black px-2 py-1 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20" title="Médio">
+                              M: R${client.price_medium?.toFixed(2)}
+                            </span>
+                            <span className="text-[10px] font-black px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" title="Grande">
+                              G: R${client.price_large?.toFixed(2)}
+                            </span>
                           </div>
                         </td>
                         <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
@@ -401,6 +421,44 @@ export default function ClientsPage() {
                       className="w-full bg-foreground/5 border border-border/20 rounded-2xl pl-12 pr-5 py-4 h-28 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 resize-none text-foreground transition-all shadow-inner font-bold"
                       placeholder="Rua, Número, Bairro, Cidade - Estado"
                     />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1 block">Tabela de Preços por Tamanho (R$)</label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Pequeno</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={clientForm.price_small}
+                        onChange={e => setClientForm({ ...clientForm, price_small: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold"
+                        placeholder="0,00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Médio</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={clientForm.price_medium}
+                        onChange={e => setClientForm({ ...clientForm, price_medium: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold"
+                        placeholder="0,00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Grande</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={clientForm.price_large}
+                        onChange={e => setClientForm({ ...clientForm, price_large: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold"
+                        placeholder="0,00"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-4 pt-4">

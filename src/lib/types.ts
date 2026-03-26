@@ -101,6 +101,9 @@ export interface Client {
     email: string | null;
     phone: string | null;
     address: string | null;
+    price_small: number;
+    price_medium: number;
+    price_large: number;
     created_at: string;
     updated_at: string;
 }
@@ -117,6 +120,7 @@ export interface Order {
     id: string;
     client_id: string;
     status: 'PENDENTE' | 'CONCLUIDO' | 'CANCELADO' | 'FATURADO' | 'DESPACHADO' | 'ENTREGUE';
+    total_amount?: number | null;
     created_at: string;
     updated_at: string;
     clients?: {
@@ -124,6 +128,7 @@ export interface Order {
     };
     order_items?: {
         id: string;
+        unit_price?: number | null;
         products: {
             id: string;
             model: string | null;
