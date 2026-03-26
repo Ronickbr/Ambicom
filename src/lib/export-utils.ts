@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import * as QRCode from 'qrcode';
+import { calculateProductSize } from './product-utils';
 
 export const exportToPDF = (title: string, headers: string[], data: (string | number | boolean | null)[][], fileName: string) => {
     const doc = new jsPDF();
@@ -226,9 +227,14 @@ export const printLabels = async (products: any[]) => {
         doc.text(val(p.defrost_power), 47, currentY + 8, { align: 'center' });
 
         doc.setFontSize(6.5);
-        doc.text("GRADE", 76, currentY + 2.5, { align: 'center' });
-        doc.setFontSize(9);
-        doc.text("", 76, currentY + 8, { align: 'center' }); // Leave blank per user request
+        doc.text("TAMANHO", 76, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(14);
+
+        // Map size to initial
+        const fullSize = p.size || await calculateProductSize(p.volume_total);
+        const displaySize = fullSize === 'Pequeno' ? 'P' : fullSize === 'Médio' ? 'M' : fullSize === 'Grande' ? 'G' : "";
+
+        doc.text(displaySize, 76, currentY + 9, { align: 'center' });
 
         currentY += 12;
 
