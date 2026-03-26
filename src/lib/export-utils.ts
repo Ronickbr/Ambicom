@@ -187,22 +187,13 @@ export const printLabels = async (products: any[]) => {
         currentY += 12;
         doc.line(8, currentY, 92, currentY);
 
-        // Row 6: PRESSÃO ALTA | PRESSÃO BAIXA | CAPAC. CONG.
-        doc.line(34, currentY, 34, currentY + 12);
+        // Row 6: PRESSÃO ALTA / BAIXA | CAPAC. CONG.
         doc.line(60, currentY, 60, currentY + 12);
 
         doc.setFontSize(6.5);
-        doc.text("PRESSÃO ALTA", 21, currentY + 2.5, { align: 'center' });
-        doc.setFontSize(9);
-
-        // Handle pressure splitting or custom logic
-        const pressures = (p.pressure_high_low || "").split('/');
-        doc.text(val(pressures[0]), 21, currentY + 8, { align: 'center' });
-
-        doc.setFontSize(6.5);
-        doc.text("PRESSÃO BAIXA", 47, currentY + 2.5, { align: 'center' });
-        doc.setFontSize(9);
-        doc.text(val(pressures[1]), 47, currentY + 8, { align: 'center' });
+        doc.text("P. DE ALTA / P. DE BAIXA", 34, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(8);
+        doc.text(val(p.pressure_high_low), 34, currentY + 8, { align: 'center' });
 
         doc.setFontSize(6.5);
         doc.text("CAPAC. CONG.", 76, currentY + 2.5, { align: 'center' });
