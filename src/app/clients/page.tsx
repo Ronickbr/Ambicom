@@ -225,8 +225,7 @@ export default function ClientsPage() {
                     <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Código</th>
                     <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Contato Principal</th>
                     <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Localização</th>
-                    <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Tabela de Preços (P/M/G)</th>
-                    <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Ações</th>
+                    <th className="px-4 sm:px-6 py-5 whitespace-nowrap text-right pr-6 sm:pr-10">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -288,19 +287,6 @@ export default function ClientsPage() {
                           <div className="flex items-center gap-2 text-muted-foreground text-[9px] sm:text-[10px] font-black bg-foreground/5 w-fit px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-border/10 shadow-inner uppercase">
                             <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary opacity-70" />
                             {client.address ? (client.address.length > 25 ? client.address.substring(0, 25) + '...' : client.address) : "Sem Endereço"}
-                          </div>
-                        </td>
-                        <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
-                          <div className="flex gap-2">
-                            <span className="text-[10px] font-black px-2 py-1 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20" title="Pequeno">
-                              P: R${client.price_small?.toFixed(2)}
-                            </span>
-                            <span className="text-[10px] font-black px-2 py-1 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20" title="Médio">
-                              M: R${client.price_medium?.toFixed(2)}
-                            </span>
-                            <span className="text-[10px] font-black px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" title="Grande">
-                              G: R${client.price_large?.toFixed(2)}
-                            </span>
                           </div>
                         </td>
                         <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
