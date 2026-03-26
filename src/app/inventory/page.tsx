@@ -586,7 +586,7 @@ export default function InventoryPage() {
                                     <table className="w-full text-left border-collapse min-w-[700px] sm:min-w-full">
                                         <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
                                             <tr>
-                                                <th className="px-4 py-6 text-center w-12">
+                                                <th className="px-4 py-6 text-center w-12 sticky left-0 z-50 bg-card/95 border-r border-border/10">
                                                     <input
                                                         type="checkbox"
                                                         checked={products.length > 0 && selectedIds.size === products.length}
@@ -594,7 +594,7 @@ export default function InventoryPage() {
                                                         className="h-4 w-4 rounded border-border/40 bg-foreground/5 text-primary focus:ring-primary/30 cursor-pointer"
                                                     />
                                                 </th>
-                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Equipamento</th>
+                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap sticky left-12 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Equipamento</th>
                                                 <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Especificações</th>
                                                 <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Rastreabilidade</th>
                                                 <th className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">Status</th>
@@ -614,8 +614,8 @@ export default function InventoryPage() {
                                                             isSelected && "bg-primary/[0.05]"
                                                         )}
                                                     >
-                                                        {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_15px_rgba(14,165,233,0.5)]" />}
-                                                        <td className="px-4 py-6 text-center" onClick={e => e.stopPropagation()}>
+                                                        <td className="px-4 py-6 text-center sticky left-0 z-40 bg-card/95 group-hover:bg-card/95 transition-colors border-r border-border/10" onClick={e => e.stopPropagation()}>
+                                                            {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_15px_rgba(14,165,233,0.5)]" />}
                                                             <input
                                                                 type="checkbox"
                                                                 checked={isSelected}
@@ -623,7 +623,7 @@ export default function InventoryPage() {
                                                                 className="h-4 w-4 rounded border-border/40 bg-foreground/5 text-primary focus:ring-primary/30 cursor-pointer"
                                                             />
                                                         </td>
-                                                        <td className="px-4 sm:px-6 py-4 sm:py-6 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                        <td className="px-4 sm:px-6 py-4 sm:py-6 whitespace-nowrap sticky left-12 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
                                                             <div className="flex items-center gap-3 sm:gap-4">
                                                                 <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-foreground/5 flex items-center justify-center border border-border/20 group-hover:border-primary/50 group-hover:bg-primary/5 transition-all shadow-inner shrink-0">
                                                                     <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-primary transition-colors" />
