@@ -10,6 +10,7 @@ Uma plataforma moderna e intuitiva para gerenciamento de inventário, controle d
 - **📦 Gestão de Inventário:** Controle detalhado de entradas, saídas e movimentações de produtos.
 - **👥 Controle de Clientes:** Cadastro e acompanhamento de clientes com histórico de interações.
 - **📄 Exportação Avançada:** Geração de relatórios profissionais em formatos **PDF** (via jspdf) e **Excel** (via xlsx).
+- **📋 Gestão de Protocolos:** Personalização e ordenação dinâmica das categorias e itens do checklist de auditoria.
 - **📱 PWA Ready:** Aplicativo pronto para ser instalado e utilizado em dispositivos móveis, com suporte offline.
 - **☁️ Integração Supabase:** Backend escalável com autenticação segura e banco de dados em tempo real.
 
@@ -49,7 +50,7 @@ Siga os passos abaixo para rodar o projeto localmente:
 
 ## 📈 Versionamento
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.5.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.7.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ## 📄 Licença
 

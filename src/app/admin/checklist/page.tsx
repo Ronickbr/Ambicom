@@ -10,7 +10,9 @@ import {
     AlertTriangle,
     CheckCircle2,
     Save,
-    ChevronLeft
+    ChevronLeft,
+    ChevronUp,
+    ChevronDown
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -36,6 +38,8 @@ export default function AdminChecklistPage() {
     const [newCategoryName, setNewCategoryName] = useState("");
     const [isSavingCategory, setIsSavingCategory] = useState(false);
     const [isManagingCategories, setIsManagingCategories] = useState(false);
+
+    const [isReordering, setIsReordering] = useState(false);
 
     const isAuthorized = profile?.role === "ADMIN";
 
@@ -154,6 +158,40 @@ export default function AdminChecklistPage() {
         }
     };
 
+    const moveCategoryUp = async (index: number) => {
+        if (index === 0) return;
+        const newList = [...dynamicCategories];
+        const temp = newList[index];
+        newList[index] = newList[index - 1];
+        newList[index - 1] = temp;
+
+        try {
+            setDynamicCategories(newList);
+            await updateCategoriesInDB(newList);
+        } catch (error) {
+            logger.error("Erro ao mover categoria:", error);
+            toast.error("Erro ao salvar nova ordem");
+            fetchData(); // Rollback
+        }
+    };
+
+    const moveCategoryDown = async (index: number) => {
+        if (index === dynamicCategories.length - 1) return;
+        const newList = [...dynamicCategories];
+        const temp = newList[index];
+        newList[index] = newList[index + 1];
+        newList[index + 1] = temp;
+
+        try {
+            setDynamicCategories(newList);
+            await updateCategoriesInDB(newList);
+        } catch (error) {
+            logger.error("Erro ao mover categoria:", error);
+            toast.error("Erro ao salvar nova ordem");
+            fetchData(); // Rollback
+        }
+    };
+
     const handleAddItem = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newItemLabel.trim()) {
@@ -240,7 +278,8 @@ export default function AdminChecklistPage() {
         return acc;
     }, {} as Record<string, ChecklistItem[]>);
 
-    const categories = Object.keys(groupedItems).sort();
+    // Use dynamicCategories order, but filter to only show categories that have items OR if categories list is explicitly defined
+    const categories = dynamicCategories.length > 0 ? dynamicCategories : Object.keys(groupedItems).sort();
 
     return (
         <MainLayout>
@@ -268,26 +307,42 @@ export default function AdminChecklistPage() {
 
                 {/* Categories Management Bar */}
                 <div className="glass-card bg-card/20 border-border/10 p-4 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-4">
-                    <div className="flex items-center gap-3 shrink-0">
-                        <Plus className="h-4 w-4 text-primary" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Nova Categoria Principal</span>
+                    <div className="flex-1 flex flex-col sm:flex-row items-center gap-4 w-full">
+                        <div className="flex items-center gap-3 shrink-0">
+                            <Plus className="h-4 w-4 text-primary" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Nova Categoria Principal</span>
+                        </div>
+                        <form onSubmit={handleAddCategory} className="flex-1 flex gap-2 w-full">
+                            <input
+                                type="text"
+                                placeholder="Nome da categoria (ex: Elétrica, Hidráulica...)"
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                className="flex-1 bg-background/30 border border-border/20 rounded-xl px-4 py-2 text-xs font-bold text-foreground focus:ring-1 focus:ring-primary/40 outline-none transition-all"
+                            />
+                            <button
+                                type="submit"
+                                disabled={isSavingCategory}
+                                className="h-10 px-6 rounded-xl bg-primary/20 text-primary hover:bg-primary hover:text-primary-foreground font-black uppercase tracking-widest text-[9px] transition-all disabled:opacity-50"
+                            >
+                                {isSavingCategory ? <Loader2 className="h-3 w-3 animate-spin" /> : "Criar"}
+                            </button>
+                        </form>
                     </div>
-                    <form onSubmit={handleAddCategory} className="flex-1 flex gap-2 w-full">
-                        <input
-                            type="text"
-                            placeholder="Nome da categoria (ex: Elétrica, Hidráulica...)"
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            className="flex-1 bg-background/30 border border-border/20 rounded-xl px-4 py-2 text-xs font-bold text-foreground focus:ring-1 focus:ring-primary/40 outline-none transition-all"
-                        />
-                        <button
-                            type="submit"
-                            disabled={isSavingCategory}
-                            className="h-10 px-6 rounded-xl bg-primary/20 text-primary hover:bg-primary hover:text-primary-foreground font-black uppercase tracking-widest text-[9px] transition-all disabled:opacity-50"
-                        >
-                            {isSavingCategory ? <Loader2 className="h-3 w-3 animate-spin" /> : "Criar"}
-                        </button>
-                    </form>
+
+                    <div className="w-px h-8 bg-border/10 hidden sm:block" />
+
+                    <button
+                        onClick={() => setIsReordering(!isReordering)}
+                        className={cn(
+                            "h-10 px-6 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center gap-2 border whitespace-nowrap",
+                            isReordering
+                                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                                : "bg-card/40 text-muted-foreground border-border/10 hover:border-primary/30 hover:text-primary"
+                        )}
+                    >
+                        {isReordering ? "Concluir Ordenação" : "Reordenar Categorias"}
+                    </button>
                 </div>
 
                 <div className="grid lg:grid-cols-3 gap-8">
@@ -351,10 +406,28 @@ export default function AdminChecklistPage() {
                                 <p className="text-sm font-black uppercase tracking-widest">Nenhum item cadastrado</p>
                             </div>
                         ) : (
-                            categories.map(category => (
+                            categories.map((category, index) => (
                                 <div key={category} className="space-y-4">
                                     <div className="flex items-center justify-between px-2">
                                         <div className="flex items-center gap-3">
+                                            {isReordering && (
+                                                <div className="flex items-center gap-1 mr-2">
+                                                    <button
+                                                        onClick={() => moveCategoryUp(index)}
+                                                        disabled={index === 0}
+                                                        className="h-6 w-6 rounded-md flex items-center justify-center bg-card/40 border border-border/10 text-muted-foreground hover:text-primary disabled:opacity-20 transition-all font-bold"
+                                                    >
+                                                        <ChevronUp className="h-3 w-3" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => moveCategoryDown(index)}
+                                                        disabled={index === categories.length - 1}
+                                                        className="h-6 w-6 rounded-md flex items-center justify-center bg-card/40 border border-border/10 text-muted-foreground hover:text-primary disabled:opacity-20 transition-all font-bold"
+                                                    >
+                                                        <ChevronDown className="h-3 w-3" />
+                                                    </button>
+                                                </div>
+                                            )}
                                             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary italic">{category}</h3>
                                             {!items.some(i => i.category === category) && (
                                                 <button

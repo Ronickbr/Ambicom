@@ -47,7 +47,9 @@ export default function TechnicianChecklist() {
         return acc;
     }, {} as Record<string, ChecklistItem[]>);
 
-    const categories = Object.keys(groupedItems).sort();
+    const categories = dynamicCategories.length > 0
+        ? dynamicCategories.filter(cat => groupedItems[cat])
+        : Object.keys(groupedItems).sort();
 
     useEffect(() => {
         // Expand first category by default
