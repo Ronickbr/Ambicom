@@ -10,7 +10,6 @@ import {
     AlertTriangle,
     CheckCircle2,
     Loader2,
-    Filter,
     ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
@@ -120,12 +119,6 @@ export default function TechnicianPage() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full rounded-2xl border border-border/20 bg-card/50 py-3 sm:py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all text-foreground shadow-inner backdrop-blur-sm placeholder:text-muted-foreground/30 font-medium"
                         />
-                    </div>
-                    <div className="flex gap-3 w-full md:w-auto">
-                        <button className="flex-1 md:flex-none px-8 h-14 bg-card/50 rounded-2xl border border-border/20 text-[10px] font-black uppercase tracking-widest text-foreground flex items-center justify-center gap-3 hover:bg-foreground/5 transition-all shadow-inner">
-                            <Filter className="h-4 w-4 text-primary" />
-                            Filtros Avançados
-                        </button>
                     </div>
                 </div>
 

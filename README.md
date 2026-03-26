@@ -50,7 +50,7 @@ Siga os passos abaixo para rodar o projeto localmente:
 
 ## 📈 Versionamento
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.7.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.7.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ## 📄 Licença
 
