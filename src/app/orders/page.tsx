@@ -94,7 +94,7 @@ export default function OrdersPage() {
                         cameraId,
                         config,
                         (decodedText) => {
-                            handleScanMountingProduct(decodedText);
+                            handleAddProductToOrder(decodedText);
                             setShowMountingCamera(false);
                         },
                         (errorMessage) => { }
@@ -105,7 +105,7 @@ export default function OrdersPage() {
                         { facingMode: "environment" },
                         config,
                         (decodedText) => {
-                            handleScanMountingProduct(decodedText);
+                            handleAddProductToOrder(decodedText);
                             setShowMountingCamera(false);
                         },
                         (errorMessage) => { }
@@ -145,21 +145,23 @@ export default function OrdersPage() {
     }, [showMountingCamera]);
 
     const handleScanMountingCode = (code: string) => {
-        handleScanMountingProduct(code);
+        handleAddProductToOrder(code);
     };
 
-    const handleScanMountingProduct = async (code: string) => {
-        if (!selectedClient || !code) {
-            if (!selectedClient) toast.error("Selecione um cliente primeiro.");
+    const handleAddProductToOrder = async (code: string) => {
+        if (!selectedOrder || selectedOrder.status !== "PENDENTE") {
+            toast.error("Selecione um pedido pendente ativo.");
             return;
         }
 
+        if (!code) return;
+
         const input = code.trim().toUpperCase();
 
-        // Prevent duplicates in current mounting list
-        if (mountingOrderItems.some(item =>
-            item.product.internal_serial?.toUpperCase() === input ||
-            item.product.original_serial?.toUpperCase() === input
+        // Prevent duplicates in current order
+        if (selectedOrder.order_items?.some((item: any) =>
+            item.products?.internal_serial?.toUpperCase() === input ||
+            item.products?.original_serial?.toUpperCase() === input
         )) {
             toast.warning("Produto já adicionado a este pedido!");
             setMountingScanInput("");
@@ -181,7 +183,7 @@ export default function OrdersPage() {
             }
 
             const product = data as Product;
-            const client = clients.find(c => c.id === selectedClient);
+            const client = (selectedOrder as any).clients;
             let unitPrice = 0;
 
             if (client) {
@@ -190,14 +192,78 @@ export default function OrdersPage() {
                 else if (product.size === 'Grande') unitPrice = client.price_large || 0;
             }
 
-            setMountingOrderItems(prev => [...prev, { product, unitPrice }]);
-            setMountingScanInput("");
+            const { error: updateError } = await supabase
+                .from("products")
+                .update({ order_id: selectedOrder.id })
+                .eq("id", product.id);
+
+            if (updateError) throw updateError;
+
+            const { error: insertError } = await supabase
+                .from("order_items")
+                .insert([{
+                    order_id: selectedOrder.id,
+                    product_id: product.id,
+                    unit_price: unitPrice
+                }]);
+
+            if (insertError) throw insertError;
+
+            const newTotal = (selectedOrder.total_amount || 0) + unitPrice;
+            await supabase
+                .from("orders")
+                .update({ total_amount: newTotal })
+                .eq("id", selectedOrder.id);
+
             toast.success("Produto adicionado!", {
                 description: `${product.brand} ${product.model} - R$ ${unitPrice.toFixed(2)}`
             });
+
+            setMountingScanInput("");
+
+            // Reload order details smoothly
+            handleViewOrder(selectedOrder);
+            fetchOrders();
         } catch (err) {
-            logger.error("Erro ao buscar produto:", err);
+            logger.error("Erro ao buscar/adicionar produto:", err);
             toast.error("Erro ao buscar produto.");
+        }
+    };
+
+    const handleRemoveItemFromOrder = async (itemId: string, productId: string, unitPrice: number) => {
+        if (!selectedOrder || selectedOrder.status !== "PENDENTE") return;
+
+        setIsSaving(true);
+        try {
+            const { error: deleteError } = await supabase
+                .from("order_items")
+                .delete()
+                .eq("id", itemId);
+
+            if (deleteError) throw deleteError;
+
+            const { error: updateError } = await supabase
+                .from("products")
+                .update({ order_id: null })
+                .eq("id", productId);
+
+            if (updateError) throw updateError;
+
+            const newTotal = Math.max(0, (selectedOrder.total_amount || 0) - unitPrice);
+            await supabase
+                .from("orders")
+                .update({ total_amount: newTotal })
+                .eq("id", selectedOrder.id);
+
+            toast.info("Produto removido do pedido.");
+
+            handleViewOrder(selectedOrder);
+            fetchOrders();
+        } catch (err) {
+            logger.error("Erro ao remover produto:", err);
+            toast.error("Erro ao remover produto.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -301,59 +367,28 @@ export default function OrdersPage() {
 
     const handleCreateOrder = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedClient || mountingOrderItems.length === 0) {
-            toast.error("Selecione um cliente e adicione pelo menos um produto.");
+        if (!selectedClient) {
+            toast.error("Selecione um cliente.");
             return;
         }
 
         setIsSaving(true);
         try {
-            const totalAmount = mountingOrderItems.reduce((acc, item) => acc + item.unitPrice, 0);
-
-            const { data: orderData, error: orderError } = await supabase
+            const { error: orderError } = await supabase
                 .from("orders")
                 .insert([{
                     client_id: selectedClient,
                     status: "PENDENTE",
-                    total_amount: totalAmount
-                }])
-                .select()
-                .single();
+                    total_amount: 0
+                }]);
 
             if (orderError) throw orderError;
 
-            const orderId = (orderData as Order).id;
-            const productIds = mountingOrderItems.map(item => item.product.id);
-
-            // 2. Link products to order in products table
-            const { error: productError } = await supabase
-                .from("products")
-                .update({
-                    order_id: orderId
-                })
-                .in("id", productIds);
-
-            if (productError) throw productError;
-
-            // 3. Insert into order_items table
-            const orderItems = mountingOrderItems.map(item => ({
-                order_id: orderId,
-                product_id: item.product.id,
-                unit_price: item.unitPrice
-            }));
-
-            const { error: itemsError } = await supabase
-                .from("order_items")
-                .insert(orderItems);
-
-            if (itemsError) throw itemsError;
-
             toast.success("Pedido criado com sucesso!", {
-                description: `${productIds.length} produtos foram vinculados.`
+                description: "Agora você pode abri-lo para adicionar os produtos."
             });
             setShowAddModal(false);
             setSelectedClient("");
-            setMountingOrderItems([]);
             fetchOrders();
         } catch (error) {
             const err = error as Error;
@@ -770,145 +805,14 @@ export default function OrdersPage() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between mb-1 ml-1">
-                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">2. Adicionar Itens via Scanner</label>
-                                        <span className="text-[10px] font-black px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">{mountingOrderItems.length} ITENS ADICIONADOS</span>
-                                    </div>
-
-                                    {/* Interface de Scanner para Montagem */}
-                                    <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 sm:p-6 space-y-4">
-                                        <div className="flex flex-col sm:flex-row items-center gap-4">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowMountingCamera(!showMountingCamera)}
-                                                className={cn(
-                                                    "h-14 w-full sm:w-14 rounded-2xl flex items-center justify-center transition-all border shrink-0",
-                                                    showMountingCamera ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-                                                )}
-                                            >
-                                                {showMountingCamera ? <X className="h-6 w-6" /> : <Camera className="h-6 w-6" />}
-                                            </button>
-                                            <div className="flex-1 w-full">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Aguardando Escaneamento para Montagem...</p>
-                                                <div className="relative">
-                                                    <input
-                                                        type="text"
-                                                        value={mountingScanInput}
-                                                        onChange={(e) => setMountingScanInput(e.target.value)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                e.preventDefault();
-                                                                handleScanMountingProduct(mountingScanInput);
-                                                            }
-                                                        }}
-                                                        placeholder="Escaneie ou digite o ID Interno..."
-                                                        className="w-full h-14 bg-card/40 border border-border/20 rounded-xl px-6 text-sm text-foreground placeholder:text-muted-foreground/30 focus:border-primary/50 transition-all outline-none"
-                                                    />
-                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden sm:block">
-                                                        <span className="text-[8px] font-bold text-muted-foreground/30 bg-foreground/5 px-2 py-1 rounded">ENTER</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Modal de Câmera Standalone para Novo Pedido */}
-                                        {showMountingCamera && (
-                                            <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-4 sm:p-8 animate-in fade-in duration-300">
-                                                <div className="w-full max-w-4xl relative">
-                                                    <div className="absolute -top-16 left-0 right-0 flex items-center justify-between px-4">
-                                                        <div className="flex flex-col">
-                                                            <h3 className="text-white text-xl font-black uppercase tracking-tighter italic">Scanner Ativo</h3>
-                                                            <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest">Aponte somente para o QR Code da etiqueta</p>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setShowMountingCamera(false)}
-                                                            className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-red-500/20 text-white hover:text-red-500 flex items-center justify-center transition-all backdrop-blur-xl border border-white/10 hover:border-red-500/20 active:scale-95"
-                                                        >
-                                                            <X className="h-6 w-6" />
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="bg-card/40 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative aspect-[4/3] sm:aspect-video flex items-center justify-center font-black">
-                                                        <div id="mounting-reader" className="w-full h-full object-cover"></div>
-
-                                                        {/* Scanning Overlay Effect */}
-                                                        <div className="absolute inset-0 pointer-events-none border-[2px] border-primary/20 rounded-[2.5rem]"></div>
-                                                        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-primary/30 shadow-[0_0_15px_rgba(34,197,94,0.5)] animate-infinite-scan z-10"></div>
-                                                    </div>
-
-                                                    <div className="mt-8 flex justify-center">
-                                                        <div className="bg-white/10 backdrop-blur-md px-8 py-3 rounded-full border border-white/10 shadow-xl">
-                                                            <p className="text-white/70 text-[9px] uppercase font-black tracking-[0.4em] italic text-center animate-pulse">Escaneando novo item...</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Tabela de Itens Escaneados */}
-                                    <div className="border border-border/20 rounded-2xl bg-card/40 overflow-hidden shadow-inner backdrop-blur-sm">
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-left text-xs border-collapse">
-                                                <thead className="bg-foreground/5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-border/10">
-                                                    <tr>
-                                                        <th className="px-4 py-3">Model</th>
-                                                        <th className="px-4 py-3">ID Interno</th>
-                                                        <th className="px-4 py-3">Tamanho</th>
-                                                        <th className="px-4 py-3">Preço Unit.</th>
-                                                        <th className="px-4 py-3 text-right">Ação</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-white/5">
-                                                    {mountingOrderItems.map((item, index) => (
-                                                        <tr key={`${item.product.id}-${index}`} className="hover:bg-white/[0.02] transition-colors">
-                                                            <td className="px-4 py-3 font-bold text-foreground italic uppercase">{item.product.model}</td>
-                                                            <td className="px-4 py-3 font-mono text-primary font-black">{item.product.internal_serial}</td>
-                                                            <td className="px-4 py-3 font-bold text-emerald-500 uppercase">{item.product.size || "-"}</td>
-                                                            <td className="px-4 py-3 font-bold text-foreground">R$ {item.unitPrice.toFixed(2)}</td>
-                                                            <td className="px-4 py-3 text-right">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setMountingOrderItems(prev => prev.filter((_, i) => i !== index))}
-                                                                    className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500 transition-all"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                    {mountingOrderItems.length === 0 && (
-                                                        <tr>
-                                                            <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground italic opacity-50 font-medium">
-                                                                Nenhum produto adicionado. Use o scanner acima.
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                                {mountingOrderItems.length > 0 && (
-                                                    <tfoot className="bg-foreground/5 border-t border-border/10">
-                                                        <tr>
-                                                            <td colSpan={3} className="px-4 py-3 text-right font-black text-[9px] uppercase tracking-widest text-muted-foreground">Total Estimado:</td>
-                                                            <td className="px-4 py-3 font-black text-sm text-primary">R$ {mountingOrderItems.reduce((acc, item) => acc + item.unitPrice, 0).toFixed(2)}</td>
-                                                            <td></td>
-                                                        </tr>
-                                                    </tfoot>
-                                                )}
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <div className="flex gap-4 pt-4">
                                     <button
                                         type="submit"
-                                        disabled={isSaving || mountingOrderItems.length === 0}
-                                        className="flex-[2] h-16 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:brightness-110 active:scale-95 disabled:grayscale disabled:opacity-50 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 border-t border-border/20"
+                                        disabled={isSaving || !selectedClient}
+                                        className="flex-[2] h-16 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:brightness-110 active:scale-95 disabled:grayscale disabled:opacity-50 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3"
                                     >
-                                        {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Download className="h-6 w-6" />}
-                                        Finalizar Remessa
+                                        {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Plus className="h-6 w-6" />}
+                                        Criar Pedido
                                     </button>
                                     <button
                                         type="button"
@@ -1030,7 +934,80 @@ export default function OrdersPage() {
                                     </div>
 
                                     {/* Products List */}
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 pt-4">
+
+                                        {/* Scanner Interface (Only for PENDENTE) */}
+                                        {selectedOrder.status === "PENDENTE" && (
+                                            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 sm:p-6 space-y-4 mb-4">
+                                                <div className="flex flex-col sm:flex-row items-center gap-4">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowMountingCamera(!showMountingCamera)}
+                                                        className={cn(
+                                                            "h-14 w-full sm:w-14 rounded-2xl flex items-center justify-center transition-all border shrink-0",
+                                                            showMountingCamera ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                                                        )}
+                                                    >
+                                                        {showMountingCamera ? <X className="h-6 w-6" /> : <Camera className="h-6 w-6" />}
+                                                    </button>
+                                                    <div className="flex-1 w-full">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Aguardando Escaneamento...</p>
+                                                        <div className="relative">
+                                                            <input
+                                                                type="text"
+                                                                value={mountingScanInput}
+                                                                onChange={(e) => setMountingScanInput(e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        e.preventDefault();
+                                                                        handleAddProductToOrder(mountingScanInput);
+                                                                    }
+                                                                }}
+                                                                placeholder="Escaneie ou digite o código do produto..."
+                                                                className="w-full h-14 bg-card/40 border border-border/20 rounded-xl px-6 text-sm text-foreground placeholder:text-muted-foreground/30 focus:border-primary/50 transition-all outline-none"
+                                                            />
+                                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden sm:block">
+                                                                <span className="text-[8px] font-bold text-muted-foreground/30 bg-foreground/5 px-2 py-1 rounded">ENTER</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {showMountingCamera && (
+                                                    <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-4 sm:p-8 animate-in fade-in duration-300">
+                                                        <div className="w-full max-w-4xl relative">
+                                                            <div className="absolute -top-16 left-0 right-0 flex items-center justify-between px-4">
+                                                                <div className="flex flex-col">
+                                                                    <h3 className="text-white text-xl font-black uppercase tracking-tighter italic">Scanner Ativo</h3>
+                                                                    <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest">Aponte somente para o QR Code da etiqueta</p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setShowMountingCamera(false)}
+                                                                    className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-red-500/20 text-white hover:text-red-500 flex items-center justify-center transition-all backdrop-blur-xl border border-white/10 hover:border-red-500/20 active:scale-95"
+                                                                >
+                                                                    <X className="h-6 w-6" />
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="bg-card/40 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative aspect-[4/3] sm:aspect-video flex items-center justify-center font-black">
+                                                                <div id="mounting-reader" className="w-full h-full object-cover"></div>
+
+                                                                <div className="absolute inset-0 pointer-events-none border-[2px] border-primary/20 rounded-[2.5rem]"></div>
+                                                                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-primary/30 shadow-[0_0_15px_rgba(34,197,94,0.5)] animate-infinite-scan z-10"></div>
+                                                            </div>
+
+                                                            <div className="mt-8 flex justify-center">
+                                                                <div className="bg-white/10 backdrop-blur-md px-8 py-3 rounded-full border border-white/10 shadow-xl">
+                                                                    <p className="text-white/70 text-[9px] uppercase font-black tracking-[0.4em] italic text-center animate-pulse">Escaneando novo item...</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
                                                 <Package className="h-3 w-3" />
@@ -1048,7 +1025,8 @@ export default function OrdersPage() {
                                                                 <th className="px-4 sm:px-6 py-4">ID Interno</th>
                                                                 <th className="px-4 sm:px-6 py-4">S/N Original</th>
                                                                 <th className="px-4 sm:px-6 py-4">Marca</th>
-                                                                <th className="px-4 sm:px-6 py-4 text-right">Preço Unit.</th>
+                                                                <th className="px-4 sm:px-6 py-4">Preço Unit.</th>
+                                                                {selectedOrder.status === "PENDENTE" && <th className="px-4 sm:px-6 py-4 text-right">Ações</th>}
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-white/5">
@@ -1058,12 +1036,23 @@ export default function OrdersPage() {
                                                                     <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-primary font-black uppercase tracking-widest">{item.products?.internal_serial || "N/A"}</td>
                                                                     <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-muted-foreground/40">{item.products?.original_serial || "N/A"}</td>
                                                                     <td className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{item.products?.brand || "N/A"}</td>
-                                                                    <td className="px-4 sm:px-6 py-4 font-bold text-foreground text-right">R$ {item.unit_price?.toFixed(2) || "0.00"}</td>
+                                                                    <td className="px-4 sm:px-6 py-4 font-bold text-foreground">R$ {item.unit_price?.toFixed(2) || "0.00"}</td>
+                                                                    {selectedOrder.status === "PENDENTE" && (
+                                                                        <td className="px-4 sm:px-6 py-3 text-right">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id, item.unit_price || 0)}
+                                                                                className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500 transition-all inline-flex items-center justify-center shrink-0"
+                                                                            >
+                                                                                <Trash2 className="h-4 w-4" />
+                                                                            </button>
+                                                                        </td>
+                                                                    )}
                                                                 </tr>
                                                             ))}
                                                             {(!selectedOrder.order_items || selectedOrder.order_items.length === 0) && (
                                                                 <tr>
-                                                                    <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground italic">Nenhum item vinculado a este pedido.</td>
+                                                                    <td colSpan={selectedOrder.status === "PENDENTE" ? 6 : 5} className="px-6 py-10 text-center text-muted-foreground italic">Nenhum item vinculado a este pedido.</td>
                                                                 </tr>
                                                             )}
                                                         </tbody>
