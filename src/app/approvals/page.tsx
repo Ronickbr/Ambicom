@@ -203,12 +203,7 @@ export default function ApprovalsPage() {
                             className="w-full rounded-2xl border border-border/20 bg-card/50 py-3 sm:py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all text-foreground shadow-inner backdrop-blur-sm placeholder:text-muted-foreground/30 font-medium"
                         />
                     </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                        <button className="flex-1 sm:flex-none px-4 sm:px-8 h-12 sm:h-14 bg-card/50 rounded-2xl border border-border/20 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-foreground flex items-center justify-center gap-2 sm:gap-3 hover:bg-foreground/5 transition-all shadow-inner whitespace-nowrap">
-                            <Filter className="h-4 w-4 text-primary" />
-                            Marca
-                        </button>
-                    </div>
+
                 </div>
 
                 {filteredProducts.length > 0 ? (

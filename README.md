@@ -52,6 +52,10 @@ Siga os passos abaixo para rodar o projeto localmente:
 
 Este projeto utiliza o versionamento semântico. A versão atual é **v2.7.6**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
+### 📝 Histórico de Versões (v2.7.x)
+- **v2.7.6:** Remoção do botão de filtro "Marca" na Central de Revisão para simplificação da interface.
+- **v2.7.5:** Ajustes de alinhamento e melhorias na UX.
+
 ## 📄 Licença
 
 Este projeto está sob a licença [MIT](LICENSE).
