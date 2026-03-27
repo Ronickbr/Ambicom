@@ -48,9 +48,6 @@ export default function OrdersPage() {
     const [clients, setClients] = useState<Client[]>([]);
     const [selectedClient, setSelectedClient] = useState("");
     const [isSaving, setIsSaving] = useState(false);
-    const [scanInput, setScanInput] = useState("");
-    const [verifiedSerials, setVerifiedSerials] = useState<string[]>([]);
-    const scannerRef = React.useRef<HTMLInputElement>(null);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [isFetchingDetails, setIsFetchingDetails] = useState(false);
@@ -58,8 +55,6 @@ export default function OrdersPage() {
     const [mountingScanInput, setMountingScanInput] = useState("");
     const [showMountingCamera, setShowMountingCamera] = useState(false);
 
-    // Camera Scanning States
-    const [showCamera, setShowCamera] = useState(false);
 
     useEffect(() => {
         let html5QrCode: Html5Qrcode | null = null;
@@ -73,10 +68,10 @@ export default function OrdersPage() {
                 // Ensure DOM element is ready
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                const element = document.getElementById(showMountingCamera ? "mounting-reader" : "reader");
+                const element = document.getElementById("mounting-reader");
                 if (!element) return;
 
-                html5QrCode = new Html5Qrcode(showMountingCamera ? "mounting-reader" : "reader");
+                html5QrCode = new Html5Qrcode("mounting-reader");
                 const config = {
                     fps: 10,
                     qrbox: { width: 250, height: 250 },
@@ -99,13 +94,8 @@ export default function OrdersPage() {
                         cameraId,
                         config,
                         (decodedText) => {
-                            if (showMountingCamera) {
-                                handleScanMountingCode(decodedText);
-                                setShowMountingCamera(false);
-                            } else {
-                                handleScanCode(decodedText);
-                                setShowCamera(false);
-                            }
+                            handleScanMountingProduct(decodedText);
+                            setShowMountingCamera(false);
                         },
                         (errorMessage) => { }
                     );
@@ -115,13 +105,8 @@ export default function OrdersPage() {
                         { facingMode: "environment" },
                         config,
                         (decodedText) => {
-                            if (showMountingCamera) {
-                                handleScanMountingCode(decodedText);
-                                setShowMountingCamera(false);
-                            } else {
-                                handleScanCode(decodedText);
-                                setShowCamera(false);
-                            }
+                            handleScanMountingProduct(decodedText);
+                            setShowMountingCamera(false);
                         },
                         (errorMessage) => { }
                     );
@@ -143,13 +128,12 @@ export default function OrdersPage() {
                         description: "Certifique-se de que nenhuma outra aplicação esteja usando a câmera."
                     });
                 }
-                setShowCamera(false);
             } finally {
                 isChecking = false;
             }
         };
 
-        if (showCamera || showMountingCamera) {
+        if (showMountingCamera) {
             startScanner();
         }
 
@@ -158,31 +142,7 @@ export default function OrdersPage() {
                 html5QrCode.stop().catch(e => { /* silent stop */ });
             }
         };
-    }, [showCamera, showMountingCamera]);
-
-    const handleScanCode = (code: string) => {
-        if (!selectedOrder || !code) return;
-        const input = code.trim().toUpperCase();
-
-        const foundItem = selectedOrder.order_items?.find(
-            (item: any) => item.products?.internal_serial?.toUpperCase() === input ||
-                item.products?.original_serial?.toUpperCase() === input
-        );
-
-        if (foundItem) {
-            const internal = foundItem.products?.internal_serial?.toUpperCase() || "";
-            if (verifiedSerials.includes(internal)) {
-                toast.warning("Produto já conferido!");
-            } else {
-                setVerifiedSerials(prev => [...prev, internal]);
-                toast.success("Produto conferido!", {
-                    description: foundItem.products?.model || "Item validado"
-                });
-            }
-        } else {
-            toast.error("Produto não pertence a este pedido!");
-        }
-    };
+    }, [showMountingCamera]);
 
     const handleScanMountingCode = (code: string) => {
         handleScanMountingProduct(code);
@@ -405,7 +365,6 @@ export default function OrdersPage() {
 
     const handleViewOrder = async (order: Order) => {
         setSelectedOrder(order);
-        setVerifiedSerials([]);
         setShowDetailsModal(true);
         setIsFetchingDetails(true);
         try {
@@ -424,9 +383,6 @@ export default function OrdersPage() {
 
             if (error) throw error;
             setSelectedOrder(data as Order);
-
-            // Auto-focus scanner input
-            setTimeout(() => scannerRef.current?.focus(), 500);
         } catch (error) {
             logger.error("Erro ao buscar detalhes do pedido:", error);
             toast.error("Erro ao carregar detalhes do pedido");
@@ -437,33 +393,6 @@ export default function OrdersPage() {
 
 
 
-    const handleScanProduct = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedOrder || !scanInput) return;
-
-        const input = scanInput.trim().toUpperCase();
-
-        // Find if this serial exists in the order
-        const foundItem = selectedOrder.order_items?.find(
-            (item: any) => item.products?.internal_serial?.toUpperCase() === input
-        );
-
-        if (foundItem) {
-            if (verifiedSerials.includes(input)) {
-                toast.warning("Produto já conferido!");
-            } else {
-                setVerifiedSerials(prev => [...prev, input]);
-                toast.success("Produto conferido!", {
-                    description: foundItem.products?.model || "Item validado"
-                });
-            }
-        } else {
-            toast.error("Produto não pertence a este pedido!");
-        }
-
-        setScanInput("");
-        scannerRef.current?.focus();
-    };
 
     const handleCancelOrder = async (order: Order) => {
         if (!confirm("Deseja realmente cancelar este pedido? Os produtos voltarão ao estoque.")) return;
@@ -536,14 +465,6 @@ export default function OrdersPage() {
     };
 
     const handleFinalizeOrder = async (order: Order) => {
-        // Enforce verification for PENDENTE orders
-        const totalItems = order.order_items?.length || 0;
-        if (verifiedSerials.length < totalItems) {
-            toast.error("Conferência incompleta!", {
-                description: `Faltam ${totalItems - verifiedSerials.length} produtos para conferir via scanner.`
-            });
-            return;
-        }
 
         setIsSaving(true);
         try {
@@ -1003,290 +924,210 @@ export default function OrdersPage() {
             </div>
 
             {/* Modal de Detalhes do Pedido */}
-            {
-                showDetailsModal && selectedOrder && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-xl animate-in fade-in duration-500">
-                        <div className="glass-card w-full max-w-4xl max-h-[95vh] overflow-hidden border-border/20 shadow-2xl bg-card/90 relative flex flex-col">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            {showDetailsModal && selectedOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-xl animate-in fade-in duration-500">
+                    <div className="glass-card w-full max-w-4xl max-h-[95vh] overflow-hidden border-border/20 shadow-2xl bg-card/90 relative flex flex-col">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
-                            {/* Modal Header */}
-                            <div className="p-6 sm:p-8 border-b border-border/20 flex items-center justify-between shrink-0">
-                                <div className="space-y-1">
-                                    <h2 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-3">
-                                        Pedido #{selectedOrder.id.split("-")[0].toUpperCase()}
-                                        <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border", statusStyles[selectedOrder.status as keyof typeof statusStyles])}>
-                                            {selectedOrder.status}
-                                        </span>
-                                    </h2>
-                                    <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-black">Detalhes Completos da Transação</p>
+                        {/* Modal Header */}
+                        <div className="p-6 sm:p-8 border-b border-border/20 flex items-center justify-between shrink-0">
+                            <div className="space-y-1">
+                                <h2 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-3">
+                                    Pedido #{selectedOrder.id.split("-")[0].toUpperCase()}
+                                    <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border", statusStyles[selectedOrder.status as keyof typeof statusStyles])}>
+                                        {selectedOrder.status}
+                                    </span>
+                                </h2>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-black">Detalhes Completos da Transação</p>
+                            </div>
+                            <button onClick={() => setShowDetailsModal(false)} className="h-12 w-12 rounded-2xl bg-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all hover:bg-red-500/20 hover:text-red-500 border border-border/20">
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="p-6 sm:p-8 overflow-y-auto flex-1 custom-scrollbar space-y-10">
+                            {isFetchingDetails ? (
+                                <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Carregando Informações...</p>
                                 </div>
-                                <button onClick={() => setShowDetailsModal(false)} className="h-12 w-12 rounded-2xl bg-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all hover:bg-red-500/20 hover:text-red-500 border border-border/20">
-                                    <X className="h-6 w-6" />
-                                </button>
-                            </div>
-
-                            {/* Modal Content */}
-                            <div className="p-6 sm:p-8 overflow-y-auto flex-1 custom-scrollbar space-y-10">
-                                {isFetchingDetails ? (
-                                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                                        <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Carregando Informações...</p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {/* Client Info Grid */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="space-y-4">
-                                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
-                                                    <User className="h-3 w-3" />
-                                                    Dados do Cliente
-                                                </h3>
-                                                <div className="bg-foreground/5 rounded-2xl p-6 border border-border/10 space-y-4">
-                                                    <div>
-                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Nome Completo</p>
-                                                        <p className="text-foreground font-bold text-lg">{(selectedOrder as any).clients?.name || "N/A"}</p>
+                            ) : (
+                                <>
+                                    {/* Resumo por Tamanho */}
+                                    {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (
+                                        <div className="grid grid-cols-3 gap-4 mb-8">
+                                            {['Pequeno', 'Médio', 'Grande'].map(size => {
+                                                const count = selectedOrder.order_items?.filter((item: any) => item.products?.size === size).length || 0;
+                                                return (
+                                                    <div key={size} className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex flex-col items-center justify-center">
+                                                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{size}</span>
+                                                        <span className="text-xl font-black text-primary">{count}</span>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/10">
-                                                        <div>
-                                                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">CPF/CNPJ</p>
-                                                            <p className="text-foreground font-mono text-sm">{(selectedOrder as any).clients?.tax_id || "N/A"}</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Telefone</p>
-                                                            <p className="text-foreground text-sm">{(selectedOrder as any).clients?.phone || "N/A"}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="pt-4 border-t border-border/10">
-                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Endereço</p>
-                                                        <p className="text-foreground text-sm">{(selectedOrder as any).clients?.address || "Não informado"}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-4">
-                                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
-                                                    <Calendar className="h-3 w-3" />
-                                                    Informações do Pedido
-                                                </h3>
-                                                <div className="bg-foreground/5 rounded-2xl p-6 border border-border/10 space-y-4 h-full">
-                                                    <div className="grid grid-cols-2 gap-6">
-                                                        <div>
-                                                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Data de Criação</p>
-                                                            <p className="text-foreground font-bold">{new Date(selectedOrder.created_at).toLocaleDateString("pt-BR")}</p>
-                                                            <p className="text-[10px] text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleTimeString("pt-BR")}</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Última Atualização</p>
-                                                            <p className="text-foreground font-bold">{new Date(selectedOrder.updated_at).toLocaleDateString("pt-BR")}</p>
-                                                            <p className="text-[10px] text-muted-foreground">{new Date(selectedOrder.updated_at).toLocaleTimeString("pt-BR")}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="pt-4 border-t border-border/10">
-                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">ID Único (UUID)</p>
-                                                        <p className="text-muted-foreground font-mono text-[10px] break-all">{selectedOrder.id}</p>
-                                                    </div>
-                                                    <div className="pt-4 border-t border-border/10">
-                                                        <p className="text-[9px] font-black text-primary uppercase tracking-widest mb-1">Valor Total do Pedido</p>
-                                                        <p className="text-2xl font-black text-foreground italic">R$ {selectedOrder.total_amount?.toFixed(2) || "0.00"}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                );
+                                            })}
                                         </div>
+                                    )}
 
-                                        {/* Products List */}
+                                    {/* Client Info Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
-                                                    <Package className="h-3 w-3" />
-                                                    Itens do Pedido ({selectedOrder.order_items?.length || 0})
-                                                </h3>
-                                                {selectedOrder.status === "PENDENTE" && (
-                                                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                                                        Conferência: {verifiedSerials.length} de {selectedOrder.order_items?.length || 0}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {selectedOrder.status === "PENDENTE" && (
-                                                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 sm:p-6 space-y-4">
-                                                    <div className="flex flex-col sm:flex-row items-center gap-4">
-                                                        <button
-                                                            onClick={() => setShowCamera(!showCamera)}
-                                                            className={cn(
-                                                                "h-14 w-full sm:w-14 rounded-2xl flex items-center justify-center transition-all border shrink-0",
-                                                                showCamera ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-                                                            )}
-                                                        >
-                                                            {showCamera ? <X className="h-6 w-6" /> : <Camera className="h-6 w-6" />}
-                                                        </button>
-                                                        <div className="flex-1 w-full">
-                                                            <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 italic">Aguardando Conferência de ID Interno...</p>
-                                                            <form onSubmit={handleScanProduct} className="relative">
-                                                                <input
-                                                                    ref={scannerRef}
-                                                                    type="text"
-                                                                    value={scanInput}
-                                                                    onChange={(e) => setScanInput(e.target.value)}
-                                                                    placeholder="Escaneie ou digite o ID Interno..."
-                                                                    className="w-full h-14 bg-card/40 border border-border/20 rounded-xl px-6 text-sm text-foreground placeholder:text-muted-foreground/30 focus:border-primary/50 transition-all outline-none"
-                                                                />
-                                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden sm:block">
-                                                                    <span className="text-[8px] font-bold text-muted-foreground/30 bg-foreground/5 px-2 py-1 rounded">ENTER</span>
-                                                                </div>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-
-                                                    {showCamera && (
-                                                        <div className="fixed inset-0 z-[100] bg-black sm:relative sm:z-0 sm:aspect-video sm:rounded-xl sm:overflow-hidden sm:border sm:border-border/20 animate-in fade-in zoom-in-95 duration-300 flex flex-col items-center justify-center p-4">
-                                                            <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-border/20 relative">
-                                                                <div id="reader" className="w-full"></div>
-
-                                                                <button
-                                                                    onClick={() => setShowCamera(false)}
-                                                                    className="absolute top-4 right-4 z-[110] h-10 w-10 rounded-full bg-background/60 text-foreground flex items-center justify-center backdrop-blur-xl border border-border/20 active:scale-90 transition-all"
-                                                                >
-                                                                    <X className="h-6 w-6" />
-                                                                </button>
-                                                            </div>
-
-                                                            <div className="mt-6 bg-background/60 backdrop-blur-md px-6 py-2 rounded-full border border-border/10 shadow-xl">
-                                                                <p className="text-foreground/70 text-[9px] uppercase font-black tracking-[0.3em] italic text-center">Aponte somente para o QR Code da etiqueta</p>
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                                                <User className="h-3 w-3" />
+                                                Dados do Cliente
+                                            </h3>
+                                            <div className="bg-foreground/5 rounded-2xl p-6 border border-border/10 space-y-4">
+                                                <div>
+                                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Nome Completo</p>
+                                                    <p className="text-foreground font-bold text-lg">{(selectedOrder as any).clients?.name || "N/A"}</p>
                                                 </div>
-                                            )}
-
-                                            <div className="glass-card rounded-2xl border border-border/10 p-0 overflow-hidden">
-                                                <div className="relative group/table" data-scroll="right">
-                                                    {/* Horizontal Scroll Indicators */}
-                                                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0a0a0a] to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-                                                    <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-
-                                                    <div
-                                                        className="overflow-x-auto scrollbar-hide border border-border/10 rounded-2xl"
-                                                        onScroll={(e) => {
-                                                            const target = e.currentTarget;
-                                                            const group = target.parentElement;
-                                                            if (group) {
-                                                                const scrollLeft = target.scrollLeft;
-                                                                const maxScroll = target.scrollWidth - target.clientWidth;
-                                                                let status = 'none';
-                                                                if (maxScroll > 0) {
-                                                                    if (scrollLeft <= 10) status = 'right';
-                                                                    else if (scrollLeft >= maxScroll - 10) status = 'left';
-                                                                    else status = 'both';
-                                                                }
-                                                                group.setAttribute('data-scroll', status);
-                                                            }
-                                                        }}
-                                                    >
-                                                        <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
-                                                            <thead className="bg-foreground/5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-border/10">
-                                                                <tr>
-                                                                    <th className="px-4 sm:px-6 py-4 sticky left-0 bg-card z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Produto</th>
-                                                                    <th className="px-4 sm:px-6 py-4">ID Interno</th>
-                                                                    <th className="px-4 sm:px-6 py-4">S/N Original</th>
-                                                                    <th className="px-4 sm:px-6 py-4">Marca</th>
-                                                                    <th className="px-4 sm:px-6 py-4">Preço Unit.</th>
-                                                                    <th className="px-4 sm:px-6 py-4 text-right">Conferência</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-white/5">
-                                                                {selectedOrder.order_items?.map((item: any) => {
-                                                                    const isVerified = verifiedSerials.includes(item.products?.internal_serial?.toUpperCase());
-                                                                    return (
-                                                                        <tr key={item.id} className={cn("transition-colors", isVerified ? "bg-emerald-500/5" : "hover:bg-white/[0.01]")}>
-                                                                            <td className="px-4 sm:px-6 py-4 font-black text-foreground italic uppercase sticky left-0 bg-card group-hover:bg-neutral-800 transition-colors z-20 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">{item.products?.model || "N/A"}</td>
-                                                                            <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-primary font-black uppercase tracking-widest">{item.products?.internal_serial || "N/A"}</td>
-                                                                            <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-muted-foreground/40">{item.products?.original_serial || "N/A"}</td>
-                                                                            <td className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{item.products?.brand || "N/A"}</td>
-                                                                            <td className="px-4 sm:px-6 py-4 font-bold text-foreground">R$ {item.unit_price?.toFixed(2) || "0.00"}</td>
-                                                                            <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
-                                                                                {isVerified ? (
-                                                                                    <span className="inline-flex items-center gap-1.5 text-emerald-500 font-black text-[9px] uppercase tracking-wider bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                                                                                        <Check className="h-3 w-3" /> CONFIRMADO
-                                                                                    </span>
-                                                                                ) : (
-                                                                                    <span className="text-muted-foreground/20 font-black text-[9px] uppercase tracking-widest italic flex items-center justify-end gap-2">
-                                                                                        <div className="h-1 w-1 rounded-full bg-muted-foreground/20 animate-pulse" />
-                                                                                        Pendente
-                                                                                    </span>
-                                                                                )}
-                                                                            </td>
-                                                                        </tr>
-                                                                    );
-                                                                })}
-                                                                {(!selectedOrder.order_items || selectedOrder.order_items.length === 0) && (
-                                                                    <tr>
-                                                                        <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground italic">Nenhum item vinculado a este pedido.</td>
-                                                                    </tr>
-                                                                )}
-                                                            </tbody>
-                                                        </table>
+                                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/10">
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">CPF/CNPJ</p>
+                                                        <p className="text-foreground font-mono text-sm">{(selectedOrder as any).clients?.tax_id || "N/A"}</p>
                                                     </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Telefone</p>
+                                                        <p className="text-foreground text-sm">{(selectedOrder as any).clients?.phone || "N/A"}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="pt-4 border-t border-border/10">
+                                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Endereço</p>
+                                                    <p className="text-foreground text-sm">{(selectedOrder as any).clients?.address || "Não informado"}</p>
                                                 </div>
                                             </div>
                                         </div>
-                                    </>
-                                )}
-                            </div>
 
-                            {/* Modal Footer */}
-                            <div className="p-6 sm:p-8 bg-card/40 border-t border-border/10 flex flex-col sm:flex-row gap-4 shrink-0">
+                                        <div className="space-y-4">
+                                            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                                                <Calendar className="h-3 w-3" />
+                                                Informações do Pedido
+                                            </h3>
+                                            <div className="bg-foreground/5 rounded-2xl p-6 border border-border/10 space-y-4 h-full">
+                                                <div className="grid grid-cols-2 gap-6">
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Data de Criação</p>
+                                                        <p className="text-foreground font-bold">{new Date(selectedOrder.created_at).toLocaleDateString("pt-BR")}</p>
+                                                        <p className="text-[10px] text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleTimeString("pt-BR")}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Última Atualização</p>
+                                                        <p className="text-foreground font-bold">{new Date(selectedOrder.updated_at).toLocaleDateString("pt-BR")}</p>
+                                                        <p className="text-[10px] text-muted-foreground">{new Date(selectedOrder.updated_at).toLocaleTimeString("pt-BR")}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="pt-4 border-t border-border/10">
+                                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">ID Único (UUID)</p>
+                                                    <p className="text-muted-foreground font-mono text-[10px] break-all">{selectedOrder.id}</p>
+                                                </div>
+                                                <div className="pt-4 border-t border-border/10">
+                                                    <p className="text-[9px] font-black text-primary uppercase tracking-widest mb-1">Valor Total do Pedido</p>
+                                                    <p className="text-2xl font-black text-foreground italic">R$ {selectedOrder.total_amount?.toFixed(2) || "0.00"}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Products List */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                                                <Package className="h-3 w-3" />
+                                                Itens do Pedido ({selectedOrder.order_items?.length || 0})
+                                            </h3>
+                                        </div>
+
+                                        <div className="glass-card rounded-2xl border border-border/10 p-0 overflow-hidden">
+                                            <div className="relative group/table" data-scroll="right">
+                                                <div className="overflow-x-auto scrollbar-hide border border-border/10 rounded-2xl">
+                                                    <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
+                                                        <thead className="bg-foreground/5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-border/10">
+                                                            <tr>
+                                                                <th className="px-4 sm:px-6 py-4 sticky left-0 bg-card z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Produto</th>
+                                                                <th className="px-4 sm:px-6 py-4">ID Interno</th>
+                                                                <th className="px-4 sm:px-6 py-4">S/N Original</th>
+                                                                <th className="px-4 sm:px-6 py-4">Marca</th>
+                                                                <th className="px-4 sm:px-6 py-4 text-right">Preço Unit.</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-white/5">
+                                                            {selectedOrder.order_items?.map((item: any) => (
+                                                                <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
+                                                                    <td className="px-4 sm:px-6 py-4 font-black text-foreground italic uppercase sticky left-0 bg-card group-hover:bg-neutral-800 transition-colors z-20 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">{item.products?.model || "N/A"}</td>
+                                                                    <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-primary font-black uppercase tracking-widest">{item.products?.internal_serial || "N/A"}</td>
+                                                                    <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-muted-foreground/40">{item.products?.original_serial || "N/A"}</td>
+                                                                    <td className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{item.products?.brand || "N/A"}</td>
+                                                                    <td className="px-4 sm:px-6 py-4 font-bold text-foreground text-right">R$ {item.unit_price?.toFixed(2) || "0.00"}</td>
+                                                                </tr>
+                                                            ))}
+                                                            {(!selectedOrder.order_items || selectedOrder.order_items.length === 0) && (
+                                                                <tr>
+                                                                    <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground italic">Nenhum item vinculado a este pedido.</td>
+                                                                </tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-6 sm:p-8 bg-card/40 border-t border-border/10 flex flex-col sm:flex-row gap-4 shrink-0">
+                            <button
+                                onClick={() => handleExportPDF(selectedOrder)}
+                                className="flex-1 h-14 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 border border-border/20"
+                            >
+                                <FileDown className="h-5 w-5" />
+                                Exportar PDF
+                            </button>
+
+                            {selectedOrder.status === "PENDENTE" && (
                                 <button
-                                    onClick={() => handleExportPDF(selectedOrder)}
-                                    className="flex-1 h-14 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 border border-border/20"
+                                    onClick={() => handleFinalizeOrder(selectedOrder)}
+                                    disabled={isSaving}
+                                    className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-500 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-3 disabled:grayscale disabled:opacity-50"
                                 >
-                                    <FileDown className="h-5 w-5" />
-                                    Exportar PDF
+                                    {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
+                                    Finalizar envio do pedido
                                 </button>
+                            )}
 
-                                {selectedOrder.status === "PENDENTE" && (
-                                    <button
-                                        onClick={() => handleFinalizeOrder(selectedOrder)}
-                                        disabled={isSaving}
-                                        className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-500 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-3 disabled:grayscale disabled:opacity-50"
-                                    >
-                                        {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-                                        {verifiedSerials.length < (selectedOrder.order_items?.length || 0) ? `Faltam ${(selectedOrder.order_items?.length || 0) - verifiedSerials.length} Itens` : "Finalizar envio do pedido"}
-                                    </button>
-                                )}
-
-                                {selectedOrder.status === "PENDENTE" && canCreateOrder && (
-                                    <button
-                                        onClick={() => handleCancelOrder(selectedOrder)}
-                                        disabled={isSaving}
-                                        className="flex-1 h-14 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all border border-red-500/20 flex items-center justify-center gap-3 disabled:opacity-50"
-                                    >
-                                        <Ban className="h-5 w-5" />
-                                        Cancelar Envio
-                                    </button>
-                                )}
-
-                                {canCreateOrder && (
-                                    <button
-                                        onClick={() => handleDeleteOrder(selectedOrder)}
-                                        disabled={isSaving}
-                                        className="flex-[0.5] sm:flex-none sm:w-14 h-14 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl transition-all border border-red-500/20 flex items-center justify-center disabled:opacity-50"
-                                        title="Excluir Pedido Permanentemente"
-                                    >
-                                        <Trash2 className="h-5 w-5" />
-                                    </button>
-                                )}
-
+                            {selectedOrder.status === "PENDENTE" && canCreateOrder && (
                                 <button
-                                    onClick={() => setShowDetailsModal(false)}
-                                    className="flex-1 h-14 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
+                                    onClick={() => handleCancelOrder(selectedOrder)}
+                                    disabled={isSaving}
+                                    className="flex-1 h-14 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all border border-red-500/20 flex items-center justify-center gap-3 disabled:opacity-50"
                                 >
-                                    Fechar Detalhes
+                                    <Ban className="h-5 w-5" />
+                                    Cancelar Envio
                                 </button>
-                            </div>
+                            )}
+
+                            {canCreateOrder && (
+                                <button
+                                    onClick={() => handleDeleteOrder(selectedOrder)}
+                                    disabled={isSaving}
+                                    className="flex-[0.5] sm:flex-none sm:w-14 h-14 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl transition-all border border-red-500/20 flex items-center justify-center disabled:opacity-50"
+                                    title="Excluir Pedido Permanentemente"
+                                >
+                                    <Trash2 className="h-5 w-5" />
+                                </button>
+                            )}
+
+                            <button
+                                onClick={() => setShowDetailsModal(false)}
+                                className="flex-1 h-14 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
+                            >
+                                Fechar Detalhes
+                            </button>
                         </div>
                     </div>
-                )
-            }
-        </MainLayout >
+                </div>
+            )}
+        </MainLayout>
     );
 }
