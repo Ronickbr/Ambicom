@@ -1067,14 +1067,6 @@ export default function OrdersPage() {
 
                         {/* Modal Footer */}
                         <div className="p-6 sm:p-8 bg-card/40 border-t border-border/10 flex flex-col sm:flex-row gap-4 shrink-0">
-                            <button
-                                onClick={() => handleExportPDF(selectedOrder)}
-                                className="flex-1 h-14 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 border border-border/20"
-                            >
-                                <FileDown className="h-5 w-5" />
-                                Exportar PDF
-                            </button>
-
                             {selectedOrder.status === "PENDENTE" && (
                                 <button
                                     onClick={() => handleFinalizeOrder(selectedOrder)}
@@ -1083,17 +1075,6 @@ export default function OrdersPage() {
                                 >
                                     {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
                                     Finalizar envio do pedido
-                                </button>
-                            )}
-
-                            {selectedOrder.status === "PENDENTE" && canCreateOrder && (
-                                <button
-                                    onClick={() => handleCancelOrder(selectedOrder)}
-                                    disabled={isSaving}
-                                    className="flex-1 h-14 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all border border-red-500/20 flex items-center justify-center gap-3 disabled:opacity-50"
-                                >
-                                    <Ban className="h-5 w-5" />
-                                    Cancelar Envio
                                 </button>
                             )}
 
@@ -1112,7 +1093,7 @@ export default function OrdersPage() {
                                 onClick={() => setShowDetailsModal(false)}
                                 className="flex-1 h-14 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
                             >
-                                Fechar Detalhes
+                                Aguardar
                             </button>
                         </div>
                     </div>
