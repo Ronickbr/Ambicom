@@ -48,11 +48,10 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-## 📈 Versionamento
-
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.9.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.9.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.9.1:** Ajuste no layout mobile do modal de pedidos, garantindo altura uniforme e largura total aos botões de ação para melhor usabilidade.
 - **v2.9.0:** Padronização Global da experiência móvel (Mobile UX). Todas as listagens de tabelas foram refatoradas para o padrão Compact Expandable List, otimizando o uso de tela e acessibilidade em dispositivos móveis.
 - **v2.8.2:** Correção de erro crítico na edição de inventário (crash de formatação de data) e melhoria no acesso a dados relacionados.
 - **v2.8.1:** Adicionada validação para impedir a finalização de pedidos vazios sem produtos.

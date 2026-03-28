@@ -1237,7 +1237,7 @@ export default function OrdersPage() {
                                 <button
                                     onClick={() => handleFinalizeOrder(selectedOrder)}
                                     disabled={isSaving}
-                                    className="flex-[2] h-14 bg-emerald-600 hover:bg-emerald-500 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-3 disabled:grayscale disabled:opacity-50"
+                                    className="w-full sm:flex-[2] h-14 bg-emerald-600 hover:bg-emerald-500 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-3 disabled:grayscale disabled:opacity-50"
                                 >
                                     {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
                                     Finalizar envio do pedido
@@ -1248,7 +1248,7 @@ export default function OrdersPage() {
                                 <button
                                     onClick={() => handleDeleteOrder(selectedOrder)}
                                     disabled={isSaving}
-                                    className="flex-[0.5] sm:flex-none sm:w-14 h-14 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl transition-all border border-red-500/20 flex items-center justify-center disabled:opacity-50"
+                                    className="w-full sm:flex-[0.5] sm:flex-none sm:w-14 h-14 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl transition-all border border-red-500/20 flex items-center justify-center disabled:opacity-50"
                                     title="Excluir Pedido Permanentemente"
                                 >
                                     <Trash2 className="h-5 w-5" />
@@ -1257,7 +1257,7 @@ export default function OrdersPage() {
 
                             <button
                                 onClick={() => setShowDetailsModal(false)}
-                                className="flex-1 h-14 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
+                                className="w-full sm:flex-1 h-14 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
                             >
                                 {selectedOrder.status === "CONCLUIDO" ? "Sair" : "Aguardar"}
                             </button>
