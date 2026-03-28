@@ -17,7 +17,9 @@ import {
     FileSearch,
     Printer,
     Camera,
-    History as HistoryIcon
+    History as HistoryIcon,
+    ChevronRight,
+    Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -43,6 +45,7 @@ export default function ApprovalsPage() {
     const navigate = useNavigate();
     const [products, setProducts] = useState<ProductWithLogs[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedProduct, setSelectedProduct] = useState<ProductWithLogs | null>(null);
@@ -207,112 +210,211 @@ export default function ApprovalsPage() {
                 </div>
 
                 {filteredProducts.length > 0 ? (
-                    <div className="relative group/table" data-scroll="right">
-                        {/* Horizontal Scroll Indicators */}
-                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                    <div className="space-y-4">
+                        {/* Mobile Compact View */}
+                        <div className="md:hidden space-y-3 px-2">
+                            {filteredProducts.map((product) => {
+                                const lastLogWithChecklist = product.product_logs?.find(l => l.data?.checklist);
+                                const checklist = lastLogWithChecklist?.data?.checklist || {};
+                                const itemsCount = Object.keys(checklist).length || 0;
+                                const checkedCount = Object.values(checklist).filter(v => v === true).length || 0;
+                                const isExpanded = expandedId === product.id;
 
-                        <div
-                            className="overflow-x-auto scrollbar-hide glass-card border-border/10 bg-card/30 shadow-2xl rounded-2xl"
-                            onScroll={(e) => {
-                                const target = e.currentTarget;
-                                const group = target.parentElement;
-                                if (group) {
-                                    const scrollLeft = target.scrollLeft;
-                                    const maxScroll = target.scrollWidth - target.clientWidth;
-                                    let status = 'none';
-                                    if (maxScroll > 0) {
-                                        if (scrollLeft <= 10) status = 'right';
-                                        else if (scrollLeft >= maxScroll - 10) status = 'left';
-                                        else status = 'both';
-                                    }
-                                    group.setAttribute('data-scroll', status);
-                                }
-                            }}
-                        >
-                            <table className="w-full text-left border-collapse min-w-[900px] sm:min-w-full">
-                                <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
-                                    <tr>
-                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Serial / Identificação</th>
-                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Produto / Modelo</th>
-                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Marca / Fabricante</th>
-                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Status Técnico</th>
-                                        <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Ações de Aprovação</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {filteredProducts.map((product) => {
-                                        const lastLogWithChecklist = product.product_logs?.find(l => l.data?.checklist);
-                                        const checklist = lastLogWithChecklist?.data?.checklist || {};
-                                        const itemsCount = Object.keys(checklist).length || 0;
-                                        const checkedCount = Object.values(checklist).filter(v => v === true).length || 0;
-
-                                        return (
-                                            <tr
-                                                key={product.id}
-                                                onClick={() => setSelectedProduct(product)}
-                                                className="group hover:bg-white/[0.03] transition-colors cursor-pointer"
-                                            >
-                                                <td className="px-4 sm:px-6 py-6 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
-                                                    <span className="font-mono text-[10px] sm:text-[11px] bg-foreground/5 px-2.5 py-1.5 rounded-xl text-primary border border-primary/10 group-hover:bg-primary group-hover:text-primary-foreground transition-all uppercase tracking-widest font-black">
+                                return (
+                                    <div
+                                        key={product.id}
+                                        className={cn(
+                                            "bg-card/40 border border-border/10 rounded-2xl overflow-hidden transition-all duration-300",
+                                            isExpanded ? "ring-1 ring-primary/30 bg-card/60 shadow-lg" : "hover:bg-card/50"
+                                        )}
+                                    >
+                                        {/* Main Row */}
+                                        <div
+                                            onClick={() => setExpandedId(isExpanded ? null : product.id)}
+                                            className="p-4 flex items-center justify-between cursor-pointer active:bg-foreground/5"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="h-9 w-9 rounded-xl bg-foreground/5 flex items-center justify-center text-muted-foreground shrink-0 border border-border/10">
+                                                    <Package className="h-4 w-4" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <span className="text-[10px] font-mono font-black text-primary/70 block leading-none mb-1">
                                                         {product.internal_serial}
                                                     </span>
-                                                </td>
-                                                <td className="px-4 sm:px-6 py-6 whitespace-nowrap">
-                                                    <span className="font-black text-[13px] sm:text-base text-foreground uppercase italic tracking-tight group-hover:text-primary transition-colors">
+                                                    <h4 className="font-black text-foreground text-sm uppercase italic truncate">
                                                         {product.model}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 sm:px-6 py-6 whitespace-nowrap">
-                                                    <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] group-hover:text-foreground">
-                                                        {product.brand}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 sm:px-6 py-6 whitespace-nowrap">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex flex-col min-w-[80px] sm:min-w-[100px]">
-                                                            <span className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1.5">
-                                                                {checkedCount}/{itemsCount} OK
-                                                            </span>
-                                                            <div className="h-1 sm:h-1.5 w-full bg-card/40 rounded-full overflow-hidden p-[1px] border border-border/10">
-                                                                <div
-                                                                    className={cn(
-                                                                        "h-full rounded-full transition-all duration-1000",
-                                                                        checkedCount === itemsCount ? "bg-emerald-500" : "bg-amber-500"
-                                                                    )}
-                                                                    style={{ width: itemsCount > 0 ? `${(checkedCount / itemsCount) * 100}%` : '0%' }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <CheckCircle2 className={cn("h-4 w-4 sm:h-5 sm:w-5 shrink-0", checkedCount === itemsCount ? "text-emerald-500" : "text-amber-500")} />
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <div className="flex flex-col items-end mr-1">
+                                                    <span className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Status OK</span>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className="text-[10px] font-black text-foreground/70">{checkedCount}/{itemsCount}</span>
+                                                        <div className={cn("h-2 w-2 rounded-full", checkedCount === itemsCount ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]")} />
                                                     </div>
-                                                </td>
-                                                <td className="px-4 sm:px-6 py-6 text-right whitespace-nowrap pr-6 sm:pr-10">
-                                                    <div className="flex items-center justify-end gap-1.5 sm:gap-2" onClick={e => e.stopPropagation()}>
+                                                </div>
+                                                <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform duration-300", isExpanded && "rotate-90")} />
+                                            </div>
+                                        </div>
+
+                                        {/* Expanded Content */}
+                                        {isExpanded && (
+                                            <div className="px-4 pb-4 pt-2 border-t border-border/5 bg-foreground/5 animate-in slide-in-from-top-2 duration-300">
+                                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Marca / Fabricante</p>
+                                                        <p className="text-[10px] font-black text-foreground uppercase tracking-widest leading-none">{product.brand}</p>
+                                                    </div>
+                                                    <div className="space-y-1 text-right">
+                                                        <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Última Atualização</p>
+                                                        <p className="text-[10px] font-bold text-foreground">
+                                                            {new Date(product.updated_at).toLocaleDateString("pt-BR")}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={() => handleAction(product.id, "APPROVE")}
                                                             disabled={!!isProcessing}
-                                                            className="h-9 sm:h-11 px-4 sm:px-6 bg-white text-black hover:bg-primary hover:text-primary-foreground rounded-lg sm:rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-lg group/btn overflow-hidden relative min-w-[100px] sm:min-w-[120px]"
+                                                            className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-white text-black hover:bg-primary hover:text-primary-foreground transition-all text-[10px] font-black uppercase tracking-widest shadow-lg relative overflow-hidden"
                                                         >
-                                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
-                                                            {isProcessing === product.id ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" /> : <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4" />}
+                                                            {isProcessing === product.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                                                             Aprovar
                                                         </button>
                                                         <button
                                                             onClick={() => handleAction(product.id, "REJECT")}
                                                             disabled={!!isProcessing}
-                                                            className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg sm:rounded-xl bg-red-500/10 text-red-500 border border-red-500/10 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center active:scale-95 group/reject"
-                                                            title="Reprovar"
+                                                            className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
                                                         >
-                                                            <XCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                            <XCircle className="h-5 w-5" />
                                                         </button>
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                                                    <button
+                                                        onClick={() => setSelectedProduct(product)}
+                                                        className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-foreground/5 text-muted-foreground hover:bg-foreground/10 transition-all text-[9px] font-black uppercase tracking-widest border border-border/10"
+                                                    >
+                                                        <FileSearch className="h-4 w-4" />
+                                                        Ver Detalhes Técnicos
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block relative group/table" data-scroll="right">
+                            {/* Horizontal Scroll Indicators */}
+                            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+
+                            <div
+                                className="overflow-x-auto scrollbar-hide glass-card border-border/10 bg-card/30 shadow-2xl rounded-2xl"
+                                onScroll={(e) => {
+                                    const target = e.currentTarget;
+                                    const group = target.parentElement;
+                                    if (group) {
+                                        const scrollLeft = target.scrollLeft;
+                                        const maxScroll = target.scrollWidth - target.clientWidth;
+                                        let status = 'none';
+                                        if (maxScroll > 0) {
+                                            if (scrollLeft <= 10) status = 'right';
+                                            else if (scrollLeft >= maxScroll - 10) status = 'left';
+                                            else status = 'both';
+                                        }
+                                        group.setAttribute('data-scroll', status);
+                                    }
+                                }}
+                            >
+                                <table className="w-full text-left border-collapse min-w-[900px] sm:min-w-full">
+                                    <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
+                                        <tr>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Serial / Identificação</th>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Produto / Modelo</th>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Marca / Fabricante</th>
+                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Status Técnico</th>
+                                            <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Ações de Aprovação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {filteredProducts.map((product) => {
+                                            const lastLogWithChecklist = product.product_logs?.find(l => l.data?.checklist);
+                                            const checklist = lastLogWithChecklist?.data?.checklist || {};
+                                            const itemsCount = Object.keys(checklist).length || 0;
+                                            const checkedCount = Object.values(checklist).filter(v => v === true).length || 0;
+
+                                            return (
+                                                <tr
+                                                    key={product.id}
+                                                    onClick={() => setSelectedProduct(product)}
+                                                    className="group hover:bg-white/[0.03] transition-colors cursor-pointer"
+                                                >
+                                                    <td className="px-4 sm:px-6 py-6 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                        <span className="font-mono text-[10px] sm:text-[11px] bg-foreground/5 px-2.5 py-1.5 rounded-xl text-primary border border-primary/10 group-hover:bg-primary group-hover:text-primary-foreground transition-all uppercase tracking-widest font-black">
+                                                            {product.internal_serial}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-6 whitespace-nowrap">
+                                                        <span className="font-black text-[13px] sm:text-base text-foreground uppercase italic tracking-tight group-hover:text-primary transition-colors">
+                                                            {product.model}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-6 whitespace-nowrap">
+                                                        <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] group-hover:text-foreground">
+                                                            {product.brand}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-6 whitespace-nowrap">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex flex-col min-w-[80px] sm:min-w-[100px]">
+                                                                <span className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1.5">
+                                                                    {checkedCount}/{itemsCount} OK
+                                                                </span>
+                                                                <div className="h-1 sm:h-1.5 w-full bg-card/40 rounded-full overflow-hidden p-[1px] border border-border/10">
+                                                                    <div
+                                                                        className={cn(
+                                                                            "h-full rounded-full transition-all duration-1000",
+                                                                            checkedCount === itemsCount ? "bg-emerald-500" : "bg-amber-500"
+                                                                        )}
+                                                                        style={{ width: itemsCount > 0 ? `${(checkedCount / itemsCount) * 100}%` : '0%' }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <CheckCircle2 className={cn("h-4 w-4 sm:h-5 sm:w-5 shrink-0", checkedCount === itemsCount ? "text-emerald-500" : "text-amber-500")} />
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 sm:px-6 py-6 text-right whitespace-nowrap pr-6 sm:pr-10">
+                                                        <div className="flex items-center justify-end gap-1.5 sm:gap-2" onClick={e => e.stopPropagation()}>
+                                                            <button
+                                                                onClick={() => handleAction(product.id, "APPROVE")}
+                                                                disabled={!!isProcessing}
+                                                                className="h-9 sm:h-11 px-4 sm:px-6 bg-white text-black hover:bg-primary hover:text-primary-foreground rounded-lg sm:rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-lg group/btn overflow-hidden relative min-w-[100px] sm:min-w-[120px]"
+                                                            >
+                                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
+                                                                {isProcessing === product.id ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" /> : <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4" />}
+                                                                Aprovar
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleAction(product.id, "REJECT")}
+                                                                disabled={!!isProcessing}
+                                                                className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg sm:rounded-xl bg-red-500/10 text-red-500 border border-red-500/10 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center active:scale-95 group/reject"
+                                                                title="Reprovar"
+                                                            >
+                                                                <XCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 ) : (

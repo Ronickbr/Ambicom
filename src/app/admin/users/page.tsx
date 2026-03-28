@@ -32,6 +32,7 @@ export default function UsersManagementPage() {
     const navigate = useNavigate();
     const [users, setUsers] = useState<Profile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [editingId, setEditingId] = useState<string | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -222,12 +223,113 @@ export default function UsersManagementPage() {
                     </div>
                 </div>
 
-                {/* Users Table */}
+                {/* Users Table / List */}
                 <div className="glass-card overflow-hidden rounded-2xl border border-border/20 shadow-2xl p-0">
                     <div className="relative group/table">
+                        {/* Mobile Compact View */}
+                        <div className="md:hidden space-y-3 px-2 py-4">
+                            {filteredUsers.length === 0 ? (
+                                <div className="px-6 py-20 text-center text-muted-foreground italic text-sm">
+                                    Nenhum membro localizado
+                                </div>
+                            ) : (
+                                filteredUsers.map((u) => {
+                                    const isExpanded = expandedId === u.id;
+                                    return (
+                                        <div
+                                            key={u.id}
+                                            className={cn(
+                                                "bg-card/40 border border-border/10 rounded-2xl overflow-hidden transition-all duration-300",
+                                                isExpanded ? "ring-1 ring-primary/30 bg-card/60 shadow-lg" : "hover:bg-card/50"
+                                            )}
+                                        >
+                                            {/* Main Row */}
+                                            <div
+                                                onClick={() => setExpandedId(isExpanded ? null : u.id)}
+                                                className="p-4 flex items-center justify-between cursor-pointer active:bg-foreground/5"
+                                            >
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="h-9 w-9 rounded-xl bg-foreground/5 flex items-center justify-center text-muted-foreground shrink-0 border border-border/10">
+                                                        <UserCircle className="h-5 w-5" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <h4 className="font-black text-foreground text-sm uppercase italic truncate">
+                                                            {u.full_name || "Sem Nome"}
+                                                        </h4>
+                                                        <p className="text-[9px] font-bold text-primary/70 uppercase tracking-widest leading-none mt-1">
+                                                            {u.role}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <div className="text-right mr-1">
+                                                        <p className="text-[8px] font-black text-foreground/40 uppercase leading-none">Acesso</p>
+                                                        <div className={cn(
+                                                            "h-2 w-2 rounded-full ml-auto mt-1",
+                                                            u.role === "ADMIN" ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" :
+                                                                u.role === "GESTOR" ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" :
+                                                                    u.role === "SUPERVISOR" ? "bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]" :
+                                                                        "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                                                        )} />
+                                                    </div>
+                                                    <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform duration-300", isExpanded && "rotate-90")} />
+                                                </div>
+                                            </div>
 
+                                            {/* Expanded Content */}
+                                            {isExpanded && (
+                                                <div className="px-4 pb-4 pt-2 border-t border-border/5 bg-foreground/5 animate-in slide-in-from-top-2 duration-300">
+                                                    <div className="space-y-4 mb-4">
+                                                        <div className="grid grid-cols-1 gap-3">
+                                                            <div className="flex items-center gap-3 p-3 rounded-xl bg-background/40 border border-border/10">
+                                                                <Mail className="h-4 w-4 text-primary/60" />
+                                                                <div className="min-w-0">
+                                                                    <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">E-mail de Acesso</p>
+                                                                    <p className="text-xs font-bold text-foreground truncate">{u.email || "Não informado"}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 p-3 rounded-xl bg-background/40 border border-border/10">
+                                                                <Calendar className="h-4 w-4 text-primary/60" />
+                                                                <div className="min-w-0">
+                                                                    <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Data de Registro</p>
+                                                                    <p className="text-xs font-bold text-foreground">{new Date(u.created_at || "").toLocaleDateString("pt-BR")}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 p-3 rounded-xl bg-background/40 border border-border/10">
+                                                                <Shield className="h-4 w-4 text-primary/60" />
+                                                                <div className="min-w-0">
+                                                                    <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Identificador Global (ID)</p>
+                                                                    <p className="text-[10px] font-mono font-bold text-foreground truncate">{u.id}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
-                        <div className="overflow-x-auto scrollbar-hide">
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => setEditingUser(u)}
+                                                            className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-white text-black hover:bg-primary hover:text-primary-foreground transition-all text-[10px] font-black uppercase tracking-widest border border-primary/10 shadow-lg"
+                                                        >
+                                                            <Settings className="h-4 w-4" />
+                                                            Editar Perfil
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteUser(u.id)}
+                                                            className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto scrollbar-hide">
                             <table className="w-full text-left text-sm border-collapse min-w-[800px] sm:min-w-full">
                                 <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
                                     <tr>

@@ -85,6 +85,7 @@ export default function InventoryPage() {
     const [page, setPage] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [expandedId, setExpandedId] = useState<string | null>(null);
     const [visibleFiltersMetadata, setVisibleFiltersMetadata] = useState<string[]>(['brand', 'voltage', 'type', 'class', 'gas']);
     const ALL_FILTERS = [
         { id: 'brand', label: 'Fabricante' },
@@ -98,23 +99,35 @@ export default function InventoryPage() {
     // Fetch unique values for filters
     useEffect(() => {
         const fetchFilters = async () => {
-            // Get all possible values for filtering
-            const { data } = await supabase
-                .from('products')
-                .select('brand, voltage, product_type, market_class, refrigerant_gas');
+            try {
+                // Tenta usar a RPC para os filtros principais (mais performático)
+                const { data: rpcData } = await supabase.rpc('get_inventory_filters');
 
-            if (data) {
-                const brands = Array.from(new Set(data.map((p: any) => p.brand))).filter(Boolean) as string[];
-                const voltages = Array.from(new Set(data.map((p: any) => p.voltage))).filter(Boolean) as string[];
-                const types = Array.from(new Set(data.map((p: any) => p.product_type))).filter(Boolean) as string[];
-                const classes = Array.from(new Set(data.map((p: any) => p.market_class))).filter(Boolean) as string[];
-                const gases = Array.from(new Set(data.map((p: any) => p.refrigerant_gas))).filter(Boolean) as string[];
+                if (rpcData && rpcData.length > 0) {
+                    const brands = Array.from(new Set(rpcData.map((p: any) => p.brand))).filter(Boolean) as string[];
+                    const voltages = Array.from(new Set(rpcData.map((p: any) => p.voltage))).filter(Boolean) as string[];
+                    setAvailableBrands(brands.sort());
+                    setAvailableVoltages(voltages.sort());
+                }
 
-                setAvailableBrands(brands.sort());
-                setAvailableVoltages(voltages.sort());
-                setAvailableTypes(types.sort());
-                setAvailableClasses(classes.sort());
-                setAvailableGases(gases.sort());
+                // Busca os outros filtros de forma otimizada (apenas as colunas necessárias)
+                // Nota: Idealmente isso deveria estar em uma RPC também para evitar download de muitos dados
+                const { data } = await supabase
+                    .from('products')
+                    .select('product_type, market_class, refrigerant_gas')
+                    .limit(1000); // Limite de amostragem para evitar excesso de dados no client
+
+                if (data) {
+                    const types = Array.from(new Set(data.map((p: any) => p.product_type))).filter(Boolean) as string[];
+                    const classes = Array.from(new Set(data.map((p: any) => p.market_class))).filter(Boolean) as string[];
+                    const gases = Array.from(new Set(data.map((p: any) => p.refrigerant_gas))).filter(Boolean) as string[];
+
+                    setAvailableTypes(types.sort());
+                    setAvailableClasses(classes.sort());
+                    setAvailableGases(gases.sort());
+                }
+            } catch (error) {
+                console.error("Erro ao carregar filtros:", error);
             }
         };
         fetchFilters();
@@ -349,14 +362,14 @@ export default function InventoryPage() {
                         <p className="text-muted-foreground font-medium text-[10px] sm:text-sm mt-2 opacity-70 italic px-1">Monitoramento em tempo real de ativos e equipamentos industriais.</p>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6">
-                        <div className="flex items-center gap-4 bg-card/50 border border-border/10 rounded-2xl px-6 py-3 shadow-inner justify-between sm:justify-start">
-                            <Box className="h-5 w-5 text-primary" />
+                        <div className="flex items-center gap-4 bg-card/60 border border-border/10 rounded-2xl px-6 py-4 shadow-inner justify-between sm:justify-start">
+                            <Box className="h-6 w-6 text-primary" />
                             <div className="flex flex-col">
-                                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Total Ativos</span>
-                                <span className="text-sm font-black text-foreground">{products.length} Unidades</span>
+                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Total Ativos</span>
+                                <span className="text-base font-black text-foreground">{products.length} Unidades</span>
                             </div>
                         </div>
-                        <div className="flex items-center justify-center bg-foreground/5 rounded-xl p-1 border border-border/20 shadow-lg">
+                        <div className="grid grid-cols-3 sm:flex items-center justify-center bg-foreground/5 rounded-2xl p-1.5 border border-border/20 shadow-lg gap-1">
                             {selectedIds.size > 0 && (
                                 <button
                                     onClick={async () => {
@@ -364,41 +377,44 @@ export default function InventoryPage() {
                                         const selectedProducts = products.filter(p => selectedIds.has(p.id));
                                         await printLabels(selectedProducts);
                                     }}
-                                    className="h-10 px-4 bg-primary text-primary-foreground rounded-lg flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 animate-in zoom-in mr-1"
+                                    className="col-span-1 h-12 px-4 bg-primary text-primary-foreground rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 animate-in zoom-in"
                                 >
-                                    <Barcode className="h-4 w-4" />
-                                    Imprimir ({selectedIds.size})
+                                    <Barcode className="h-5 w-5" />
+                                    <span className="hidden xs:inline">Etiquetas ({selectedIds.size})</span>
+                                    <span className="xs:hidden">{selectedIds.size}</span>
                                 </button>
                             )}
                             <button
                                 onClick={() => handleExport('PDF')}
-                                className="p-2.5 hover:bg-foreground/10 rounded-lg text-muted-foreground hover:text-foreground transition-all active:scale-90 flex-1 sm:flex-none flex justify-center"
+                                className={cn(
+                                    "p-3.5 hover:bg-white/10 rounded-xl text-muted-foreground hover:text-foreground transition-all active:scale-90 flex justify-center border border-transparent",
+                                    selectedIds.size > 0 ? "col-span-1" : "col-span-1"
+                                )}
                                 title="Exportar PDF Geral"
                             >
-                                <FileDown className="h-5 w-5" />
+                                <FileDown className="h-6 w-6" />
                             </button>
-                            <div className="w-px h-6 bg-foreground/10 mx-1" />
                             <button
                                 onClick={() => handleExport('EXCEL')}
-                                className="p-2.5 hover:bg-foreground/10 rounded-lg text-emerald-500 hover:text-emerald-400 transition-all active:scale-90 flex-1 sm:flex-none flex justify-center"
+                                className="p-3.5 hover:bg-emerald-500/10 rounded-xl text-emerald-500 hover:text-emerald-400 transition-all active:scale-90 flex justify-center border border-transparent"
                                 title="Exportar Excel"
                             >
-                                <Download className="h-5 w-5" />
+                                <Download className="h-6 w-6" />
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-card/40 p-2 rounded-2xl border border-border/10 mx-2 sm:mx-0 space-y-2">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="md:col-span-2 relative group">
+                <div className="bg-card/40 p-2 sm:p-3 rounded-3xl border border-border/10 mx-2 sm:mx-0 space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div className="sm:col-span-2 relative group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Rastrear por ID, Marca, Modelo, Tipo ou Serial..."
+                                placeholder="Rastrear por ID, Marca, Modelo..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full h-12 sm:h-14 bg-transparent border-none rounded-xl pl-12 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all text-foreground"
+                                className="w-full h-14 bg-background/50 border border-border/10 rounded-2xl pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-foreground font-medium"
                             />
                         </div>
                         <div className="relative">
@@ -406,31 +422,31 @@ export default function InventoryPage() {
                             <select
                                 value={statusFilter}
                                 onChange={e => setStatusFilter(e.target.value)}
-                                className="w-full h-12 sm:h-14 bg-background border border-border/20 rounded-xl pl-10 pr-4 text-sm appearance-none focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all cursor-pointer text-foreground font-bold shadow-sm"
+                                className="w-full h-14 bg-background/50 border border-border/10 rounded-2xl pl-10 pr-4 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer text-foreground font-bold shadow-sm"
                             >
-                                <option value="ALL" className="bg-background">Todos os Status</option>
+                                <option value="ALL">Todos Status</option>
                                 {Object.entries(statusConfig).map(([val, conf]) => (
-                                    <option key={val} value={val} className="bg-background">{conf.label}</option>
+                                    <option key={val} value={val}>{conf.label}</option>
                                 ))}
                             </select>
                         </div>
                         <button
                             onClick={() => setShowFilters(!showFilters)}
                             className={cn(
-                                "flex items-center justify-center gap-2 h-12 sm:h-14 rounded-xl border transition-all text-xs font-black uppercase tracking-widest",
-                                showFilters ? "bg-primary text-primary-foreground border-primary" : "bg-foreground/5 border-border/20 text-muted-foreground"
+                                "flex items-center justify-center gap-2 h-14 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest",
+                                showFilters ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" : "bg-foreground/5 border-border/10 text-muted-foreground hover:bg-foreground/10"
                             )}
                         >
-                            <Filter className="h-4 w-4" />
-                            {showFilters ? "Ocultar Filtros" : "Mais Filtros"}
+                            <HistoryIcon className="h-4 w-4" />
+                            {showFilters ? "Fechar Filtros" : "Mais Opções"}
                         </button>
                     </div>
 
                     {showFilters && (
-                        <div className="border-t border-border/10 animate-in slide-in-from-top-2 duration-300">
+                        <div className="border-t border-border/5 mt-2 animate-in slide-in-from-top-2 duration-300">
                             {/* Filter Management Bar */}
-                            <div className="flex items-center gap-2 px-4 py-3 bg-white/[0.02] border-b border-border/10">
-                                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mr-2">Configurar Visibilidade:</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-4 bg-white/[0.01]">
+                                <span className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest">Colunas Visíveis:</span>
                                 <div className="flex flex-wrap gap-2">
                                     {ALL_FILTERS.map(f => {
                                         const isVisible = visibleFiltersMetadata.includes(f.id);
@@ -442,13 +458,12 @@ export default function InventoryPage() {
                                                     else setVisibleFiltersMetadata(prev => [...prev, f.id]);
                                                 }}
                                                 className={cn(
-                                                    "px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-wider transition-all border",
+                                                    "px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border",
                                                     isVisible
-                                                        ? "bg-primary/20 text-primary border-primary/30"
-                                                        : "bg-foreground/5 text-muted-foreground border-border/20 opacity-50 hover:opacity-100"
+                                                        ? "bg-primary/20 text-primary border-primary/30 shadow-sm"
+                                                        : "bg-foreground/5 text-muted-foreground border-border/10 opacity-60 hover:opacity-100"
                                                 )}
                                             >
-                                                {isVisible ? <CheckCircle className="inline h-2.5 w-2.5 mr-1" /> : <XCircle className="inline h-2.5 w-2.5 mr-1" />}
                                                 {f.label}
                                             </button>
                                         );
@@ -555,16 +570,135 @@ export default function InventoryPage() {
                 </div>
 
                 {isLoading ? (
-                    <div className="h-[40vh] flex flex-col items-center justify-center gap-6">
-                        <div className="relative">
-                            <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl animate-pulse" />
-                            <Loader2 className="h-12 w-12 animate-spin text-primary relative z-10" />
+                    <div className="space-y-4">
+                        {/* Mobile Skeletons */}
+                        <div className="md:hidden space-y-3 px-2">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                                <div key={i} className="h-20 bg-card/20 border border-border/5 rounded-2xl animate-pulse flex items-center px-4 gap-4">
+                                    <div className="h-6 w-6 rounded-md bg-foreground/5" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-2 w-24 bg-foreground/10 rounded" />
+                                        <div className="h-3 w-40 bg-foreground/10 rounded" />
+                                    </div>
+                                    <div className="h-6 w-16 bg-foreground/5 rounded-full" />
+                                </div>
+                            ))}
                         </div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground animate-pulse">Sincronizando Ativos...</p>
+                        {/* Desktop Skeletons */}
+                        <div className="hidden md:block glass-card border-border/10 overflow-hidden rounded-2xl">
+                            <div className="h-12 bg-foreground/5 border-b border-border/5" />
+                            {[1, 2, 3, 4, 5, 6].map((i) => (
+                                <div key={i} className="h-16 flex items-center px-6 gap-6 border-b border-border/5 animate-pulse">
+                                    <div className="h-4 w-4 bg-foreground/5 rounded" />
+                                    <div className="h-4 w-48 bg-foreground/5 rounded" />
+                                    <div className="h-4 w-32 bg-foreground/5 rounded" />
+                                    <div className="h-4 w-32 bg-foreground/5 rounded" />
+                                    <div className="h-6 w-20 bg-foreground/5 rounded-full ml-auto" />
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 ) : products.length > 0 ? (
                     <div className="space-y-4">
-                        <div className="glass-card overflow-hidden border-border/20 shadow-2xl bg-card/30 p-0 rounded-2xl">
+                        {/* Mobile Compact View */}
+                        <div className="md:hidden space-y-3 px-2">
+                            {products.map((p) => {
+                                const config = statusConfig[p.status as keyof typeof statusConfig];
+                                const isExpanded = expandedId === p.id;
+                                const isSelected = selectedIds.has(p.id);
+                                return (
+                                    <div
+                                        key={p.id}
+                                        className={cn(
+                                            "bg-card/40 border border-border/10 rounded-2xl overflow-hidden transition-all duration-300",
+                                            isExpanded ? "ring-1 ring-primary/30 bg-card/60" : "hover:bg-card/50",
+                                            isSelected && "border-primary/30"
+                                        )}
+                                    >
+                                        {/* Main Row */}
+                                        <div
+                                            onClick={() => setExpandedId(isExpanded ? null : p.id)}
+                                            className="p-4 flex items-center justify-between cursor-pointer active:bg-foreground/5"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="flex-shrink-0" onClick={(e) => { e.stopPropagation(); toggleSelect(p.id); }}>
+                                                    <div className={cn(
+                                                        "h-5 w-5 rounded border border-border/40 flex items-center justify-center transition-all",
+                                                        isSelected ? "bg-primary border-primary" : "bg-foreground/5"
+                                                    )}>
+                                                        {isSelected && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}
+                                                    </div>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-mono font-bold text-primary">{p.internal_serial}</span>
+                                                        {config && (
+                                                            <div className={cn("h-1.5 w-1.5 rounded-full", config.color.split(' ')[1].replace('text-', 'bg-'))} />
+                                                        )}
+                                                    </div>
+                                                    <h4 className="font-black text-foreground text-sm uppercase italic truncate">
+                                                        {p.brand} {p.model}
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3 shrink-0">
+                                                {config && (
+                                                    <span className={cn("text-[8px] font-black uppercase px-2 py-0.5 rounded-full border", config.color)}>
+                                                        {config.label}
+                                                    </span>
+                                                )}
+                                                <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform duration-300", isExpanded && "rotate-90")} />
+                                            </div>
+                                        </div>
+
+                                        {/* Expanded Content */}
+                                        {isExpanded && (
+                                            <div className="px-4 pb-4 pt-2 border-t border-border/5 bg-foreground/5 animate-in slide-in-from-top-2 duration-300">
+                                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Tipo / Classe</p>
+                                                        <p className="text-[10px] font-bold text-foreground uppercase">{p.product_type || "N/A"} • {p.market_class || "STD"}</p>
+                                                    </div>
+                                                    <div className="space-y-1 text-right">
+                                                        <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Voltagem / Gás</p>
+                                                        <p className="text-[10px] font-bold text-foreground uppercase">{p.voltage || "BIV"} • {p.refrigerant_gas || "N/A"}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => fetchHistory(p)}
+                                                        className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all text-[10px] font-black uppercase tracking-widest border border-primary/20"
+                                                    >
+                                                        <HistoryIcon className="h-4 w-4" />
+                                                        Histórico
+                                                    </button>
+                                                    {isAuthorized && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => setEditingProduct({ ...p })}
+                                                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-white/5 text-muted-foreground hover:bg-white/10 transition-all border border-border/10"
+                                                            >
+                                                                <Edit2 className="h-4 w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setDeletingProduct(p)}
+                                                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/20"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block glass-card overflow-hidden border-border/20 shadow-2xl bg-card/30 p-0 rounded-2xl">
                             <div className="relative group/table" data-scroll="right">
                                 {/* Horizontal Scroll Indicators */}
                                 <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />

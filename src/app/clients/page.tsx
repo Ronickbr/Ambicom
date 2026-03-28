@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Plus, Search, User, Mail, Phone, MapPin, Loader2, X, ShieldCheck, Pencil, Trash2, Hash, Building2, Settings } from "lucide-react";
+import { Plus, Search, User, Mail, Phone, MapPin, Loader2, X, ShieldCheck, Pencil, Trash2, Hash, Building2, Settings, ChevronRight, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -11,7 +11,7 @@ import { logger } from "@/lib/logger";
 export default function ClientsPage() {
   const { profile } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
-  // const [stats, setStats] = useState({ total: 0, new: 0, growth: "0%" });
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -196,124 +196,230 @@ export default function ClientsPage() {
             </div>
           </div>
           <div className="relative group/table" data-scroll="right">
-            {/* Horizontal Scroll Indicators */}
-            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-
-            <div
-              className="overflow-x-auto scrollbar-hide"
-              onScroll={(e) => {
-                const target = e.currentTarget;
-                const group = target.parentElement;
-                if (group) {
-                  const scrollLeft = target.scrollLeft;
-                  const maxScroll = target.scrollWidth - target.clientWidth;
-                  let status = 'none';
-                  if (maxScroll > 0) {
-                    if (scrollLeft <= 10) status = 'right';
-                    else if (scrollLeft >= maxScroll - 10) status = 'left';
-                    else status = 'both';
-                  }
-                  group.setAttribute('data-scroll', status);
-                }
-              }}
-            >
-              <table className="w-full text-left text-sm border-collapse min-w-[800px] sm:min-w-full">
-                <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
-                  <tr>
-                    <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Identificação / Nome</th>
-                    <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Código</th>
-                    <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Contato Principal</th>
-                    <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Localização</th>
-                    <th className="px-4 sm:px-6 py-5 whitespace-nowrap text-right pr-6 sm:pr-10">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-20 text-center">
-                        <div className="flex flex-col items-center gap-4">
-                          <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sincronizando Base de Clientes</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : filteredClients.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-20 text-center text-muted-foreground italic text-sm">
-                        Nenhum registro de cliente localizado na busca
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredClients.map((client) => (
-                      <tr
-                        key={client.id}
-                        className="group hover:bg-white/[0.02] transition-colors"
+            {/* Mobile Compact View */}
+            <div className="md:hidden space-y-3 px-2 py-4">
+              {isLoading ? (
+                <div className="flex flex-col items-center gap-4 py-20">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sincronizando Base de Clientes</span>
+                </div>
+              ) : filteredClients.length === 0 ? (
+                <div className="px-6 py-20 text-center text-muted-foreground italic text-sm">
+                  Nenhum registro localizado
+                </div>
+              ) : (
+                filteredClients.map((client) => {
+                  const isExpanded = expandedId === client.id;
+                  return (
+                    <div
+                      key={client.id}
+                      className={cn(
+                        "bg-card/40 border border-border/10 rounded-2xl overflow-hidden transition-all duration-300",
+                        isExpanded ? "ring-1 ring-primary/30 bg-card/60 shadow-lg" : "hover:bg-card/50"
+                      )}
+                    >
+                      {/* Main Row */}
+                      <div
+                        onClick={() => setExpandedId(isExpanded ? null : client.id)}
+                        className="p-4 flex items-center justify-between cursor-pointer active:bg-foreground/5"
                       >
-                        <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
-                          <div className="flex flex-col">
-                            <span className="text-foreground font-black text-[13px] sm:text-base leading-tight group-hover:text-primary transition-colors uppercase italic">{client.name}</span>
-                            <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest mt-1 font-black flex items-center gap-1.5 opacity-60">
-                              <Building2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                              PF/PJ: {client.tax_id || "N/A"}
-                            </span>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-9 w-9 rounded-xl bg-foreground/5 flex items-center justify-center text-muted-foreground shrink-0 border border-border/10">
+                            <Building2 className="h-4 w-4" />
                           </div>
-                        </td>
-                        <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <div className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl bg-foreground/5 flex items-center justify-center border border-border/20 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all text-muted-foreground group-hover:text-primary shadow-inner">
-                              <Hash className="h-3 w-3 sm:h-4 sm:w-4" />
-                            </div>
-                            <span className="font-mono text-[10px] sm:text-xs font-bold text-foreground/50 group-hover:text-primary transition-colors uppercase">
-                              {client.id.substring(0, 8)}
-                            </span>
+                          <div className="min-w-0">
+                            <h4 className="font-black text-foreground text-sm uppercase italic truncate">
+                              {client.name}
+                            </h4>
+                            <p className="text-[9px] font-bold text-primary/70 uppercase tracking-widest leading-none mt-1">
+                              PJ/PF: {client.tax_id || "N/A"}
+                            </p>
                           </div>
-                        </td>
-                        <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
-                          <div className="flex flex-col gap-1 sm:gap-1.5">
-                            <div className="flex items-center gap-2 text-foreground/80 font-bold text-[10px] sm:text-xs">
-                              <Mail className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary opacity-70" />
-                              {client.email}
-                            </div>
-                            {client.phone && (
-                              <div className="flex items-center gap-2 text-muted-foreground font-black text-[9px] sm:text-[10px] tracking-wide uppercase">
-                                <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary opacity-50" />
-                                {client.phone}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="text-right mr-1">
+                            <p className="text-[8px] font-black text-foreground/40 uppercase leading-none">Código</p>
+                            <p className="text-[10px] font-mono font-bold text-foreground/60 uppercase">{client.id.substring(0, 8)}</p>
+                          </div>
+                          <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform duration-300", isExpanded && "rotate-90")} />
+                        </div>
+                      </div>
+
+                      {/* Expanded Content */}
+                      {isExpanded && (
+                        <div className="px-4 pb-4 pt-2 border-t border-border/5 bg-foreground/5 animate-in slide-in-from-top-2 duration-300">
+                          <div className="space-y-4 mb-4">
+                            <div className="grid grid-cols-1 gap-3">
+                              <div className="flex items-center gap-3 p-3 rounded-xl bg-background/40 border border-border/10">
+                                <Mail className="h-4 w-4 text-primary/60" />
+                                <div className="min-w-0">
+                                  <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">E-mail Corporativo</p>
+                                  <p className="text-xs font-bold text-foreground truncate">{client.email}</p>
+                                </div>
                               </div>
-                            )}
+                              <div className="flex items-center gap-3 p-3 rounded-xl bg-background/40 border border-border/10">
+                                <Phone className="h-4 w-4 text-primary/60" />
+                                <div className="min-w-0">
+                                  <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Telefone Principal</p>
+                                  <p className="text-xs font-bold text-foreground">{client.phone || "Não informado"}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 p-3 rounded-xl bg-background/40 border border-border/10">
+                                <MapPin className="h-4 w-4 text-primary/60" />
+                                <div className="min-w-0">
+                                  <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Localização / Endereço</p>
+                                  <p className="text-xs font-bold text-foreground line-clamp-1">{client.address || "Não informado"}</p>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </td>
-                        <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
-                          <div className="flex items-center gap-2 text-muted-foreground text-[9px] sm:text-[10px] font-black bg-foreground/5 w-fit px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-border/10 shadow-inner uppercase">
-                            <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary opacity-70" />
-                            {client.address ? (client.address.length > 25 ? client.address.substring(0, 25) + '...' : client.address) : "Sem Endereço"}
-                          </div>
-                        </td>
-                        <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
-                          <div className="flex items-center justify-end gap-1.5 sm:gap-2">
+
+                          <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleOpenModal(client)}
-                              className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-foreground/5 flex items-center justify-center border border-border/20 hover:bg-primary/20 hover:border-primary/50 transition-all text-muted-foreground hover:text-primary shadow-inner active:scale-95"
-                              title="Editar Cliente"
+                              className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-white text-black hover:bg-primary hover:text-primary-foreground transition-all text-[10px] font-black uppercase tracking-widest border border-primary/10 shadow-lg"
                             >
-                              <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              <Settings className="h-4 w-4" />
+                              Configurações
                             </button>
                             {canEdit && (
                               <button
                                 onClick={() => handleDeleteClient(client.id, client.name)}
-                                className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-foreground/5 flex items-center justify-center border border-border/20 hover:bg-red-500/20 hover:border-red-500/50 transition-all text-muted-foreground hover:text-red-500 shadow-inner active:scale-95"
-                                title="Excluir Cliente"
+                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20"
                               >
-                                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             )}
                           </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block">
+              {/* Horizontal Scroll Indicators */}
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+              <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+
+              <div
+                className="overflow-x-auto scrollbar-hide"
+                onScroll={(e) => {
+                  const target = e.currentTarget;
+                  const group = target.parentElement;
+                  if (group) {
+                    const scrollLeft = target.scrollLeft;
+                    const maxScroll = target.scrollWidth - target.clientWidth;
+                    let status = 'none';
+                    if (maxScroll > 0) {
+                      if (scrollLeft <= 10) status = 'right';
+                      else if (scrollLeft >= maxScroll - 10) status = 'left';
+                      else status = 'both';
+                    }
+                    group.setAttribute('data-scroll', status);
+                  }
+                }}
+              >
+                <table className="w-full text-left text-sm border-collapse min-w-[800px] sm:min-w-full">
+                  <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
+                    <tr>
+                      <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Identificação / Nome</th>
+                      <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Código</th>
+                      <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Contato Principal</th>
+                      <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Localização</th>
+                      <th className="px-4 sm:px-6 py-5 whitespace-nowrap text-right pr-6 sm:pr-10">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-20 text-center">
+                          <div className="flex flex-col items-center gap-4">
+                            <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sincronizando Base de Clientes</span>
+                          </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : filteredClients.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-20 text-center text-muted-foreground italic text-sm">
+                          Nenhum registro de cliente localizado na busca
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredClients.map((client) => (
+                        <tr
+                          key={client.id}
+                          className="group hover:bg-white/[0.02] transition-colors"
+                        >
+                          <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                            <div className="flex flex-col">
+                              <span className="text-foreground font-black text-[13px] sm:text-base leading-tight group-hover:text-primary transition-colors uppercase italic">{client.name}</span>
+                              <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest mt-1 font-black flex items-center gap-1.5 opacity-60">
+                                <Building2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                PF/PJ: {client.tax_id || "N/A"}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl bg-foreground/5 flex items-center justify-center border border-border/20 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all text-muted-foreground group-hover:text-primary shadow-inner">
+                                <Hash className="h-3 w-3 sm:h-4 sm:w-4" />
+                              </div>
+                              <span className="font-mono text-[10px] sm:text-xs font-bold text-foreground/50 group-hover:text-primary transition-colors uppercase">
+                                {client.id.substring(0, 8)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                            <div className="flex flex-col gap-1 sm:gap-1.5">
+                              <div className="flex items-center gap-2 text-foreground/80 font-bold text-[10px] sm:text-xs">
+                                <Mail className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary opacity-70" />
+                                {client.email}
+                              </div>
+                              {client.phone && (
+                                <div className="flex items-center gap-2 text-muted-foreground font-black text-[9px] sm:text-[10px] tracking-wide uppercase">
+                                  <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary opacity-50" />
+                                  {client.phone}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                            <div className="flex items-center gap-2 text-muted-foreground text-[9px] sm:text-[10px] font-black bg-foreground/5 w-fit px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-border/10 shadow-inner uppercase">
+                              <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary opacity-70" />
+                              {client.address ? (client.address.length > 25 ? client.address.substring(0, 25) + '...' : client.address) : "Sem Endereço"}
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
+                            <div className="flex items-center justify-end gap-1.5 sm:gap-2">
+                              <button
+                                onClick={() => handleOpenModal(client)}
+                                className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-foreground/5 flex items-center justify-center border border-border/20 hover:bg-primary/20 hover:border-primary/50 transition-all text-muted-foreground hover:text-primary shadow-inner active:scale-95"
+                                title="Editar Cliente"
+                              >
+                                <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              </button>
+                              {canEdit && (
+                                <button
+                                  onClick={() => handleDeleteClient(client.id, client.name)}
+                                  className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-foreground/5 flex items-center justify-center border border-border/20 hover:bg-red-500/20 hover:border-red-500/50 transition-all text-muted-foreground hover:text-red-500 shadow-inner active:scale-95"
+                                  title="Excluir Cliente"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>

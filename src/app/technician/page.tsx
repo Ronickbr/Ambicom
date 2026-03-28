@@ -10,7 +10,9 @@ import {
     AlertTriangle,
     CheckCircle2,
     Loader2,
-    ArrowRight
+    ArrowRight,
+    ChevronRight,
+    Box
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -23,6 +25,7 @@ export default function TechnicianPage() {
     const navigate = useNavigate();
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
 
     const isAuthorized = profile?.role === "TECNICO" || profile?.role === "SUPERVISOR" || profile?.role === "GESTOR" || profile?.role === "ADMIN";
@@ -124,86 +127,170 @@ export default function TechnicianPage() {
 
                 {filteredProducts.length > 0 ? (
                     <div className="glass-card overflow-hidden rounded-2xl border border-border/20 shadow-2xl p-0">
-                        <div className="relative group/table" data-scroll="right">
-                            {/* Horizontal Scroll Indicators */}
-                            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-
-                            <div
-                                className="overflow-x-auto scrollbar-hide"
-                                onScroll={(e) => {
-                                    const target = e.currentTarget;
-                                    const group = target.parentElement;
-                                    if (group) {
-                                        const scrollLeft = target.scrollLeft;
-                                        const maxScroll = target.scrollWidth - target.clientWidth;
-                                        let status = 'none';
-                                        if (maxScroll > 0) {
-                                            if (scrollLeft <= 10) status = 'right';
-                                            else if (scrollLeft >= maxScroll - 10) status = 'left';
-                                            else status = 'both';
-                                        }
-                                        group.setAttribute('data-scroll', status);
-                                    }
-                                }}
-                            >
-                                <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
-                                    <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
-                                        <tr>
-                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Ativo / Identificação</th>
-                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Marca / Fabricante</th>
-                                            <th className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">Status</th>
-                                            <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Entrada</th>
-                                            <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Checklist</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {filteredProducts.map((product) => (
-                                            <tr
-                                                key={product.id}
-                                                className="group hover:bg-white/[0.02] transition-all cursor-pointer"
-                                                onClick={() => navigate(`/technician/checklist/${product.id}`)}
+                        <div className="relative group/table">
+                            {/* Mobile Compact View */}
+                            <div className="md:hidden space-y-3 px-2 py-4">
+                                {filteredProducts.map((product) => {
+                                    const isExpanded = expandedId === product.id;
+                                    return (
+                                        <div
+                                            key={product.id}
+                                            className={cn(
+                                                "bg-card/40 border border-border/10 rounded-2xl overflow-hidden transition-all duration-300",
+                                                isExpanded ? "ring-1 ring-primary/30 bg-card/60 shadow-lg" : "hover:bg-card/50"
+                                            )}
+                                        >
+                                            {/* Main Row */}
+                                            <div
+                                                onClick={() => setExpandedId(isExpanded ? null : product.id)}
+                                                className="p-4 flex items-center justify-between cursor-pointer active:bg-foreground/5"
                                             >
-                                                <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
-                                                    <div className="flex items-center gap-3 sm:gap-4">
-                                                        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-foreground transition-all border border-amber-500/10 shadow-inner">
-                                                            <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="h-9 w-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0 border border-amber-500/10 shadow-inner">
+                                                        <AlertTriangle className="h-4 w-4" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <h4 className="font-black text-foreground text-[11px] uppercase italic truncate">
+                                                            {product.model}
+                                                        </h4>
+                                                        <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tight leading-none mt-1">
+                                                            {product.internal_serial}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <div className="text-right mr-1">
+                                                        <span className="inline-flex px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[8px] font-black uppercase tracking-wider shadow-sm">
+                                                            Pendente
+                                                        </span>
+                                                    </div>
+                                                    <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform duration-300", isExpanded && "rotate-90")} />
+                                                </div>
+                                            </div>
+
+                                            {/* Expanded Content */}
+                                            {isExpanded && (
+                                                <div className="px-4 pb-4 pt-2 border-t border-border/5 bg-foreground/5 animate-in slide-in-from-top-2 duration-300">
+                                                    <div className="grid grid-cols-1 gap-2 mb-4">
+                                                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-background/40 border border-border/10">
+                                                            <div className="flex items-center gap-2">
+                                                                <Box className="h-3.5 w-3.5 text-primary/60" />
+                                                                <p className="text-[9px] font-black text-muted-foreground uppercase opacity-50">Fabricante</p>
+                                                            </div>
+                                                            <p className="text-[10px] font-bold text-foreground">{product.brand}</p>
                                                         </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="font-black text-foreground text-[13px] sm:text-base group-hover:text-primary transition-colors leading-tight uppercase italic truncate max-w-[120px] sm:max-w-none">{product.model}</span>
-                                                            <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground uppercase mt-0.5 tracking-widest bg-foreground/5 w-fit px-1.5 py-0.5 rounded border border-border/10">
-                                                                {product.internal_serial}
-                                                            </span>
+                                                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-background/40 border border-border/10">
+                                                            <div className="flex items-center gap-2">
+                                                                <Clock className="h-3.5 w-3.5 text-primary/60" />
+                                                                <p className="text-[9px] font-black text-muted-foreground uppercase opacity-50">Entrada</p>
+                                                            </div>
+                                                            <p className="text-[10px] font-bold text-foreground">
+                                                                {new Date(product.created_at).toLocaleDateString("pt-BR")} às {new Date(product.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
+                                                            </p>
                                                         </div>
                                                     </div>
-                                                </td>
-                                                <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
-                                                    <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-hover:text-foreground transition-colors">
-                                                        {product.brand}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">
-                                                    <span className="inline-flex px-2 sm:px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[8px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm">
-                                                        Pendente
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[11px] sm:text-xs font-bold text-foreground/80">{new Date(product.created_at).toLocaleDateString("pt-BR")}</span>
-                                                        <span className="text-[9px] sm:text-[10px] text-muted-foreground/40 font-mono tracking-tighter uppercase">{new Date(product.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
+
                                                     <button
-                                                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all border border-primary/20 shadow-lg active:scale-90 ml-auto"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate(`/technician/checklist/${product.id}`);
+                                                        }}
+                                                        className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 active:scale-95"
                                                     >
-                                                        <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                        <ClipboardList className="h-4 w-4" />
+                                                        Iniciar Checklist
                                                     </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block">
+                                <div className="relative group/table" data-scroll="right">
+                                    {/* Horizontal Scroll Indicators */}
+                                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                                    <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+
+                                    <div
+                                        className="overflow-x-auto scrollbar-hide"
+                                        onScroll={(e) => {
+                                            const target = e.currentTarget;
+                                            const group = target.parentElement;
+                                            if (group) {
+                                                const scrollLeft = target.scrollLeft;
+                                                const maxScroll = target.scrollWidth - target.clientWidth;
+                                                let status = 'none';
+                                                if (maxScroll > 0) {
+                                                    if (scrollLeft <= 10) status = 'right';
+                                                    else if (scrollLeft >= maxScroll - 10) status = 'left';
+                                                    else status = 'both';
+                                                }
+                                                group.setAttribute('data-scroll', status);
+                                            }
+                                        }}
+                                    >
+                                        <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
+                                            <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
+                                                <tr>
+                                                    <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Ativo / Identificação</th>
+                                                    <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Marca / Fabricante</th>
+                                                    <th className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">Status</th>
+                                                    <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Entrada</th>
+                                                    <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Checklist</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                                {filteredProducts.map((product) => (
+                                                    <tr
+                                                        key={product.id}
+                                                        className="group hover:bg-white/[0.02] transition-all cursor-pointer"
+                                                        onClick={() => navigate(`/technician/checklist/${product.id}`)}
+                                                    >
+                                                        <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                                            <div className="flex items-center gap-3 sm:gap-4">
+                                                                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-foreground transition-all border border-amber-500/10 shadow-inner">
+                                                                    <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
+                                                                </div>
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-black text-foreground text-[13px] sm:text-base group-hover:text-primary transition-colors leading-tight uppercase italic truncate max-w-[120px] sm:max-w-none">{product.model}</span>
+                                                                    <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground uppercase mt-0.5 tracking-widest bg-foreground/5 w-fit px-1.5 py-0.5 rounded border border-border/10">
+                                                                        {product.internal_serial}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                                                            <span className="text-[9px] sm:text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] group-hover:text-foreground transition-colors">
+                                                                {product.brand}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">
+                                                            <span className="inline-flex px-2 sm:px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[8px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm">
+                                                                Pendente
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 sm:px-6 py-5 whitespace-nowrap">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[11px] sm:text-xs font-bold text-foreground/80">{new Date(product.created_at).toLocaleDateString("pt-BR")}</span>
+                                                                <span className="text-[9px] sm:text-[10px] text-muted-foreground/40 font-mono tracking-tighter uppercase">{new Date(product.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">
+                                                            <button
+                                                                className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all border border-primary/20 shadow-lg active:scale-90 ml-auto"
+                                                            >
+                                                                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

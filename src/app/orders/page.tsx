@@ -17,7 +17,8 @@ import {
     Ban,
     Check,
     Camera,
-    Trash2
+    Trash2,
+    ArrowRight
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,8 @@ export default function OrdersPage() {
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
@@ -623,7 +626,95 @@ export default function OrdersPage() {
 
                 {filteredOrders.length > 0 ? (
                     <div className="space-y-4">
-                        <div className="glass-card overflow-hidden rounded-2xl border border-border/20 shadow-2xl p-0">
+                        {/* Mobile Compact View */}
+                        <div className="md:hidden space-y-3 px-2">
+                            {filteredOrders.map((order) => {
+                                const style = statusStyles[order.status as keyof typeof statusStyles];
+                                const isExpanded = expandedId === order.id;
+                                return (
+                                    <div
+                                        key={order.id}
+                                        className={cn(
+                                            "bg-card/40 border border-border/10 rounded-2xl overflow-hidden transition-all duration-300",
+                                            isExpanded ? "ring-1 ring-primary/30 bg-card/60 shadow-lg" : "hover:bg-card/50"
+                                        )}
+                                    >
+                                        {/* Main Row */}
+                                        <div
+                                            onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                                            className="p-4 flex items-center justify-between cursor-pointer active:bg-foreground/5"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                                    <Package className="h-4 w-4" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-mono font-black text-primary/70">#{order.id.split("-")[0].toUpperCase()}</span>
+                                                        <span className={cn("text-[8px] font-black uppercase px-2 py-0.5 rounded-full border leading-none", style)}>
+                                                            {order.status}
+                                                        </span>
+                                                    </div>
+                                                    <h4 className="font-black text-foreground text-sm uppercase italic truncate">
+                                                        {(order as any).clients?.name || "N/A"}
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <div className="text-right mr-1">
+                                                    <p className="text-[10px] font-black text-foreground/40 uppercase leading-none">Data</p>
+                                                    <p className="text-[10px] font-bold text-foreground/60">{new Date(order.created_at).toLocaleDateString("pt-BR")}</p>
+                                                </div>
+                                                <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform duration-300", isExpanded && "rotate-90")} />
+                                            </div>
+                                        </div>
+
+                                        {/* Expanded Content */}
+                                        {isExpanded && (
+                                            <div className="px-4 pb-4 pt-2 border-t border-border/5 bg-foreground/5 animate-in slide-in-from-top-2 duration-300">
+                                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Local de Destino</p>
+                                                        <p className="text-[10px] font-bold text-foreground uppercase">{(order as any).clients?.address || "NÃO INFORMADO"}</p>
+                                                    </div>
+                                                    <div className="space-y-1 text-right">
+                                                        <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Valor Total</p>
+                                                        <p className="text-[10px] font-bold text-foreground">R$ {order.total_amount?.toFixed(2) || "0.00"}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleViewOrder(order)}
+                                                        className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all text-[10px] font-black uppercase tracking-widest border border-primary/20"
+                                                    >
+                                                        <ArrowRight className="h-4 w-4" />
+                                                        Abrir Pedido
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleExportPDF(order)}
+                                                        className="h-12 w-12 flex items-center justify-center rounded-xl bg-white/5 text-muted-foreground hover:bg-white/10 transition-all border border-border/10"
+                                                    >
+                                                        <FileDown className="h-4 w-4" />
+                                                    </button>
+                                                    {canCreateOrder && (
+                                                        <button
+                                                            onClick={() => handleDeleteOrder(order)}
+                                                            className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/20"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block glass-card overflow-hidden rounded-2xl border border-border/20 shadow-2xl p-0">
                             <div className="relative group/table" data-scroll="right">
                                 {/* Horizontal Scroll Indicators */}
                                 <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
@@ -1019,48 +1110,119 @@ export default function OrdersPage() {
                                             </h3>
                                         </div>
 
-                                        <div className="glass-card rounded-2xl border border-border/10 p-0 overflow-hidden">
-                                            <div className="relative group/table" data-scroll="right">
-                                                <div className="overflow-x-auto scrollbar-hide border border-border/10 rounded-2xl">
-                                                    <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
-                                                        <thead className="bg-foreground/5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-border/10">
-                                                            <tr>
-                                                                <th className="px-4 sm:px-6 py-4 sticky left-0 bg-card z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Produto</th>
-                                                                <th className="px-4 sm:px-6 py-4">ID Interno</th>
-                                                                <th className="px-4 sm:px-6 py-4">S/N Original</th>
-                                                                <th className="px-4 sm:px-6 py-4">Marca</th>
-                                                                <th className="px-4 sm:px-6 py-4">Preço Unit.</th>
-                                                                {selectedOrder.status === "PENDENTE" && <th className="px-4 sm:px-6 py-4 text-right">Ações</th>}
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-white/5">
-                                                            {selectedOrder.order_items?.map((item: any) => (
-                                                                <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
-                                                                    <td className="px-4 sm:px-6 py-4 font-black text-foreground italic uppercase sticky left-0 bg-card group-hover:bg-neutral-800 transition-colors z-20 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">{item.products?.model || "N/A"}</td>
-                                                                    <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-primary font-black uppercase tracking-widest">{item.products?.internal_serial || "N/A"}</td>
-                                                                    <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-muted-foreground/40">{item.products?.original_serial || "N/A"}</td>
-                                                                    <td className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{item.products?.brand || "N/A"}</td>
-                                                                    <td className="px-4 sm:px-6 py-4 font-bold text-foreground">R$ {item.unit_price?.toFixed(2) || "0.00"}</td>
-                                                                    {selectedOrder.status === "PENDENTE" && (
-                                                                        <td className="px-4 sm:px-6 py-3 text-right">
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id, item.unit_price || 0)}
-                                                                                className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500 transition-all inline-flex items-center justify-center shrink-0"
-                                                                            >
-                                                                                <Trash2 className="h-4 w-4" />
-                                                                            </button>
-                                                                        </td>
-                                                                    )}
-                                                                </tr>
-                                                            ))}
-                                                            {(!selectedOrder.order_items || selectedOrder.order_items.length === 0) && (
-                                                                <tr>
-                                                                    <td colSpan={selectedOrder.status === "PENDENTE" ? 6 : 5} className="px-6 py-10 text-center text-muted-foreground italic">Nenhum item vinculado a este pedido.</td>
-                                                                </tr>
+                                        <div className="space-y-3">
+                                            {/* Mobile Items View */}
+                                            <div className="md:hidden space-y-2">
+                                                {selectedOrder.order_items?.map((item: any) => {
+                                                    const isExpanded = expandedItemId === item.id;
+                                                    return (
+                                                        <div
+                                                            key={item.id}
+                                                            className={cn(
+                                                                "bg-card/40 border border-border/10 rounded-xl overflow-hidden transition-all",
+                                                                isExpanded ? "ring-1 ring-primary/30 bg-card/60" : ""
                                                             )}
-                                                        </tbody>
-                                                    </table>
+                                                        >
+                                                            <div
+                                                                onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
+                                                                className="p-3 flex items-center justify-between cursor-pointer"
+                                                            >
+                                                                <div className="flex items-center gap-3 min-w-0">
+                                                                    <div className="h-8 w-8 rounded-lg bg-foreground/5 flex items-center justify-center text-muted-foreground shrink-0 border border-border/10">
+                                                                        <Package className="h-3.5 w-3.5" />
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <h4 className="font-black text-foreground text-xs uppercase italic truncate">
+                                                                            {item.products?.model || "N/A"}
+                                                                        </h4>
+                                                                        <p className="text-[9px] font-mono text-primary/70 font-black uppercase tracking-widest leading-none mt-1">
+                                                                            {item.products?.internal_serial || "N/A"}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 shrink-0">
+                                                                    <span className="text-[10px] font-bold text-foreground">R$ {item.unit_price?.toFixed(2) || "0.00"}</span>
+                                                                    <ChevronRight className={cn("h-3 w-3 text-muted-foreground transition-all", isExpanded && "rotate-90")} />
+                                                                </div>
+                                                            </div>
+
+                                                            {isExpanded && (
+                                                                <div className="px-3 pb-3 pt-1 border-t border-border/5 bg-foreground/5 animate-in slide-in-from-top-1 duration-200">
+                                                                    <div className="grid grid-cols-2 gap-3 mb-3">
+                                                                        <div>
+                                                                            <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">S/N Original</p>
+                                                                            <p className="text-[10px] font-mono text-foreground/70">{item.products?.original_serial || "N/A"}</p>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <p className="text-[8px] font-black text-muted-foreground uppercase opacity-50">Marca</p>
+                                                                            <p className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">{item.products?.brand || "N/A"}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    {selectedOrder.status === "PENDENTE" && (
+                                                                        <button
+                                                                            onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id, item.unit_price || 0)}
+                                                                            className="w-full h-10 flex items-center justify-center gap-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all text-[9px] font-black uppercase tracking-widest border border-red-500/20"
+                                                                        >
+                                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                                            Remover do Pedido
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                                {(!selectedOrder.order_items || selectedOrder.order_items.length === 0) && (
+                                                    <div className="px-6 py-10 text-center text-muted-foreground italic text-xs border border-dashed border-border/20 rounded-2xl">
+                                                        Nenhum item vinculado.
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Desktop Items Table */}
+                                            <div className="hidden md:block glass-card rounded-2xl border border-border/10 p-0 overflow-hidden">
+                                                <div className="relative group/table" data-scroll="right">
+                                                    <div className="overflow-x-auto scrollbar-hide border border-border/10 rounded-2xl">
+                                                        <table className="w-full text-left text-sm border-collapse min-w-[700px] sm:min-w-full">
+                                                            <thead className="bg-foreground/5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-border/10">
+                                                                <tr>
+                                                                    <th className="px-4 sm:px-6 py-4 sticky left-0 bg-card z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Produto</th>
+                                                                    <th className="px-4 sm:px-6 py-4">ID Interno</th>
+                                                                    <th className="px-4 sm:px-6 py-4">S/N Original</th>
+                                                                    <th className="px-4 sm:px-6 py-4">Marca</th>
+                                                                    <th className="px-4 sm:px-6 py-4">Preço Unit.</th>
+                                                                    {selectedOrder.status === "PENDENTE" && <th className="px-4 sm:px-6 py-4 text-right">Ações</th>}
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-white/5">
+                                                                {selectedOrder.order_items?.map((item: any) => (
+                                                                    <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
+                                                                        <td className="px-4 sm:px-6 py-4 font-black text-foreground italic uppercase sticky left-0 bg-card group-hover:bg-neutral-800 transition-colors z-20 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">{item.products?.model || "N/A"}</td>
+                                                                        <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-primary font-black uppercase tracking-widest">{item.products?.internal_serial || "N/A"}</td>
+                                                                        <td className="px-4 sm:px-6 py-4 font-mono text-[10px] sm:text-xs text-muted-foreground/40">{item.products?.original_serial || "N/A"}</td>
+                                                                        <td className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{item.products?.brand || "N/A"}</td>
+                                                                        <td className="px-4 sm:px-6 py-4 font-bold text-foreground">R$ {item.unit_price?.toFixed(2) || "0.00"}</td>
+                                                                        {selectedOrder.status === "PENDENTE" && (
+                                                                            <td className="px-4 sm:px-6 py-3 text-right">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id, item.unit_price || 0)}
+                                                                                    className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500 transition-all inline-flex items-center justify-center shrink-0"
+                                                                                >
+                                                                                    <Trash2 className="h-4 w-4" />
+                                                                                </button>
+                                                                            </td>
+                                                                        )}
+                                                                    </tr>
+                                                                ))}
+                                                                {(!selectedOrder.order_items || selectedOrder.order_items.length === 0) && (
+                                                                    <tr>
+                                                                        <td colSpan={selectedOrder.status === "PENDENTE" ? 6 : 5} className="px-6 py-10 text-center text-muted-foreground italic text-xs">Nenhum item vinculado a este pedido.</td>
+                                                                    </tr>
+                                                                )}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
