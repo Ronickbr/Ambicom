@@ -293,7 +293,7 @@ export default function OrdersPage() {
         try {
             let query = supabase
                 .from("orders")
-                .select("*, clients!inner(name), order_items(id, products(model))", { count: 'exact' })
+                .select("*, clients!inner(name), order_items(id, products(model, internal_serial, original_serial, brand))", { count: 'exact' })
                 .order("created_at", { ascending: false })
                 .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
@@ -1097,7 +1097,7 @@ export default function OrdersPage() {
                                 onClick={() => setShowDetailsModal(false)}
                                 className="flex-1 h-14 bg-foreground/5 hover:bg-foreground/10 text-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
                             >
-                                Aguardar
+                                {selectedOrder.status === "CONCLUIDO" ? "Sair" : "Aguardar"}
                             </button>
                         </div>
                     </div>

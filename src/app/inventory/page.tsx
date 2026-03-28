@@ -51,12 +51,17 @@ const statusConfig = {
 };
 
 interface InventoryProduct extends Product {
-    orders: {
+    orders: ({
         id: string;
         clients: {
             name: string;
         };
-    } | null;
+    } | {
+        id: string;
+        clients: {
+            name: string;
+        };
+    }[]) | null;
     product_logs?: ProductLog[];
 }
 
@@ -322,7 +327,7 @@ export default function InventoryPage() {
                 Modelo: p.model,
                 Status: p.status,
                 Original: p.original_serial,
-                Cliente: p.orders?.clients?.name || "-"
+                Cliente: (Array.isArray(p.orders) ? p.orders[0]?.clients?.name : p.orders?.clients?.name) || "-"
             }));
             exportToExcel(data, "estoque_industrial");
         }
@@ -838,7 +843,10 @@ export default function InventoryPage() {
                                                 <input
                                                     type="date"
                                                     className="w-full h-11 bg-foreground/5 border border-border/20 rounded-xl px-4 text-foreground focus:ring-1 focus:ring-primary/30 focus:border-primary/50 outline-none font-bold transition-all text-sm"
-                                                    value={editingProduct.manufacturing_date ? new Date(editingProduct.manufacturing_date).toISOString().split('T')[0] : ""}
+                                                    value={editingProduct.manufacturing_date ? (() => {
+                                                        const d = new Date(editingProduct.manufacturing_date);
+                                                        return isNaN(d.getTime()) ? "" : d.toISOString().split('T')[0];
+                                                    })() : ""}
                                                     onChange={e => setEditingProduct({ ...editingProduct, manufacturing_date: e.target.value })}
                                                 />
                                             </div>
