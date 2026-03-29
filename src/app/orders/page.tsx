@@ -250,7 +250,7 @@ export default function OrdersPage() {
 
             // Reload order details smoothly and silently to keep scanner open
             handleViewOrder(selectedOrder, true);
-            fetchOrders();
+            fetchOrders(true);
         } catch (err) {
             logger.error("Erro ao buscar/adicionar produto:", err);
             toast.error("Erro ao buscar produto.");
@@ -285,7 +285,7 @@ export default function OrdersPage() {
             toast.info("Produto removido do pedido.");
 
             handleViewOrder(selectedOrder, true);
-            fetchOrders();
+            fetchOrders(true);
         } catch (err) {
             logger.error("Erro ao remover produto:", err);
             toast.error("Erro ao remover produto.");
@@ -322,8 +322,8 @@ export default function OrdersPage() {
         }
     }, [authLoading, isAuthorized, navigate, page, searchTerm]);
 
-    const fetchOrders = async () => {
-        setIsLoading(true);
+    const fetchOrders = async (silent: boolean = false) => {
+        if (!silent) setIsLoading(true);
         try {
             let query = supabase
                 .from("orders")
