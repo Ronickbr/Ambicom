@@ -57,6 +57,8 @@ export default function OrdersPage() {
     const [mountingOrderItems, setMountingOrderItems] = useState<{ product: Product; unitPrice: number }[]>([]);
     const [mountingScanInput, setMountingScanInput] = useState("");
     const [showMountingCamera, setShowMountingCamera] = useState(false);
+    const [detectedScanCode, setDetectedScanCode] = useState("");
+
 
 
     useEffect(() => {
@@ -97,8 +99,9 @@ export default function OrdersPage() {
                         cameraId,
                         config,
                         (decodedText) => {
-                            handleAddProductToOrder(decodedText);
-                            // Câmera continua aberta para múltiplos scans
+                            setDetectedScanCode(decodedText);
+                            setMountingScanInput(decodedText);
+                            // Leitura manual: apenas identifica o código
                         },
                         (errorMessage) => { }
                     );
@@ -108,8 +111,9 @@ export default function OrdersPage() {
                         { facingMode: "environment" },
                         config,
                         (decodedText) => {
-                            handleAddProductToOrder(decodedText);
-                            // Câmera continua aberta para múltiplos scans
+                            setDetectedScanCode(decodedText);
+                            setMountingScanInput(decodedText);
+                            // Leitura manual: apenas identifica o código
                         },
                         (errorMessage) => { }
                     );
@@ -1122,15 +1126,39 @@ export default function OrdersPage() {
                                                             <div className="mt-8 flex flex-col items-center gap-6">
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => handleAddProductToOrder(mountingScanInput)}
-                                                                    className="h-20 w-20 rounded-full bg-primary shadow-[0_0_30px_rgba(34,197,94,0.4)] flex items-center justify-center border-4 border-white/20 active:scale-90 transition-transform group"
+                                                                    onClick={() => {
+                                                                        handleAddProductToOrder(mountingScanInput || detectedScanCode);
+                                                                        setDetectedScanCode("");
+                                                                    }}
+                                                                    className={cn(
+                                                                        "h-24 w-24 rounded-full flex items-center justify-center border-4 active:scale-90 transition-all group relative",
+                                                                        (mountingScanInput || detectedScanCode)
+                                                                            ? "bg-primary shadow-[0_0_40px_rgba(34,197,94,0.6)] border-white/40"
+                                                                            : "bg-muted text-muted-foreground border-white/10 opacity-50 cursor-not-allowed"
+                                                                    )}
+                                                                    disabled={!mountingScanInput && !detectedScanCode}
                                                                 >
-                                                                    <div className="h-14 w-14 rounded-full border-2 border-white/40 flex items-center justify-center">
-                                                                        <Camera className="text-white h-7 w-7" />
+                                                                    {(mountingScanInput || detectedScanCode) && (
+                                                                        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full animate-bounce shadow-lg border-2 border-white">
+                                                                            CAPTURAR
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="h-16 w-16 rounded-full border-2 border-white/20 flex items-center justify-center">
+                                                                        <Camera className={cn("h-8 w-8", (mountingScanInput || detectedScanCode) ? "text-white" : "text-muted-foreground")} />
                                                                     </div>
                                                                 </button>
-                                                                <div className="bg-white/10 backdrop-blur-md px-8 py-3 rounded-full border border-white/10 shadow-xl">
-                                                                    <p className="text-white/70 text-[9px] uppercase font-black tracking-[0.4em] italic text-center animate-pulse">Aponte para o QR Code ou Use Capturar</p>
+
+                                                                <div className="flex flex-col items-center gap-3">
+                                                                    {(mountingScanInput || detectedScanCode) ? (
+                                                                        <div className="bg-primary/20 backdrop-blur-xl px-6 py-3 rounded-2xl border border-primary/30 shadow-2xl animate-in zoom-in-95 duration-200">
+                                                                            <p className="text-primary text-[10px] uppercase font-black tracking-widest mb-1 text-center">Código Identificado</p>
+                                                                            <p className="text-white text-lg font-mono font-black tracking-tighter">{mountingScanInput || detectedScanCode}</p>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="bg-white/10 backdrop-blur-md px-8 py-3 rounded-full border border-white/10 shadow-xl">
+                                                                            <p className="text-white/70 text-[9px] uppercase font-black tracking-[0.4em] italic text-center animate-pulse">Aguardando QR Code...</p>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </div>
