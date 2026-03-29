@@ -98,7 +98,7 @@ export default function OrdersPage() {
                         config,
                         (decodedText) => {
                             handleAddProductToOrder(decodedText);
-                            setShowMountingCamera(false);
+                            // Câmera continua aberta para múltiplos scans
                         },
                         (errorMessage) => { }
                     );
@@ -109,7 +109,7 @@ export default function OrdersPage() {
                         config,
                         (decodedText) => {
                             handleAddProductToOrder(decodedText);
-                            setShowMountingCamera(false);
+                            // Câmera continua aberta para múltiplos scans
                         },
                         (errorMessage) => { }
                     );
@@ -166,27 +166,43 @@ export default function OrdersPage() {
             item.products?.internal_serial?.toUpperCase() === input ||
             item.products?.original_serial?.toUpperCase() === input
         )) {
-            toast.warning("Produto já adicionado a este pedido!");
+            toast.info("Este item já está na lista!", {
+                description: "O produto já foi scaneado e adicionado a este pedido."
+            });
             setMountingScanInput("");
             return;
         }
 
+
         try {
-            const { data, error } = await supabase
+            // First find the product regardless of status to give better feedback
+            const { data: productData, error: productError } = await supabase
                 .from("products")
                 .select("*")
                 .or(`internal_serial.eq."${input}",original_serial.eq."${input}"`)
-                .eq("status", "EM ESTOQUE")
-                .is("order_id", null)
-                .single();
+                .maybeSingle();
 
-            if (error || !data) {
-                toast.error("Produto não encontrado ou indisponível.");
+            if (productError || !productData) {
+                toast.error("Produto não encontrado.", {
+                    description: "Verifique o QR Code ou digite o código manualmente."
+                });
                 return;
             }
 
-            const product = data as Product;
+            const product = productData as Product;
+
+            // Check if product is available
+            if (product.status !== "EM ESTOQUE" || product.order_id !== null) {
+                toast.warning("Produto indisponível!", {
+                    description: product.status === "VENDIDO"
+                        ? "Este item já foi vendido."
+                        : "Este item já está reservado em outro pedido."
+                });
+                return;
+            }
+
             const client = (selectedOrder as any).clients;
+
             let unitPrice = 0;
 
             if (client) {
@@ -1103,9 +1119,18 @@ export default function OrdersPage() {
                                                                 <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-primary/30 shadow-[0_0_15px_rgba(34,197,94,0.5)] animate-infinite-scan z-10"></div>
                                                             </div>
 
-                                                            <div className="mt-8 flex justify-center">
+                                                            <div className="mt-8 flex flex-col items-center gap-6">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleAddProductToOrder(mountingScanInput)}
+                                                                    className="h-20 w-20 rounded-full bg-primary shadow-[0_0_30px_rgba(34,197,94,0.4)] flex items-center justify-center border-4 border-white/20 active:scale-90 transition-transform group"
+                                                                >
+                                                                    <div className="h-14 w-14 rounded-full border-2 border-white/40 flex items-center justify-center">
+                                                                        <Camera className="text-white h-7 w-7" />
+                                                                    </div>
+                                                                </button>
                                                                 <div className="bg-white/10 backdrop-blur-md px-8 py-3 rounded-full border border-white/10 shadow-xl">
-                                                                    <p className="text-white/70 text-[9px] uppercase font-black tracking-[0.4em] italic text-center animate-pulse">Escaneando novo item...</p>
+                                                                    <p className="text-white/70 text-[9px] uppercase font-black tracking-[0.4em] italic text-center animate-pulse">Aponte para o QR Code ou Use Capturar</p>
                                                                 </div>
                                                             </div>
                                                         </div>
