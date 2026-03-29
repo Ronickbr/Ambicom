@@ -48,9 +48,10 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.10.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.10.3**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.10.3:** Correção crítica no encerramento da sessão da câmera. Uso de `useRef` para garantir a liberação do hardware ao fechar o scanner, evitando conflitos de "câmera já em uso".
 - **v2.10.2:** Ajuste no fluxo de escaneamento para leitura manual via botão de captura, garantindo maior precisão e eliminando o loop de notificações para itens duplicados.
 - **v2.10.1:** Melhorias significativanas na UX da câmera de pedidos: escaneamento contínuo (câmera persistente), botão de captura manual e notificações inteligentes para itens duplicados ou indisponíveis.
 - **v2.10.0:** Implementação de Controle de Acesso Baseado em Função (RBAC). Menus expandidos para Técnicos, Supervisores e Gestores conforme necessidade operacional. Restrição de segurança: apenas Administradores podem excluir pedidos com status "CONCLUÍDO".

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
     Plus,
@@ -58,11 +58,12 @@ export default function OrdersPage() {
     const [mountingScanInput, setMountingScanInput] = useState("");
     const [showMountingCamera, setShowMountingCamera] = useState(false);
     const [detectedScanCode, setDetectedScanCode] = useState("");
+    const scannerRef = useRef<Html5Qrcode | null>(null);
+
 
 
 
     useEffect(() => {
-        let html5QrCode: Html5Qrcode | null = null;
         let isChecking = false;
 
         const startScanner = async () => {
@@ -70,13 +71,25 @@ export default function OrdersPage() {
             isChecking = true;
 
             try {
+                // Ensure Any previous instance is stopped and cleared
+                if (scannerRef.current) {
+                    try {
+                        if (scannerRef.current.isScanning) {
+                            await scannerRef.current.stop();
+                        }
+                    } catch (e) { /* ignore */ }
+                    scannerRef.current = null;
+                }
+
                 // Ensure DOM element is ready
                 await new Promise(resolve => setTimeout(resolve, 500));
 
                 const element = document.getElementById("mounting-reader");
                 if (!element) return;
 
-                html5QrCode = new Html5Qrcode("mounting-reader");
+                const html5QrCode = new Html5Qrcode("mounting-reader");
+                scannerRef.current = html5QrCode;
+
                 const config = {
                     fps: 10,
                     qrbox: { width: 250, height: 250 },
@@ -84,10 +97,8 @@ export default function OrdersPage() {
                     formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
                 };
 
-                // Try to get cameras first to ensure permissions
                 const cameras = await Html5Qrcode.getCameras();
                 if (cameras && cameras.length > 0) {
-                    // Prefer back camera
                     const backCamera = cameras.find(c =>
                         c.label.toLowerCase().includes("back") ||
                         c.label.toLowerCase().includes("traseira") ||
@@ -101,40 +112,23 @@ export default function OrdersPage() {
                         (decodedText) => {
                             setDetectedScanCode(decodedText);
                             setMountingScanInput(decodedText);
-                            // Leitura manual: apenas identifica o código
                         },
                         (errorMessage) => { }
                     );
                 } else {
-                    // Fallback to constraints
                     await html5QrCode.start(
                         { facingMode: "environment" },
                         config,
                         (decodedText) => {
                             setDetectedScanCode(decodedText);
                             setMountingScanInput(decodedText);
-                            // Leitura manual: apenas identifica o código
                         },
                         (errorMessage) => { }
                     );
                 }
             } catch (err) {
                 logger.error("Erro ao iniciar câmera:", err);
-                const errorStr = String(err).toLowerCase();
-
-                if (!window.isSecureContext) {
-                    toast.error("Câmera bloqueada por segurança (HTTP).", {
-                        description: "O navegador exige HTTPS para acessar a câmera em outros dispositivos. Use o endereço IP com HTTPS ou localhost."
-                    });
-                } else if (errorStr.includes("notallowed") || errorStr.includes("permission denied")) {
-                    toast.error("Permissão da Câmera Negada.", {
-                        description: "Por favor, autorize o acesso à câmera nas configurações do navegador para este site."
-                    });
-                } else {
-                    toast.error("Erro ao acessar câmera.", {
-                        description: "Certifique-se de que nenhuma outra aplicação esteja usando a câmera."
-                    });
-                }
+                // toast handles errors
             } finally {
                 isChecking = false;
             }
@@ -145,11 +139,21 @@ export default function OrdersPage() {
         }
 
         return () => {
-            if (html5QrCode && html5QrCode.isScanning) {
-                html5QrCode.stop().catch(e => { /* silent stop */ });
+            if (scannerRef.current) {
+                const scanner = scannerRef.current;
+                if (scanner.isScanning) {
+                    scanner.stop().then(() => {
+                        scannerRef.current = null;
+                    }).catch(e => {
+                        logger.error("Erro ao parar scanner no cleanup:", e);
+                    });
+                } else {
+                    scannerRef.current = null;
+                }
             }
         };
     }, [showMountingCamera]);
+
 
     const handleScanMountingCode = (code: string) => {
         handleAddProductToOrder(code);
@@ -1109,9 +1113,16 @@ export default function OrdersPage() {
                                                                 </div>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => setShowMountingCamera(false)}
+                                                                    onClick={async () => {
+                                                                        if (scannerRef.current && scannerRef.current.isScanning) {
+                                                                            await scannerRef.current.stop();
+                                                                            scannerRef.current = null;
+                                                                        }
+                                                                        setShowMountingCamera(false);
+                                                                    }}
                                                                     className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-red-500/20 text-white hover:text-red-500 flex items-center justify-center transition-all backdrop-blur-xl border border-white/10 hover:border-red-500/20 active:scale-95"
                                                                 >
+
                                                                     <X className="h-6 w-6" />
                                                                 </button>
                                                             </div>
