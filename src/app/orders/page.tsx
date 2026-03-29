@@ -248,8 +248,8 @@ export default function OrdersPage() {
 
             setMountingScanInput("");
 
-            // Reload order details smoothly
-            handleViewOrder(selectedOrder);
+            // Reload order details smoothly and silently to keep scanner open
+            handleViewOrder(selectedOrder, true);
             fetchOrders();
         } catch (err) {
             logger.error("Erro ao buscar/adicionar produto:", err);
@@ -284,7 +284,7 @@ export default function OrdersPage() {
 
             toast.info("Produto removido do pedido.");
 
-            handleViewOrder(selectedOrder);
+            handleViewOrder(selectedOrder, true);
             fetchOrders();
         } catch (err) {
             logger.error("Erro ao remover produto:", err);
@@ -432,10 +432,10 @@ export default function OrdersPage() {
         }
     };
 
-    const handleViewOrder = async (order: Order) => {
+    const handleViewOrder = async (order: Order, silent: boolean = false) => {
         setSelectedOrder(order);
         setShowDetailsModal(true);
-        setIsFetchingDetails(true);
+        if (!silent) setIsFetchingDetails(true);
         try {
             const { data, error } = await supabase
                 .from("orders")
