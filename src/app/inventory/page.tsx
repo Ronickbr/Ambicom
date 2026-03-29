@@ -349,7 +349,7 @@ export default function InventoryPage() {
 
     // Products are already filtered by the database query
 
-    const isAuthorized = profile?.role === "GESTOR" || profile?.role === "ADMIN";
+    const isAuthorized = profile?.role === "GESTOR" || profile?.role === "ADMIN" || profile?.role === "TECNICO" || profile?.role === "SUPERVISOR";
 
     return (
         <MainLayout>

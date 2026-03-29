@@ -270,8 +270,15 @@ export default function OrdersPage() {
         }
     };
 
-    const isAuthorized = profile?.role === "GESTOR" || profile?.role === "ADMIN" || profile?.role === "TECNICO";
-    const canCreateOrder = profile?.role === "GESTOR" || profile?.role === "ADMIN";
+    const isAuthorized = profile?.role === "GESTOR" || profile?.role === "ADMIN" || profile?.role === "TECNICO" || profile?.role === "SUPERVISOR";
+    const canCreateOrder = profile?.role === "GESTOR" || profile?.role === "ADMIN" || profile?.role === "SUPERVISOR";
+
+    const canDeleteThisOrder = (order: Order) => {
+        if (order.status === 'CONCLUIDO') {
+            return profile?.role === 'ADMIN';
+        }
+        return profile?.role === 'ADMIN' || profile?.role === 'GESTOR' || profile?.role === 'SUPERVISOR';
+    };
 
     useEffect(() => {
         setPage(0);
@@ -466,6 +473,10 @@ export default function OrdersPage() {
     };
 
     const handleDeleteOrder = async (order: Order) => {
+        if (!canDeleteThisOrder(order)) {
+            toast.error("Apenas administradores podem excluir pedidos finalizados.");
+            return;
+        }
         if (!confirm("Deseja realmente EXCLUIR este pedido permanentemente? Os produtos voltarão ao estoque e a ação é irreversível.")) return;
 
         setIsSaving(true);
@@ -697,7 +708,7 @@ export default function OrdersPage() {
                                                     >
                                                         <FileDown className="h-4 w-4" />
                                                     </button>
-                                                    {canCreateOrder && (
+                                                    {canDeleteThisOrder(order) && (
                                                         <button
                                                             onClick={() => handleDeleteOrder(order)}
                                                             className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/20"
@@ -794,7 +805,7 @@ export default function OrdersPage() {
                                                             >
                                                                 <FileDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                                             </button>
-                                                            {canCreateOrder && (
+                                                            {canDeleteThisOrder(order) && (
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
@@ -1244,7 +1255,7 @@ export default function OrdersPage() {
                                 </button>
                             )}
 
-                            {canCreateOrder && (
+                            {canDeleteThisOrder(selectedOrder) && (
                                 <button
                                     onClick={() => handleDeleteOrder(selectedOrder)}
                                     disabled={isSaving}
