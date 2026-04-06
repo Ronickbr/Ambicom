@@ -321,16 +321,29 @@ export default function ScanPage() {
                 // ── Aplica restrições avançadas de hardware ──
                 const advancedConstraints: any = {};
 
-                // 1. Foco Contínuo
-                if (caps?.focusMode?.includes("continuous")) {
+                const supportedFocus = caps?.focusMode || [];
+                logger.info("Hardware capabilities detected:", caps);
+
+                // 1. Prioriza Modo Macro para etiquetas, senão Contínuo
+                if (supportedFocus.includes("macro")) {
+                    advancedConstraints.focusMode = "macro";
+                    logger.info("Enabling Hardware Macro Mode");
+                } else if (supportedFocus.includes("continuous")) {
                     advancedConstraints.focusMode = "continuous";
+                    logger.info("Enabling Hardware Continuous Focus");
                 }
 
-                // 2. Zoom Automático de 2x (Melhor para etiquetas próximas)
+                // 2. Automatiza Exposição e Balanço de Branco para evitar oscilações
+                if (caps?.exposureMode?.includes("continuous")) {
+                    advancedConstraints.exposureMode = "continuous";
+                }
+                if (caps?.whiteBalanceMode?.includes("continuous")) {
+                    advancedConstraints.whiteBalanceMode = "continuous";
+                }
+
+                // 3. Zoom Automático de 2x (Melhor para etiquetas próximas)
                 if (caps?.zoom) {
-                    const minZoom = caps.zoom.min || 1;
                     const maxZoom = caps.zoom.max || 1;
-                    // Tenta 2x, mas respeita o limite do hardware
                     advancedConstraints.zoom = Math.min(2, maxZoom);
                 }
 
@@ -338,9 +351,9 @@ export default function ScanPage() {
                     track.applyConstraints({
                         advanced: [advancedConstraints]
                     }).then(() => {
-                        logger.info("Hardware advanced constraints applied", advancedConstraints);
+                        logger.info("Advanced hardware constraints active", advancedConstraints);
                     }).catch(e => {
-                        logger.warn("Could not apply advanced hardware constraints", e);
+                        logger.warn("Could not apply macro/continuous constraints", e);
                     });
                 }
             }
