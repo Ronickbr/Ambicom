@@ -77,54 +77,19 @@ export function useScan() {
   const scanImage = async (imageSrc: string) => {
     setOcrLoading(true)
     try {
-      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || import.meta.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
-      const model = import.meta.env.VITE_OPENROUTER_MODEL || import.meta.env.NEXT_PUBLIC_OPENROUTER_MODEL || "google/gemini-1.5-flash";
-
-      if (!apiKey) {
-        throw new Error("API Key do OpenRouter não configurada.");
-      }
-
-      // Converte Base64 (com data:image/...) para apenas o conteúdo se necessário
+      // Converte Base64 (com data:image/...) para apenas o conteúdo
       const base64Image = imageSrc.includes('base64,') ? imageSrc.split('base64,')[1] : imageSrc;
 
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "Scan Relatorio"
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: "Analise esta etiqueta de produto (geralmente Electrolux) e extraia os dados técnicos. Retorne APENAS um objeto JSON com estes campos (use nulo se não encontrar): fabricante, modelo, codigo_comercial, cor, pnc_ml, numero_serie, data_fabricacao, gas_refrigerante, volume_total, tensao, tipo, classe_mercado, carga_gas, compressor, volume_freezer, volume_refrigerator, pressao_alta_baixa, capacidade_congelamento, corrente_eletrica, potencia_degelo, frequencia. Não escreva nada além do JSON."
-                },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: `data:image/jpeg;base64,${base64Image}`
-                  }
-                }
-              ]
-            }
-          ],
-          response_format: { type: "json_object" }
-        })
+      // Chama a Edge Function do Supabase para processar o OCR com segurança
+      const { data, error: functionError } = await supabase.functions.invoke('ocr', {
+        body: { image: base64Image }
       });
 
-      if (!response.ok) {
-        // OpenRouter error handled silently
-        throw new Error(`Falha na API do OpenRouter: ${response.statusText}`);
+      if (functionError) {
+        throw new Error(`Falha no processamento via Edge Function: ${functionError.message}`);
       }
 
-      const result = await response.json();
-      const content = result.choices[0]?.message?.content;
+      const content = data?.content;
 
       if (content) {
         const parsedData = typeof content === 'string' ? JSON.parse(content) : content;
