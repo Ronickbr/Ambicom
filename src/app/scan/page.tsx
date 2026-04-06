@@ -29,13 +29,11 @@ import { logger } from "@/lib/logger";
 
 // ─── Constantes de Câmera ──────────────────────────────────────────────────
 const CAMERA_CONSTRAINTS: MediaTrackConstraints = {
-    facingMode: "environment",
-    width: { ideal: 1920 },
-    height: { ideal: 1080 },
-    aspectRatio: { ideal: 16 / 9 }, // Padrão da maioria dos sensores, o CSS cuidará do recorte 9:16 visual
-    frameRate: { ideal: 24, max: 30 },
-    // @ts-expect-error – constraint experimental
-    videoStabilization: false,
+    facingMode: { ideal: "environment" },
+    width: { ideal: 1920, min: 1280 },
+    height: { ideal: 1080, min: 720 },
+    aspectRatio: { ideal: 16 / 9 },
+    frameRate: { ideal: 30, max: 60 },
 };
 
 const CAPTURE_QUALITY = 0.85; // JPEG quality
@@ -257,19 +255,35 @@ export default function ScanPage() {
      * Em browsers que expõem ImageCapture API com focusMode, poderíamos
      * chamar a API real; aqui usamos timing realista (300-800 ms).
      */
-    const triggerFocusAnimation = useCallback(() => {
+    const triggerFocusAnimation = useCallback(async () => {
         setFocusStatus("focusing");
         if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
 
+        // ── Refoco de Hardware Real ──
+        const stream = webcamRef.current?.video?.srcObject as MediaStream | null;
+        const track = stream?.getVideoTracks()[0];
+        if (track && track.applyConstraints) {
+            try {
+                // Força o motor de foco a "caçar" novamente trocando o modo temporariamente
+                const caps = track.getCapabilities() as any;
+                if (caps.focusMode?.includes("continuous")) {
+                    await track.applyConstraints({ advanced: [{ focusMode: "manual", focusDistance: 0 } as any] });
+                    await new Promise(r => setTimeout(r, 100));
+                    await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] });
+                }
+            } catch (e) {
+                logger.warn("Hardware refocus failed", e);
+            }
+        }
+
         focusTimerRef.current = setTimeout(() => {
-            // 90% chance de sucesso (simula dispositivos reais)
-            const success = Math.random() > 0.1;
+            const success = true; // No Android, assumimos que o comando foi enviado
             setFocusStatus(success ? "locked" : "failed");
 
             focusTimerRef.current = setTimeout(() => {
                 setFocusStatus("idle");
             }, 1200);
-        }, 400 + Math.random() * 400);
+        }, 600);
     }, []);
 
     // ── Handlers de câmera ────────────────────────────────────────────────
@@ -296,12 +310,25 @@ export default function ScanPage() {
     const handleCameraReady = () => {
         setCameraReady(true);
         logger.info("Camera access granted");
-        // Verifica suporte a torch
+
         const stream = webcamRef.current?.video?.srcObject as MediaStream | null;
         if (stream) {
             const track = stream.getVideoTracks()[0];
-            const caps = track?.getCapabilities?.() as any;
-            setTorchSupported(!!(caps?.torch));
+            if (track) {
+                const caps = track.getCapabilities?.() as any;
+                setTorchSupported(!!(caps?.torch));
+
+                // ── Aplica Foco Contínuo se suportado pelo hardware (Motorola/Android) ──
+                if (caps?.focusMode?.includes("continuous")) {
+                    track.applyConstraints({
+                        advanced: [{ focusMode: "continuous" } as any]
+                    }).then(() => {
+                        logger.info("Hardware continuous focus enabled");
+                    }).catch(e => {
+                        logger.warn("Could not apply hardware focus", e);
+                    });
+                }
+            }
         }
         // Dispara autofocus ao iniciar
         triggerFocusAnimation();
