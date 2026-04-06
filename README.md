@@ -48,9 +48,10 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.10.6**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.10.7**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.10.7:** Correção de erro crítico no mapeamento de categorias de checklist (`TypeError: Cannot read properties of undefined (reading 'map')`) e implementação de estado vazio intuitivo ("Nenhum dado encontrado").
 - **v2.10.6:** Correção profunda no fechamento automático da câmera. Implementação de atualizações silenciosas tanto no carregamento de detalhes do pedido quanto na atualização global da lista, garantindo a estabilidade do scanner.
 - **v2.10.5:** Correção no fechamento automático da câmera de pedidos. Implementação de atualização silenciosa de dados para manter o scanner ativo e persistente durante o escaneamento de múltiplos itens.
 - **v2.10.4:** Build de produção e atualização de versionamento conforme as diretrizes do projeto.

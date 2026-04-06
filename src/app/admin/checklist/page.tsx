@@ -443,28 +443,35 @@ export default function AdminChecklistPage() {
                                     </div>
 
                                     <div className="grid gap-2">
-                                        {groupedItems[category].map((item) => (
-                                            <div
-                                                key={item.id}
-                                                className="glass-card bg-card/20 border-border/10 p-4 rounded-xl flex items-center justify-between group hover:border-primary/20 transition-all"
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    <div className="h-8 w-8 rounded-lg bg-foreground/5 flex items-center justify-center">
-                                                        <CheckCircle2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                                                    </div>
-                                                    <span className="text-xs sm:text-sm font-bold text-foreground/80 uppercase italic tracking-tight">{item.label}</span>
-                                                </div>
-
-                                                <button
-                                                    onClick={() => handleDeleteItem(item.id)}
-                                                    disabled={deletingId === item.id}
-                                                    className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
-                                                    title="Excluir item"
+                                        {groupedItems[category] && groupedItems[category].length > 0 ? (
+                                            groupedItems[category].map((item) => (
+                                                <div
+                                                    key={item.id}
+                                                    className="glass-card bg-card/20 border-border/10 p-4 rounded-xl flex items-center justify-between group hover:border-primary/20 transition-all"
                                                 >
-                                                    {deletingId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                                </button>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-8 w-8 rounded-lg bg-foreground/5 flex items-center justify-center">
+                                                            <CheckCircle2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                        </div>
+                                                        <span className="text-xs sm:text-sm font-bold text-foreground/80 uppercase italic tracking-tight">{item.label}</span>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => handleDeleteItem(item.id)}
+                                                        disabled={deletingId === item.id}
+                                                        className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+                                                        title="Excluir item"
+                                                    >
+                                                        {deletingId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                    </button>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="py-12 border border-dashed border-border/10 rounded-2xl flex flex-col items-center justify-center opacity-30 grayscale blur-[0.5px] group hover:blur-0 hover:opacity-50 transition-all">
+                                                <ShieldAlert className="h-6 w-6 mb-2 text-muted-foreground" />
+                                                <p className="text-[10px] font-black uppercase tracking-[0.3em]">Nenhum dado encontrado</p>
                                             </div>
-                                        ))}
+                                        )}
                                     </div>
                                 </div>
                             ))
