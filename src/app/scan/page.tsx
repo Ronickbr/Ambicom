@@ -318,14 +318,29 @@ export default function ScanPage() {
                 const caps = track.getCapabilities?.() as any;
                 setTorchSupported(!!(caps?.torch));
 
-                // ── Aplica Foco Contínuo se suportado pelo hardware (Motorola/Android) ──
+                // ── Aplica restrições avançadas de hardware ──
+                const advancedConstraints: any = {};
+
+                // 1. Foco Contínuo
                 if (caps?.focusMode?.includes("continuous")) {
+                    advancedConstraints.focusMode = "continuous";
+                }
+
+                // 2. Zoom Automático de 2x (Melhor para etiquetas próximas)
+                if (caps?.zoom) {
+                    const minZoom = caps.zoom.min || 1;
+                    const maxZoom = caps.zoom.max || 1;
+                    // Tenta 2x, mas respeita o limite do hardware
+                    advancedConstraints.zoom = Math.min(2, maxZoom);
+                }
+
+                if (Object.keys(advancedConstraints).length > 0) {
                     track.applyConstraints({
-                        advanced: [{ focusMode: "continuous" } as any]
+                        advanced: [advancedConstraints]
                     }).then(() => {
-                        logger.info("Hardware continuous focus enabled");
+                        logger.info("Hardware advanced constraints applied", advancedConstraints);
                     }).catch(e => {
-                        logger.warn("Could not apply hardware focus", e);
+                        logger.warn("Could not apply advanced hardware constraints", e);
                     });
                 }
             }
