@@ -28,26 +28,22 @@ import { useScan } from "@/hooks/useScan";
 import { logger } from "@/lib/logger";
 
 // ─── Constantes de Câmera ──────────────────────────────────────────────────
+// FIX: Resolução reduzida para evitar que o Chrome mobile entre em modo
+//      de compatibilidade e desabilite features avançadas (afeta Moto G35 5G).
+//      720p é suficiente para OCR e garante acesso ao API de constraints avançadas.
 const CAMERA_CONSTRAINTS: MediaTrackConstraints = {
     facingMode: { ideal: "environment" },
-    width: { ideal: 1920, min: 1280 },
-    height: { ideal: 1080, min: 720 },
+    width: { ideal: 1280, min: 640 },
+    height: { ideal: 720, min: 480 },
     aspectRatio: { ideal: 16 / 9 },
-    frameRate: { ideal: 30, max: 60 },
+    frameRate: { ideal: 30, max: 30 },
 };
 
-const CAPTURE_QUALITY = 0.85; // JPEG quality
-const MAX_IMAGE_SIZE_KB = 1024; // 1024 KB
+const CAPTURE_QUALITY = 0.85;
+const MAX_IMAGE_SIZE_KB = 1024;
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-/**
- * Lê o valor de Orientation do EXIF de um dataURL JPEG.
- * Retorna 1 (sem rotação) caso não encontre ou não seja JPEG.
- *
- * Orientações EXIF → rotação necessária para upright:
- *   1 = 0°   3 = 180°   6 = 90° CW   8 = 90° CCW
- */
 function getExifOrientation(dataUrl: string): number {
     if (!dataUrl.startsWith("data:image/jpeg")) return 1;
 
@@ -57,19 +53,17 @@ function getExifOrientation(dataUrl: string): number {
         const buf = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
 
-        // Percorre segmentos JPEG procurando APP1 (0xFFE1 = EXIF)
-        let offset = 2; // pula SOI (FF D8)
+        let offset = 2;
         while (offset < buf.length - 1) {
             if (buf[offset] !== 0xFF) break;
             const marker = buf[offset + 1];
             const segLen = (buf[offset + 2] << 8) | buf[offset + 3];
 
-            if (marker === 0xE1) { // APP1
-                // Verifica magic "Exif\0\0"
+            if (marker === 0xE1) {
                 const exifMagic = String.fromCharCode(...Array.from(buf.slice(offset + 4, offset + 10)));
                 if (exifMagic.startsWith("Exif")) {
                     const tiffOffset = offset + 10;
-                    const isLE = buf[tiffOffset] === 0x49; // "II" = little-endian
+                    const isLE = buf[tiffOffset] === 0x49;
                     const read16 = (o: number) => isLE
                         ? buf[tiffOffset + o] | (buf[tiffOffset + o + 1] << 8)
                         : (buf[tiffOffset + o] << 8) | (buf[tiffOffset + o + 1]);
@@ -82,28 +76,23 @@ function getExifOrientation(dataUrl: string): number {
                     for (let e = 0; e < numEntries; e++) {
                         const eOff = ifdOffset + 2 + e * 12;
                         const tag = read16(eOff);
-                        if (tag === 0x0112) { // Orientation tag
+                        if (tag === 0x0112) {
                             return read16(eOff + 8);
                         }
                     }
                 }
             }
 
-            // Marcadores sem segmento (SOI, EOI, RST)
             if (marker === 0xD8 || marker === 0xD9 || (marker >= 0xD0 && marker <= 0xD7)) {
                 offset += 2;
             } else {
                 offset += 2 + segLen;
             }
         }
-    } catch { /* silencia erros de parsing */ }
+    } catch { }
     return 1;
 }
 
-/**
- * Aplica a transformação correta no canvas baseada no valor de Orientation EXIF.
- * Retorna { w, h } com as dimensões já ajustadas para o canvas.
- */
 function applyExifRotation(
     ctx: CanvasRenderingContext2D,
     img: HTMLImageElement,
@@ -118,14 +107,13 @@ function applyExifRotation(
 
     ctx.save();
     switch (orientation) {
-        case 2: ctx.transform(-1, 0, 0, 1, iw, 0); break;  // flip H
-        case 3: ctx.transform(-1, 0, 0, -1, iw, ih); break;  // 180°
-        case 4: ctx.transform(1, 0, 0, -1, 0, ih); break;  // flip V
-        case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;  // 90° CCW + flip H
-        case 6: ctx.transform(0, 1, -1, 0, ih, 0); break;  // 90° CW
-        case 7: ctx.transform(0, -1, -1, 0, ih, iw); break;  // 90° CW + flip H
-        case 8: ctx.transform(0, -1, 1, 0, 0, iw); break;  // 90° CCW
-        // default (1): sem transformação
+        case 2: ctx.transform(-1, 0, 0, 1, iw, 0); break;
+        case 3: ctx.transform(-1, 0, 0, -1, iw, ih); break;
+        case 4: ctx.transform(1, 0, 0, -1, 0, ih); break;
+        case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;
+        case 6: ctx.transform(0, 1, -1, 0, ih, 0); break;
+        case 7: ctx.transform(0, -1, -1, 0, ih, iw); break;
+        case 8: ctx.transform(0, -1, 1, 0, 0, iw); break;
     }
     ctx.drawImage(img, 0, 0);
     ctx.restore();
@@ -133,10 +121,6 @@ function applyExifRotation(
     return { w: canvas.width, h: canvas.height };
 }
 
-/**
- * Comprime um dataURL JPEG/PNG para no máximo `maxKB` kilobytes,
- * corrigindo automaticamente a orientação EXIF.
- */
 function compressImage(dataUrl: string, maxKB: number, quality = CAPTURE_QUALITY): Promise<string> {
     return new Promise((resolve) => {
         const orientation = getExifOrientation(dataUrl);
@@ -150,7 +134,6 @@ function compressImage(dataUrl: string, maxKB: number, quality = CAPTURE_QUALITY
             let q = quality;
             let result = canvas.toDataURL("image/jpeg", q);
 
-            // Reduz qualidade iterativamente até atingir o limite
             while (result.length * 0.75 > maxKB * 1024 && q > 0.2) {
                 q -= 0.05;
                 result = canvas.toDataURL("image/jpeg", q);
@@ -162,6 +145,47 @@ function compressImage(dataUrl: string, maxKB: number, quality = CAPTURE_QUALITY
     });
 }
 
+// ─── FIX: Helper para aplicar constraints avançadas com fallback granular ──
+// Motorola G35 5G retorna caps incompletas e rejeita o bloco inteiro se
+// qualquer chave dentro de `advanced[0]` não for suportada.
+// A solução é aplicar cada constraint individualmente e ignorar erros.
+async function applyAdvancedConstraintsSafely(
+    track: MediaStreamTrack,
+    constraints: Record<string, unknown>
+): Promise<void> {
+    // Tenta aplicar todas de uma vez primeiro (mais eficiente)
+    try {
+        await track.applyConstraints({ advanced: [constraints as any] });
+        logger.info("Advanced constraints applied (batch)", constraints);
+        return;
+    } catch (e) {
+        logger.warn("Batch constraints failed, falling back to individual application", e);
+    }
+
+    // Se falhar, aplica uma por vez
+    for (const [key, value] of Object.entries(constraints)) {
+        try {
+            await track.applyConstraints({ advanced: [{ [key]: value } as any] });
+            logger.info(`Constraint applied individually: ${key} =`, value);
+        } catch (err) {
+            logger.warn(`Constraint not supported, skipping: ${key}`, err);
+        }
+    }
+}
+
+// FIX: Detecta suporte real de zoom verificando min/max (alguns dispositivos
+// expõem zoom=0 ou zoom={} que são inválidos)
+function getValidZoom(caps: any, targetMultiplier: number): number | null {
+    const zoom = caps?.zoom;
+    if (!zoom || typeof zoom !== "object") return null;
+
+    const min = typeof zoom.min === "number" ? zoom.min : 1;
+    const max = typeof zoom.max === "number" ? zoom.max : 1;
+
+    if (max <= min || max <= 1) return null; // zoom não funcional
+
+    return Math.min(targetMultiplier, max);
+}
 
 // ─── Tipos ─────────────────────────────────────────────────────────────────
 type FocusStatus = "idle" | "focusing" | "locked" | "failed";
@@ -173,24 +197,24 @@ export default function ScanPage() {
     const webcamRef = React.useRef<Webcam>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-    // Constraints com fallback progressivo
     const [videoConstraints, setVideoConstraints] = useState<MediaTrackConstraints | boolean>(CAMERA_CONSTRAINTS);
     const [cameraError, setCameraError] = useState(false);
     const [cameraReady, setCameraReady] = useState(false);
 
-    // Flash / Torch
     const [torchOn, setTorchOn] = useState(false);
     const [torchSupported, setTorchSupported] = useState(false);
 
-    // Indicador de foco
     const [focusStatus, setFocusStatus] = useState<FocusStatus>("idle");
     const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // OCR States
+    // FIX: Guarda o track ativo para reusar sem re-chamar getVideoTracks()
+    const activeTrackRef = useRef<MediaStreamTrack | null>(null);
+    // FIX: Guarda capabilities para não chamar getCapabilities() repetidamente
+    const capsRef = useRef<any>(null);
+
     const [showOcrModal, setShowOcrModal] = useState(false);
     const [isFullscreenImage, setIsFullscreenImage] = useState(false);
 
-    // Photos State
     const [labelPhoto, setLabelPhoto] = useState<string | null>(null);
     const [ocrForm, setOcrForm] = useState<any>({
         brand: "",
@@ -216,7 +240,6 @@ export default function ScanPage() {
         voltage: "",
     });
 
-    // Custom Hook
     const {
         isProcessing,
         lastScans,
@@ -235,51 +258,53 @@ export default function ScanPage() {
         }
     }, [authLoading, profile, navigate]);
 
-    // Cleanup focus timer + desligar torch no unmount
     useEffect(() => {
         return () => {
             if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
-            // Garante que o flash é desligado ao sair da página
-            const stream = webcamRef.current?.video?.srcObject as MediaStream | null;
-            if (stream) {
-                stream.getVideoTracks().forEach(t => {
-                    try { t.applyConstraints({ advanced: [{ torch: false } as any] }); } catch { /* ignore */ }
-                });
+            const track = activeTrackRef.current;
+            if (track) {
+                try {
+                    track.applyConstraints({ advanced: [{ torch: false } as any] });
+                } catch { }
             }
         };
     }, []);
 
-    // ── Foco Automático simulado ──────────────────────────────────────────
-    /**
-     * Simula o ciclo de autofocus para dar feedback visual ao usuário.
-     * Em browsers que expõem ImageCapture API com focusMode, poderíamos
-     * chamar a API real; aqui usamos timing realista (300-800 ms).
-     */
+    // ── Autofocus ─────────────────────────────────────────────────────────
     const triggerFocusAnimation = useCallback(async () => {
         setFocusStatus("focusing");
         if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
 
-        // ── Refoco de Hardware Real ──
-        const stream = webcamRef.current?.video?.srcObject as MediaStream | null;
-        const track = stream?.getVideoTracks()[0];
-        if (track && track.applyConstraints) {
+        const track = activeTrackRef.current;
+        const caps = capsRef.current;
+
+        if (track && caps) {
             try {
-                // Força o motor de foco a "caçar" novamente trocando o modo temporariamente
-                const caps = track.getCapabilities() as any;
-                if (caps.focusMode?.includes("continuous")) {
-                    await track.applyConstraints({ advanced: [{ focusMode: "manual", focusDistance: 0 } as any] });
-                    await new Promise(r => setTimeout(r, 100));
-                    await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] });
+                const supportedFocus: string[] = caps.focusMode || [];
+
+                // FIX: Só tenta refoco se continuous está disponível.
+                // Não tenta "manual + focusDistance" pois Moto G35 5G
+                // não suporta e bloqueia o foco em vez de ignorar.
+                if (supportedFocus.includes("continuous")) {
+                    // Cicla para "single-shot" se disponível, senão reaplica continuous
+                    if (supportedFocus.includes("single-shot")) {
+                        await track.applyConstraints({ advanced: [{ focusMode: "single-shot" } as any] });
+                        await new Promise(r => setTimeout(r, 150));
+                        await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] });
+                    } else {
+                        // Força re-execução do continuous reescrevendo a constraint
+                        await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] });
+                    }
                 }
+                // FIX: Sem fallback para "manual" — em dispositivos que não
+                // suportam focusDistance, isso congela o foco completamente.
             } catch (e) {
                 logger.warn("Hardware refocus failed", e);
             }
         }
 
         focusTimerRef.current = setTimeout(() => {
-            const success = true; // No Android, assumimos que o comando foi enviado
-            setFocusStatus(success ? "locked" : "failed");
-
+            setFocusStatus("locked");
             focusTimerRef.current = setTimeout(() => {
                 setFocusStatus("idle");
             }, 1200);
@@ -291,14 +316,12 @@ export default function ScanPage() {
         logger.error("Camera access error", err);
 
         if (typeof videoConstraints !== "boolean" && (videoConstraints as MediaTrackConstraints).width) {
-            // 1ª tentativa: remover restrições de resolução, manter facingMode
             logger.info("Retrying with basic environment constraint");
             setVideoConstraints({ facingMode: "environment" });
             return;
         }
 
         if (typeof videoConstraints !== "boolean" && (videoConstraints as any).facingMode === "environment") {
-            // 2ª tentativa: qualquer câmera disponível
             logger.info("Environment camera not found, falling back to any camera");
             setVideoConstraints(true);
             return;
@@ -307,68 +330,81 @@ export default function ScanPage() {
         setCameraError(true);
     };
 
-    const handleCameraReady = () => {
+    const handleCameraReady = async () => {
         setCameraReady(true);
         logger.info("Camera access granted");
 
         const stream = webcamRef.current?.video?.srcObject as MediaStream | null;
-        if (stream) {
-            const track = stream.getVideoTracks()[0];
-            if (track) {
-                const caps = track.getCapabilities?.() as any;
-                setTorchSupported(!!(caps?.torch));
+        if (!stream) return;
 
-                // ── Aplica restrições avançadas de hardware ──
-                const advancedConstraints: any = {};
+        const track = stream.getVideoTracks()[0];
+        if (!track) return;
 
-                const supportedFocus = caps?.focusMode || [];
-                logger.info("Hardware capabilities detected:", caps);
+        // FIX: Guarda referências para uso futuro
+        activeTrackRef.current = track;
 
-                // 1. Prioriza Modo Macro para etiquetas, senão Contínuo
-                if (supportedFocus.includes("macro")) {
-                    advancedConstraints.focusMode = "macro";
-                    logger.info("Enabling Hardware Macro Mode");
-                } else if (supportedFocus.includes("continuous")) {
-                    advancedConstraints.focusMode = "continuous";
-                    logger.info("Enabling Hardware Continuous Focus");
-                }
+        // FIX: getCapabilities() pode retornar {} em alguns browsers/dispositivos.
+        // Sempre verificar se a propriedade existe E tem valor utilizável.
+        const caps: any = track.getCapabilities?.() ?? {};
+        capsRef.current = caps;
 
-                // 2. Automatiza Exposição e Balanço de Branco para evitar oscilações
-                if (caps?.exposureMode?.includes("continuous")) {
-                    advancedConstraints.exposureMode = "continuous";
-                }
-                if (caps?.whiteBalanceMode?.includes("continuous")) {
-                    advancedConstraints.whiteBalanceMode = "continuous";
-                }
+        logger.info("Hardware capabilities detected:", JSON.stringify(caps));
 
-                // 3. Zoom Automático de 2x (Melhor para etiquetas próximas)
-                if (caps?.zoom) {
-                    const maxZoom = caps.zoom.max || 1;
-                    advancedConstraints.zoom = Math.min(2, maxZoom);
-                }
+        // Detecta suporte a torch
+        setTorchSupported(!!caps.torch);
 
-                if (Object.keys(advancedConstraints).length > 0) {
-                    track.applyConstraints({
-                        advanced: [advancedConstraints]
-                    }).then(() => {
-                        logger.info("Advanced hardware constraints active", advancedConstraints);
-                    }).catch(e => {
-                        logger.warn("Could not apply macro/continuous constraints", e);
-                    });
-                }
-            }
+        // FIX: Monta o objeto de constraints apenas com o que realmente está disponível
+        const supportedFocus: string[] = Array.isArray(caps.focusMode) ? caps.focusMode : [];
+        const advancedConstraints: Record<string, unknown> = {};
+
+        // Foco: prefere continuous, aceita single-shot, ignora se nenhum disponível
+        // FIX: Remove "macro" da lista de prioridade — causa travamento em mid-range
+        if (supportedFocus.includes("continuous")) {
+            advancedConstraints.focusMode = "continuous";
+            logger.info("Focus mode: continuous");
+        } else if (supportedFocus.includes("single-shot")) {
+            advancedConstraints.focusMode = "single-shot";
+            logger.info("Focus mode: single-shot (fallback)");
+        } else {
+            logger.info("Focus mode: não suportado, deixando o driver decidir");
         }
-        // Dispara autofocus ao iniciar
+
+        // Exposição automática
+        if (Array.isArray(caps.exposureMode) && caps.exposureMode.includes("continuous")) {
+            advancedConstraints.exposureMode = "continuous";
+        }
+
+        // Balanço de branco automático
+        if (Array.isArray(caps.whiteBalanceMode) && caps.whiteBalanceMode.includes("continuous")) {
+            advancedConstraints.whiteBalanceMode = "continuous";
+        }
+
+        // FIX: Zoom com validação real de min/max.
+        // Moto G35 5G pode expor zoom mas com range inválido (max=1).
+        // Reduzido de 2× para 1.5× para maior compatibilidade.
+        const safeZoom = getValidZoom(caps, 1.5);
+        if (safeZoom !== null) {
+            advancedConstraints.zoom = safeZoom;
+            logger.info(`Zoom configurado para ${safeZoom}×`);
+        } else {
+            logger.info("Zoom não disponível ou range inválido, ignorando");
+        }
+
+        // FIX: Usa o helper que aplica individualmente em caso de falha em lote
+        if (Object.keys(advancedConstraints).length > 0) {
+            await applyAdvancedConstraintsSafely(track, advancedConstraints);
+        }
+
+        // FIX: Aguarda 300ms após configurar antes de disparar o foco
+        // para dar tempo ao hardware de estabilizar (importante no G35 5G)
+        await new Promise(r => setTimeout(r, 300));
         triggerFocusAnimation();
     };
 
     // ── Toggle Flash ─────────────────────────────────────────────────────
     const toggleTorch = useCallback(async () => {
-        const stream = webcamRef.current?.video?.srcObject as MediaStream | null;
-        if (!stream) { toast.error("Câmera não disponível"); return; }
-
-        const track = stream.getVideoTracks()[0];
-        if (!track) return;
+        const track = activeTrackRef.current;
+        if (!track) { toast.error("Câmera não disponível"); return; }
 
         const next = !torchOn;
         try {
@@ -387,15 +423,15 @@ export default function ScanPage() {
 
         triggerFocusAnimation();
 
-        // Aguarda o foco antes de capturar (400ms mín.)
-        await new Promise(r => setTimeout(r, 450));
+        // FIX: Aumentado de 450ms para 600ms — dispositivos mid-range como
+        // o G35 5G precisam de mais tempo para o foco estabilizar após o trigger
+        await new Promise(r => setTimeout(r, 600));
 
         const rawImage = webcamRef.current.getScreenshot();
         if (!rawImage) return;
 
         toast.info("Processando imagem...");
 
-        // Comprime para máx 500 KB
         const compressed = await compressImage(rawImage, MAX_IMAGE_SIZE_KB);
 
         setLabelPhoto(compressed);
@@ -483,7 +519,6 @@ export default function ScanPage() {
 
     if (authLoading) return null;
 
-    // ── Cor e ícone do indicador de foco ─────────────────────────────────
     const focusIndicator = {
         idle: { color: "text-white/40 border-white/20", icon: <Focus className="h-4 w-4" />, label: "Pronto" },
         focusing: { color: "text-amber-400 border-amber-400/60 animate-pulse", icon: <Loader2 className="h-4 w-4 animate-spin" />, label: "Focando..." },
@@ -517,7 +552,6 @@ export default function ScanPage() {
 
                 <div className="grid lg:grid-cols-5 gap-8">
                     <div className="lg:col-span-3 space-y-6">
-                        {/* Camera Frame */}
                         <div className="glass-card p-2 border-border/20 bg-black shadow-2xl relative overflow-hidden group max-w-sm mx-auto">
                             <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-card border border-border/10">
                                 {!cameraError ? (
@@ -535,7 +569,6 @@ export default function ScanPage() {
                                             imageSmoothing={false}
                                         />
 
-                                        {/* ── Indicador de foco (canto sup. dir.) ── */}
                                         {cameraReady && (
                                             <div className={cn(
                                                 "absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm bg-black/40 transition-all duration-300",
@@ -546,10 +579,8 @@ export default function ScanPage() {
                                             </div>
                                         )}
 
-                                        {/* ── Viewfinder Clean (Área de Foco Total) ── */}
                                         {cameraReady && (
                                             <div className="absolute inset-0 z-10 pointer-events-none">
-                                                {/* Cantilheiras de Foco Sutis e Totais */}
                                                 <div className={cn(
                                                     "absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 rounded-tl transition-colors duration-300",
                                                     focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/20"
@@ -567,22 +598,18 @@ export default function ScanPage() {
                                                     focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/20"
                                                 )} />
 
-                                                {/* Indicador de Pronto - Sutil */}
                                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20">
                                                     <Camera className="h-12 w-12 text-white" />
                                                 </div>
                                             </div>
                                         )}
 
-                                        {/* ── Badge HD + Botão Flash ── */}
                                         {cameraReady && (
                                             <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-                                                {/* Badge HD */}
                                                 <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-white/10">
                                                     <span className="text-[8px] font-black text-white/60 uppercase tracking-widest">HD · 720p</span>
                                                 </div>
 
-                                                {/* Botão Flash */}
                                                 <button
                                                     onClick={toggleTorch}
                                                     title={torchSupported ? (torchOn ? "Desligar flash" : "Ligar flash") : "Flash indisponível"}
@@ -602,7 +629,6 @@ export default function ScanPage() {
                                             </div>
                                         )}
 
-                                        {/* ── Botão de captura ── */}
                                         <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center px-4">
                                             <button
                                                 onClick={handleCaptureAndOCR}
@@ -618,7 +644,6 @@ export default function ScanPage() {
                                             </button>
                                         </div>
 
-                                        {/* ── Botão de refoco ao clicar no vídeo ── */}
                                         <button
                                             className="absolute inset-0 z-[5] cursor-crosshair bg-transparent"
                                             onClick={triggerFocusAnimation}
@@ -634,7 +659,13 @@ export default function ScanPage() {
                                         <p className="text-sm text-muted-foreground max-w-xs mx-auto">Verifique as permissões do navegador ou suba uma foto da galeria.</p>
                                         <div className="flex gap-4 w-full max-w-sm">
                                             <button
-                                                onClick={() => { setCameraError(false); setCameraReady(false); setVideoConstraints(CAMERA_CONSTRAINTS); }}
+                                                onClick={() => {
+                                                    activeTrackRef.current = null;
+                                                    capsRef.current = null;
+                                                    setCameraError(false);
+                                                    setCameraReady(false);
+                                                    setVideoConstraints(CAMERA_CONSTRAINTS);
+                                                }}
                                                 className="flex-1 px-6 py-4 bg-foreground/5 hover:bg-foreground/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-foreground transition-all border border-border/10 flex items-center justify-center gap-3"
                                             >
                                                 <RefreshCw className="h-4 w-4" />
@@ -751,7 +782,6 @@ export default function ScanPage() {
                         </div>
 
                         <div className="p-6 space-y-8 overflow-y-auto custom-scrollbar flex-1 bg-background/20">
-                            {/* Visual Preview */}
                             <div className="space-y-2">
                                 <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Documento Digitalizado</label>
                                 <div className="flex justify-center">
@@ -777,9 +807,7 @@ export default function ScanPage() {
                                 </div>
                             </div>
 
-                            {/* Form fields */}
                             <div className="space-y-6">
-                                {/* Seção Identificação */}
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black text-primary uppercase tracking-widest border-l-2 border-primary pl-2">Identificação Extraída</h4>
                                     <div className="grid grid-cols-2 gap-4">
@@ -818,7 +846,6 @@ export default function ScanPage() {
                                     </div>
                                 </div>
 
-                                {/* Seção Performance & Fluidos */}
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest border-l-2 border-emerald-500 pl-2">Desempenho e Fluidos</h4>
                                     <div className="grid grid-cols-2 gap-4">
@@ -831,7 +858,6 @@ export default function ScanPage() {
                                     </div>
                                 </div>
 
-                                {/* Seção Volumes */}
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest border-l-2 border-blue-500 pl-2">Capacidades e Volumes</h4>
                                     <div className="grid grid-cols-3 gap-3">
@@ -841,7 +867,6 @@ export default function ScanPage() {
                                     </div>
                                 </div>
 
-                                {/* Seção Elétrica */}
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest border-l-2 border-amber-500 pl-2">Especificações Elétricas</h4>
                                     <div className="grid grid-cols-2 gap-4">
@@ -871,7 +896,6 @@ export default function ScanPage() {
                                     const result = await registerProduct(ocrForm, capturedPhotos);
                                     if (result) {
                                         setShowOcrModal(false);
-                                        // Imprime a etiqueta automaticamente após o cadastro bem-sucedido
                                         const { printLabels } = await import("@/lib/export-utils");
                                         await printLabels([result]);
                                     }
@@ -911,7 +935,6 @@ export default function ScanPage() {
                 </div>
             )}
 
-            {/* Inputs de Arquivo Ocultos */}
             <input
                 type="file"
                 ref={fileInputRef}
