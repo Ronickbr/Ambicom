@@ -1,4 +1,5 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+// @ts-ignore: Deno is defined in the Supabase Edge Runtime environment
+declare const Deno: any;
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -14,7 +15,7 @@ Deno.serve(async (req: Request) => {
     try {
         const { image } = await req.json()
         const openRouterKey = Deno.env.get('OPENROUTER_KEY')
-        const model = Deno.env.get('OPENROUTER_MODEL') || "google/gemini-1.5-flash"
+        const model = Deno.env.get('OPENROUTER_MODEL') || "openai/gpt-4o-mini"
 
         if (!openRouterKey) {
             throw new Error('OPENROUTER_KEY não configurada nas variáveis de ambiente da Edge Function')
