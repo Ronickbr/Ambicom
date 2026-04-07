@@ -48,9 +48,10 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.11.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.11.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.11.2:** Restauração e auditoria de segurança da função OCR. Ajuste de bypass de autenticação JWT em nível de gateway para resolver erro 401 e garantir funcionamento imediato do scanner, mantendo proteção via CORS e ocultação de chaves.
 - **v2.11.1:** Ajuste de compatibilidade do ambiente de desenvolvimento. Adicionada declaração global para `Deno` na Edge Function para eliminar avisos visuais do IDE (VS Code/Cursor).
 - **v2.11.0:** Melhoria crítica de segurança. Migração da lógica de OCR para Supabase Edge Functions, protegendo a chave de API do OpenRouter e centralizando o processamento de IA no servidor.
 - **v2.10.11:** Correções críticas de compatibilidade para dispositivos de médio custo (Moto G35 5G). Implementação de aplicação granular de constraints, redução estratégica de resolução para 720p (evitando modo de compatibilidade do Chrome) e refinamento do ciclo de refoco de hardware.
