@@ -155,6 +155,7 @@ async function applyAdvancedConstraintsSafely(
 ): Promise<void> {
     // Tenta aplicar todas de uma vez primeiro (mais eficiente)
     try {
+        if (track.readyState !== "live") return;
         await track.applyConstraints({ advanced: [constraints as any] });
         logger.info("Advanced constraints applied (batch)", constraints);
         return;
@@ -165,6 +166,7 @@ async function applyAdvancedConstraintsSafely(
     // Se falhar, aplica uma por vez
     for (const [key, value] of Object.entries(constraints)) {
         try {
+            if (track.readyState !== "live") break;
             await track.applyConstraints({ advanced: [{ [key]: value } as any] });
             logger.info(`Constraint applied individually: ${key} =`, value);
         } catch (err) {
@@ -206,6 +208,8 @@ export default function ScanPage() {
 
     const [focusStatus, setFocusStatus] = useState<FocusStatus>("idle");
     const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const isMounted = useRef(true);
 
     // FIX: Guarda o track ativo para reusar sem re-chamar getVideoTracks()
     const activeTrackRef = useRef<MediaStreamTrack | null>(null);
@@ -259,53 +263,54 @@ export default function ScanPage() {
     }, [authLoading, profile, navigate]);
 
     useEffect(() => {
+        isMounted.current = true;
         return () => {
+            isMounted.current = false;
             if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
             const track = activeTrackRef.current;
-            if (track) {
-                try {
-                    track.applyConstraints({ advanced: [{ torch: false } as any] });
-                } catch { }
+            // FIX: Só tenta desligar o flash se a track ainda estiver viva e ativa
+            if (track && track.readyState === "live") {
+                track.applyConstraints({ advanced: [{ torch: false } as any] })
+                    .catch(err => logger.debug("Cleanup: Torch already off or track closed", err));
             }
         };
     }, []);
 
     // ── Autofocus ─────────────────────────────────────────────────────────
     const triggerFocusAnimation = useCallback(async () => {
+        if (!isMounted.current) return;
         setFocusStatus("focusing");
         if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
 
         const track = activeTrackRef.current;
         const caps = capsRef.current;
 
-        if (track && caps) {
+        if (track && caps && track.readyState === "live") {
             try {
                 const supportedFocus: string[] = caps.focusMode || [];
 
-                // FIX: Só tenta refoco se continuous está disponível.
-                // Não tenta "manual + focusDistance" pois Moto G35 5G
-                // não suporta e bloqueia o foco em vez de ignorar.
                 if (supportedFocus.includes("continuous")) {
-                    // Cicla para "single-shot" se disponível, senão reaplica continuous
                     if (supportedFocus.includes("single-shot")) {
-                        await track.applyConstraints({ advanced: [{ focusMode: "single-shot" } as any] });
+                        await track.applyConstraints({ advanced: [{ focusMode: "single-shot" } as any] }).catch(() => { });
+                        if (!isMounted.current) return;
                         await new Promise(r => setTimeout(r, 150));
-                        await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] });
+                        if (!isMounted.current) return;
+                        await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] }).catch(() => { });
                     } else {
-                        // Força re-execução do continuous reescrevendo a constraint
-                        await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] });
+                        await track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] }).catch(() => { });
                     }
                 }
-                // FIX: Sem fallback para "manual" — em dispositivos que não
-                // suportam focusDistance, isso congela o foco completamente.
             } catch (e) {
                 logger.warn("Hardware refocus failed", e);
             }
         }
 
+        if (!isMounted.current) return;
         focusTimerRef.current = setTimeout(() => {
+            if (!isMounted.current) return;
             setFocusStatus("locked");
             focusTimerRef.current = setTimeout(() => {
+                if (!isMounted.current) return;
                 setFocusStatus("idle");
             }, 1200);
         }, 600);
@@ -395,16 +400,23 @@ export default function ScanPage() {
             await applyAdvancedConstraintsSafely(track, advancedConstraints);
         }
 
+        if (!isMounted.current) return;
+
         // FIX: Aguarda 300ms após configurar antes de disparar o foco
         // para dar tempo ao hardware de estabilizar (importante no G35 5G)
         await new Promise(r => setTimeout(r, 300));
+
+        if (!isMounted.current) return;
         triggerFocusAnimation();
     };
 
     // ── Toggle Flash ─────────────────────────────────────────────────────
     const toggleTorch = useCallback(async () => {
         const track = activeTrackRef.current;
-        if (!track) { toast.error("Câmera não disponível"); return; }
+        if (!track || track.readyState !== "live") {
+            toast.error("Câmera não disponível ou inativa");
+            return;
+        }
 
         const next = !torchOn;
         try {

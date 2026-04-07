@@ -48,9 +48,10 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.11.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.11.3**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.11.3:** Correção do erro fatal `setPhotoOptions failed` ao fechar a tela de scan. Implementação de proteção de ciclo de vida (`isMounted`) e tratamento robusto de exceções em constraints de hardware para evitar toasts de erro em segundo plano no encerramento da câmera.
 - **v2.11.2:** Restauração e auditoria de segurança da função OCR. Ajuste de bypass de autenticação JWT em nível de gateway para resolver erro 401 e garantir funcionamento imediato do scanner, mantendo proteção via CORS e ocultação de chaves.
 - **v2.11.1:** Ajuste de compatibilidade do ambiente de desenvolvimento. Adicionada declaração global para `Deno` na Edge Function para eliminar avisos visuais do IDE (VS Code/Cursor).
 - **v2.11.0:** Melhoria crítica de segurança. Migração da lógica de OCR para Supabase Edge Functions, protegendo a chave de API do OpenRouter e centralizando o processamento de IA no servidor.

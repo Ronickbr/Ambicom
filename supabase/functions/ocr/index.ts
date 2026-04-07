@@ -13,17 +13,27 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-        const { image } = await req.json()
-        const openRouterKey = Deno.env.get('OPENROUTER_KEY')
-        const model = Deno.env.get('OPENROUTER_MODEL') || "openai/gpt-4o-mini"
+        let body;
+        try {
+            body = await req.json();
+        } catch (e: unknown) {
+            throw new Error(`INTERNAL_JSON_PARSE_ERROR: ${(e as Error).message}`);
+        }
+
+        const { image } = body;
+        const openRouterKey = Deno.env.get('OPENROUTER_KEY');
+        // Forçando um modelo estável para teste
+        const model = Deno.env.get('OPENROUTER_MODEL') || "google/gemini-2.0-flash-lite-001";
 
         if (!openRouterKey) {
-            throw new Error('OPENROUTER_KEY não configurada nas variáveis de ambiente da Edge Function')
+            throw new Error('CONFIG_MISSING: OPENROUTER_KEY não está definida nas Secrets do Supabase.');
         }
 
         if (!image) {
-            throw new Error('Nenhuma imagem fornecida')
+            throw new Error('VALIDATION_ERROR: O campo "image" (base64) é obrigatório.');
         }
+
+        console.log(`OpenRouter Request: Model=${model}`);
 
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
@@ -31,7 +41,7 @@ Deno.serve(async (req: Request) => {
                 "Authorization": `Bearer ${openRouterKey}`,
                 "Content-Type": "application/json",
                 "HTTP-Referer": "https://supabase.com",
-                "X-Title": "Scan Relatorio OCR"
+                "X-Title": "OCR Scan"
             },
             body: JSON.stringify({
                 model: model,
@@ -41,7 +51,7 @@ Deno.serve(async (req: Request) => {
                         content: [
                             {
                                 type: "text",
-                                text: "Analise esta etiqueta de produto (geralmente Electrolux) e extraia os dados técnicos. Retorne APENAS um objeto JSON com estes campos (use nulo se não encontrar): fabricante, modelo, codigo_comercial, cor, pnc_ml, numero_serie, data_fabricacao, gas_refrigerante, volume_total, tensao, tipo, classe_mercado, carga_gas, compressor, volume_freezer, volume_refrigerator, pressao_alta_baixa, capacidade_congelamento, corrente_eletrica, potencia_degelo, frequencia. Não escreva nada além do JSON."
+                                text: "Extraia dados técnicos desta etiqueta industrial para JSON. Retorne apenas o JSON: fabricante, modelo, codigo_comercial, cor, pnc_ml, numero_serie, data_fabricacao, gas_refrigerante, volume_total, tensao, tipo, classe_mercado, carga_gas, compressor, volume_freezer, volume_refrigerator, pressao_alta_baixa, capacidade_congelamento, corrente_eletrica, potencia_degelo, frequencia."
                             },
                             {
                                 type: "image_url",
@@ -54,25 +64,37 @@ Deno.serve(async (req: Request) => {
                 ],
                 response_format: { type: "json_object" }
             })
-        })
+        });
+
+        const resData = await response.json();
 
         if (!response.ok) {
-            const errorText = await response.text()
-            throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`)
+            // Retorna o erro exato do OpenRouter para o frontend
+            const orError = resData.error?.message || JSON.stringify(resData);
+            throw new Error(`OPENROUTER_REJECTED (${response.status}): ${orError}`);
         }
 
-        const result = await response.json()
-        const content = result.choices[0]?.message?.content
+        const content = resData.choices?.[0]?.message?.content;
+
+        if (!content) {
+            throw new Error('IA_EMPTY_CONTENT: O OpenRouter não devolveu conteúdo na resposta.');
+        }
 
         return new Response(JSON.stringify({ content }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
-        })
+        });
+
     } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'An unknown error occurred'
-        return new Response(JSON.stringify({ error: message }), {
+        const message = error instanceof Error ? error.message : 'Erro fatal desconhecido';
+        console.error('Edge Function Trace:', message);
+
+        return new Response(JSON.stringify({
+            error: message,
+            diagnostic: "Check your OpenRouter credits or API key status on their dashboard."
+        }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 400,
-        })
+        });
     }
-})
+});
