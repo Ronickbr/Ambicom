@@ -82,21 +82,19 @@ async function processPendingJobs() {
 async function executeJob(job) {
     log(`🚀 Processando Job ${job.id} para ${job.printer_target}...`);
 
-    // Tenta marcar como processando (controle de concorrência com skip locked se fosse via SQL puro)
-    // Aqui usamos um update simples com check de status
     const { data, error: lockError } = await supabase
         .from('print_jobs')
         .update({
             status: 'processing',
-            processed_at: new Date().toISOString(),
-            retry_count: (job.retry_count || 0) + 1
+            picked_at: new Date().toISOString(),
+            attempts: (job.attempts || 0) + 1
         })
         .eq('id', job.id)
         .eq('status', 'pending')
         .select();
 
     if (lockError || !data?.length) {
-        log(`⚠️ Job ${job.id} já sendo processado por outra instância.`);
+        log(`⚠️ Job ${job.id} já sendo processado ou falha no lock. (lockError: ${lockError?.message || 'Nenhum'})`);
         return;
     }
 
@@ -109,7 +107,7 @@ async function executeJob(job) {
                 const tempFile = path.join(os.tmpdir(), `${jobId}.zpl`);
                 fs.writeFileSync(tempFile, job.payload_data);
 
-                const cmd = `powershell -NoProfile -Command "Get-Content -Path '${tempFile}' -Raw | Out-Printer -Name '${job.printer_target}'"`;
+                const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${path.join(__dirname, 'print_raw.ps1')}" -PrinterName "${job.printer_target}" -FilePath "${tempFile}"`;
                 exec(cmd, (error, stdout, stderr) => {
                     if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
                     if (error) {
@@ -133,12 +131,15 @@ async function executeJob(job) {
     } catch (err) {
         log(`❌ Falha no Job ${job.id}: ${err.message}`);
 
-        const isRetryable = (job.retry_count || 0) < 3;
+        const isRetryable = (job.attempts || 0) < (job.max_attempts || 3);
+        const newErrorHistory = Array.isArray(job.error_history) ? [...job.error_history] : [];
+        newErrorHistory.push({ error: err.message, time: new Date().toISOString() });
+
         await supabase
             .from('print_jobs')
             .update({
                 status: isRetryable ? 'pending' : 'failed',
-                error_log: err.message
+                error_history: newErrorHistory
             })
             .eq('id', job.id);
     }
