@@ -12,6 +12,8 @@ Uma plataforma moderna e intuitiva para gerenciamento de inventário, controle d
 - **📄 Exportação Avançada:** Geração de relatórios profissionais em formatos **PDF** (via jspdf) e **Excel** (via xlsx).
 - **📋 Gestão de Protocolos:** Personalização e ordenação dinâmica das categorias e itens do checklist de auditoria.
 - **📱 PWA Ready:** Aplicativo pronto para ser instalado e utilizado em dispositivos móveis, com suporte offline.
+- **🌐 Impressão Industrial Remota (Print Bridge):** Fila de impressão via nuvem com suporte ZPL e auditoria local.
+- **📱 Scanner Industrial:** Otimizado para OCR de alta precisão e resiliência em hardware mid-range.
 - **☁️ Integração Supabase:** Backend escalável com autenticação segura e banco de dados em tempo real.
 
 ## 🛠️ Tecnologias Utilizadas
@@ -48,9 +50,10 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.11.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.11.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.11.5:** Implementação do sistema de Impressão Remota Industrial e estabilização de lifecycle.
 - **v2.11.4:** Correção de erro no script de `build` que impedia o build em ambientes baseados em Linux/sh (como Vercel). Implementação de script Node.js multiplataforma para compressão do build, configurado para rodar apenas em ambiente local (pula na Vercel).
 - **v2.11.3:** Correção do erro fatal `setPhotoOptions failed` ao fechar a tela de scan. Implementação de proteção de ciclo de vida (`isMounted`) e tratamento robusto de exceções em constraints de hardware para evitar toasts de erro em segundo plano no encerramento da câmera.
 - **v2.11.2:** Restauração e auditoria de segurança da função OCR. Ajuste de bypass de autenticação JWT em nível de gateway para resolver erro 401 e garantir funcionamento imediato do scanner, mantendo proteção via CORS e ocultação de chaves.

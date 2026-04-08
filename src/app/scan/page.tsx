@@ -18,9 +18,14 @@ import {
     ZapOff,
     Zap,
     Flashlight,
-    FlashlightOff
+    FlashlightOff,
+    Printer,
+    Globe,
+    AlertTriangle,
+    Check
 } from "lucide-react";
 import { toast } from "sonner";
+import { printService, ActiveBridge } from "@/lib/print-service";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -145,36 +150,6 @@ function compressImage(dataUrl: string, maxKB: number, quality = CAPTURE_QUALITY
     });
 }
 
-// ─── FIX: Helper para aplicar constraints avançadas com fallback granular ──
-// Motorola G35 5G retorna caps incompletas e rejeita o bloco inteiro se
-// qualquer chave dentro de `advanced[0]` não for suportada.
-// A solução é aplicar cada constraint individualmente e ignorar erros.
-async function applyAdvancedConstraintsSafely(
-    track: MediaStreamTrack,
-    constraints: Record<string, unknown>
-): Promise<void> {
-    // Tenta aplicar todas de uma vez primeiro (mais eficiente)
-    try {
-        if (track.readyState !== "live") return;
-        await track.applyConstraints({ advanced: [constraints as any] });
-        logger.info("Advanced constraints applied (batch)", constraints);
-        return;
-    } catch (e) {
-        logger.warn("Batch constraints failed, falling back to individual application", e);
-    }
-
-    // Se falhar, aplica uma por vez
-    for (const [key, value] of Object.entries(constraints)) {
-        try {
-            if (track.readyState !== "live") break;
-            await track.applyConstraints({ advanced: [{ [key]: value } as any] });
-            logger.info(`Constraint applied individually: ${key} =`, value);
-        } catch (err) {
-            logger.warn(`Constraint not supported, skipping: ${key}`, err);
-        }
-    }
-}
-
 // FIX: Detecta suporte real de zoom verificando min/max (alguns dispositivos
 // expõem zoom=0 ou zoom={} que são inválidos)
 function getValidZoom(caps: any, targetMultiplier: number): number | null {
@@ -192,28 +167,69 @@ function getValidZoom(caps: any, targetMultiplier: number): number | null {
 // ─── Tipos ─────────────────────────────────────────────────────────────────
 type FocusStatus = "idle" | "focusing" | "locked" | "failed";
 
+// ─── FIX: Helper para aplicar constraints avançadas com fallback granular ──
+async function applyAdvancedConstraintsSafely(
+    track: MediaStreamTrack,
+    constraints: Record<string, unknown>
+): Promise<void> {
+    try {
+        if (track.readyState !== "live") return;
+        await track.applyConstraints({ advanced: [constraints as any] });
+        logger.info("Advanced constraints applied (batch)", constraints);
+        return;
+    } catch (e) {
+        logger.warn("Batch constraints failed, falling back to individual application", e);
+    }
+
+    for (const [key, value] of Object.entries(constraints)) {
+        try {
+            if (track.readyState !== "live") break;
+            await track.applyConstraints({ advanced: [{ [key]: value } as any] });
+            logger.info(`Constraint applied individually: ${key} =`, value);
+        } catch (err) {
+            logger.warn(`Constraint not supported, skipping: ${key}`, err);
+        }
+    }
+}
+
 // ─── Componente ────────────────────────────────────────────────────────────
-export default function ScanPage() {
-    const { profile, loading: authLoading } = useAuth();
+const ScanPage = () => {
     const navigate = useNavigate();
-    const webcamRef = React.useRef<Webcam>(null);
+    const { profile, loading: authLoading } = useAuth();
+    const webcamRef = useRef<Webcam>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const [videoConstraints, setVideoConstraints] = useState<MediaTrackConstraints | boolean>(CAMERA_CONSTRAINTS);
+    const [showHistory, setShowHistory] = useState(false);
+
+    // Estados de Impressão Remota
+    const [activeBridges, setActiveBridges] = useState<ActiveBridge[]>([]);
+    const [selectedPrinter, setSelectedPrinter] = useState<string>(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('default_printer') || "";
+        }
+        return "";
+    });
+    const [isPrinting, setIsPrinting] = useState(false);
+
+    // Persistir impressora selecionada
+    useEffect(() => {
+        if (selectedPrinter) {
+            localStorage.setItem('default_printer', selectedPrinter);
+        }
+    }, [selectedPrinter]);
+
     const [cameraError, setCameraError] = useState(false);
     const [cameraReady, setCameraReady] = useState(false);
 
     const [torchOn, setTorchOn] = useState(false);
     const [torchSupported, setTorchSupported] = useState(false);
-
+    const [zoom, setZoom] = useState(1);
     const [focusStatus, setFocusStatus] = useState<FocusStatus>("idle");
     const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const isMounted = useRef(true);
-
-    // FIX: Guarda o track ativo para reusar sem re-chamar getVideoTracks()
     const activeTrackRef = useRef<MediaStreamTrack | null>(null);
-    // FIX: Guarda capabilities para não chamar getCapabilities() repetidamente
     const capsRef = useRef<any>(null);
 
     const [showOcrModal, setShowOcrModal] = useState(false);
@@ -264,6 +280,10 @@ export default function ScanPage() {
 
     useEffect(() => {
         isMounted.current = true;
+
+        // Carregar pontes de impressão
+        printService.getActiveBridges().then(setActiveBridges);
+
         return () => {
             isMounted.current = false;
             if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
@@ -314,7 +334,7 @@ export default function ScanPage() {
                 setFocusStatus("idle");
             }, 1200);
         }, 600);
-    }, []);
+    }, [isMounted]);
 
     // ── Handlers de câmera ────────────────────────────────────────────────
     const handleCameraError = (err: string | DOMException) => {
@@ -476,6 +496,29 @@ export default function ScanPage() {
                 voltage: data.tensao || "",
             });
             setShowOcrModal(true);
+        }
+    };
+
+    // ── Impressão Remota ──────────────────────────────────────────────────
+    const handleRemotePrint = async (data: any) => {
+        if (!selectedPrinter) {
+            toast.error("Selecione uma impressora");
+            return;
+        }
+
+        setIsPrinting(true);
+        try {
+            await printService.submitPrintJob({
+                payload_type: 'zpl',
+                payload_data: `^XA^FO50,50^A0N,50,50^FDAMBICOM^FS^FO50,120^A0N,30,30^FDMODELO: ${data.model}^FS^FO50,170^A0N,30,30^FDS/N: ${data.original_serial}^FS^XZ`,
+                printer_target: selectedPrinter
+            });
+            toast.success("Impressão enviada para fila!");
+        } catch (e) {
+            toast.error("Erro ao enviar para fila de impressão");
+            logger.error("Print submission failed", e);
+        } finally {
+            setIsPrinting(false);
         }
     };
 
@@ -888,6 +931,51 @@ export default function ScanPage() {
                                         <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Potência Degelo</label><input type="text" value={ocrForm.defrost_power} onChange={e => setOcrForm({ ...ocrForm, defrost_power: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
                                     </div>
                                 </div>
+
+                                {/* Seção de Impressão Remota */}
+                                <div className="space-y-4 pt-4 border-t border-border/10">
+                                    <h4 className="text-[10px] font-black text-sky-500 uppercase tracking-widest border-l-2 border-sky-500 pl-2 flex items-center gap-2">
+                                        <Globe className="w-3 h-3" /> Impressão Via Nuvem
+                                    </h4>
+
+                                    {activeBridges.length > 0 ? (
+                                        <div className="space-y-3 bg-sky-500/5 p-4 rounded-xl border border-sky-500/10">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Selecionar Impressora Online</label>
+                                                <select
+                                                    value={selectedPrinter}
+                                                    onChange={(e) => setSelectedPrinter(e.target.value)}
+                                                    className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-sky-500/50 outline-none transition-all font-bold"
+                                                >
+                                                    <option value="">Selecione...</option>
+                                                    {activeBridges.map(bridge =>
+                                                        bridge.available_printers.map(printer => (
+                                                            <option key={`${bridge.id}-${printer}`} value={printer}>
+                                                                {printer} ({bridge.bridge_name})
+                                                            </option>
+                                                        ))
+                                                    )}
+                                                </select>
+                                            </div>
+
+                                            <button
+                                                onClick={() => handleRemotePrint(ocrForm)}
+                                                disabled={isPrinting || !selectedPrinter}
+                                                className="w-full py-2.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all flex items-center justify-center gap-2"
+                                            >
+                                                {isPrinting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Printer className="w-3 h-3" />}
+                                                {isPrinting ? "Enviando..." : "Imprimir na Rede (Remoto)"}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 flex items-center gap-3">
+                                            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+                                            <div className="text-[10px] text-amber-200/70 leading-relaxed font-medium">
+                                                Nenhuma ponte de impressão online. Certifique-se que o computador da impressora está ligado e com o script ativo.
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -957,3 +1045,5 @@ export default function ScanPage() {
         </MainLayout>
     );
 }
+
+export default ScanPage;
