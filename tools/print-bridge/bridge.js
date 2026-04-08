@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { exec } from 'child_process';
-import printer from 'node-printer';
+
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
@@ -28,16 +28,29 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+async function getPrinters() {
+    return new Promise((resolve) => {
+        exec('powershell -NoProfile -Command "Get-Printer | Select-Object -ExpandProperty Name"', (error, stdout) => {
+            if (error) {
+                log(`⚠️ Erro lendo impressoras: ${error.message}`);
+                resolve([]);
+            } else {
+                resolve(stdout.split('\n').map(p => p.trim()).filter(p => p.length > 0));
+            }
+        });
+    });
+}
+
 // ─── Status da Ponte ────────────────────────────────────────────────────────
 async function updateBridgeStatus() {
-    const printers = printer.getPrinters().map(p => p.name);
+    const printers = await getPrinters();
 
     const { error } = await supabase
         .from('active_bridges')
         .upsert({
             bridge_name: bridgeName,
             available_printers: printers,
-            last_seen: new Date().toISOString()
+            last_heartbeat: new Date().toISOString()
         }, { onConflict: 'bridge_name' });
 
     if (error) log(`❌ Erro ao atualizar status da ponte: ${error.message}`);
@@ -47,7 +60,7 @@ async function updateBridgeStatus() {
 // ─── Processamento de Jobs ──────────────────────────────────────────────────
 async function processPendingJobs() {
     // Busca jobs para as impressoras desta ponte
-    const printers = printer.getPrinters().map(p => p.name);
+    const printers = await getPrinters();
 
     const { data: jobs, error } = await supabase
         .from('print_jobs')
@@ -92,15 +105,19 @@ async function executeJob(job) {
             // Impressão Direta ZPL (Assume Raw support ou porta direta)
             // Para Windows usaremos node-printer printRaw
             await new Promise((resolve, reject) => {
-                printer.printDirect({
-                    data: job.payload_data,
-                    printer: job.printer_target,
-                    type: 'RAW',
-                    success: (jobID) => {
-                        log(`✅ Job ${job.id} enviado com ID SO: ${jobID}`);
-                        resolve(jobID);
-                    },
-                    error: (err) => reject(err)
+                const jobId = `ZPL-${Date.now()}`;
+                const tempFile = path.join(os.tmpdir(), `${jobId}.zpl`);
+                fs.writeFileSync(tempFile, job.payload_data);
+
+                const cmd = `powershell -NoProfile -Command "Get-Content -Path '${tempFile}' -Raw | Out-Printer -Name '${job.printer_target}'"`;
+                exec(cmd, (error, stdout, stderr) => {
+                    if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+                    if (error) {
+                        reject(error);
+                    } else {
+                        log(`✅ Job ${job.id} enviado com ID SO: ${jobId}`);
+                        resolve(jobId);
+                    }
                 });
             });
         } else {
