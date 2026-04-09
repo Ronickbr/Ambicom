@@ -16,6 +16,7 @@ export default function ProfilePage() {
     const [activeBridges, setActiveBridges] = useState<ActiveBridge[]>([]);
     const [selectedPrinter, setSelectedPrinter] = useState<string>("");
     const [isLoadingPrinters, setIsLoadingPrinters] = useState(true);
+    const [printOrientation, setPrintOrientation] = useState<"portrait" | "landscape">("portrait");
 
     // Carregar impressora
     useEffect(() => {
@@ -23,6 +24,9 @@ export default function ProfilePage() {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('default_printer');
             if (saved) setSelectedPrinter(saved);
+
+            const savedOrientation = localStorage.getItem('print_orientation') as "portrait" | "landscape";
+            if (savedOrientation) setPrintOrientation(savedOrientation);
         }
 
         printService.getActiveBridges()
@@ -40,6 +44,13 @@ export default function ProfilePage() {
             localStorage.removeItem('default_printer');
             toast.success("Impressora padrão limpa");
         }
+    };
+
+    const handleOrientationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const val = e.target.value as "portrait" | "landscape";
+        setPrintOrientation(val);
+        localStorage.setItem('print_orientation', val);
+        toast.success(`Orientação de impressão definida como ${val === 'portrait' ? 'Retrato' : 'Paisagem'}`);
     };
 
     const handleUpdatePassword = async (e: React.FormEvent) => {
@@ -183,6 +194,18 @@ export default function ProfilePage() {
                                                         </option>
                                                     ))
                                                 )}
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Orientação da Etiqueta</label>
+                                            <select
+                                                value={printOrientation}
+                                                onChange={handleOrientationChange}
+                                                className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm text-foreground focus:border-sky-500/50 outline-none transition-all font-bold cursor-pointer"
+                                            >
+                                                <option value="portrait">Retrato (Vertical / Padrão)</option>
+                                                <option value="landscape">Paisagem (Horizontal / Rotacionado 90°)</option>
                                             </select>
                                         </div>
 

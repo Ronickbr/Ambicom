@@ -53,6 +53,7 @@ Siga os passos abaixo para rodar o projeto localmente:
 Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.12.3:** Implementação de Orientação de Marcas Flexível: Restaurado layout vertical (v2.11.5) como padrão e adicionada opção de alternar para modo Paisagem (Horizontal) diretamente no Perfil do Usuário.
 - **v2.12.2:** Remoção de margens (padding) no layout ZPL para ocupação total da largura e comprimento do papel adesivo 4x6/landscape.
 - **v2.12.1:** Rotação completa do layout ZPL da etiqueta industrial em 90 graus (retrato para paisagem) para suportar bobinas largas no perfil de impressão Print Bridge, aplicando um novo grid customizado de campos.
 - **v2.12.0:** Implementação de Soft Delete no protocolo técnico. Itens excluídos agora são marcados como inativos (`is_active: false`), preservando a integridade de logs históricos enquanto limpa a interface do Admin, Técnico e Central de Revisão. Contagem de status técnico na aba de aprovações agora reflete apenas itens ativos.

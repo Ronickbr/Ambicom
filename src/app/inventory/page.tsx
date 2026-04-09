@@ -375,11 +375,11 @@ export default function InventoryPage() {
                                     onClick={async () => {
                                         const selectedProducts = products.filter(p => selectedIds.has(p.id));
                                         const targetPrinter = localStorage.getItem('default_printer');
-
                                         if (targetPrinter) {
                                             const promise = new Promise(async (resolve, reject) => {
                                                 try {
                                                     const { printService } = await import("@/lib/print-service");
+                                                    const orientation = localStorage.getItem('print_orientation') || 'portrait';
                                                     let combinedZpl = "";
                                                     const val = (v: any) => v || '-';
 
@@ -387,7 +387,10 @@ export default function InventoryPage() {
                                                         const fullSize = p.size || await calculateProductSize(p.volume_total);
                                                         const displaySize = fullSize === 'Pequeno' ? 'P' : fullSize === 'Médio' ? 'M' : fullSize === 'Grande' ? 'G' : "-";
 
-                                                        const zplCode = `^XA
+                                                        let zplCode = "";
+
+                                                        if (orientation === 'landscape') {
+                                                            zplCode = `^XA
 ^PW640
 ^LL440
 ^CI28
@@ -449,6 +452,71 @@ export default function InventoryPage() {
 ^FO93,280^A0R,15,15^FB150,1,0,C^FDTAMANHO^FS
 ^FO69,280^A0R,30,30^FB150,1,0,C^FD${displaySize}^FS
 ^XZ`.replace(/\n/g, '');
+                                                        } else {
+                                                            zplCode = `^XA
+^PW440
+^LL640
+^CI28
+^FO15,15^A0N,45,45^FDAmbicom^FS
+^FO15,65^A0N,15,15^FB240,1,0,L^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
+^FO15,80^A0N,15,15^FB240,1,0,L^FDSao Jose dos Pinhais - PR, 83010-520^FS
+^FO15,100^A0N,20,20^FB240,1,0,L^FDSAC: 041 - 3382-5410^FS
+^FO270,15^A0N,15,15^FB160,1,0,C^FDPRODUTO^FS
+^FO270,30^A0N,15,15^FB160,1,0,C^FDREMANUFATURADO^FS
+^FO270,45^A0N,15,15^FB160,1,0,C^FDGARANTIA^FS
+^FO270,60^A0N,15,15^FB160,1,0,C^FDAMBICOM^FS
+^FO10,120^GB420,500,2^FS
+^FO10,180^GB420,0,2^FS
+^FO215,120^GB0,500,2^FS
+^FO10,125^A0N,15,15^FB205,1,0,C^FDMODELO^FS
+^FO10,145^A0N,30,30^FB205,1,0,C^FD${val(p.model)}^FS
+^FO215,125^A0N,15,15^FB205,1,0,C^FDVOLTAGEM^FS
+^FO215,145^A0N,30,30^FB205,1,0,C^FD${val(p.voltage)}^FS
+^FO285,180^GB0,440,2^FS
+^FO10,280^GB205,0,2^FS
+^FO10,348^GB205,0,2^FS
+^FO10,416^GB205,0,2^FS
+^FO10,484^GB205,0,2^FS
+^FO10,552^GB205,0,2^FS
+^FO112,348^GB0,68,2^FS
+^FO112,416^GB0,68,2^FS
+^FO112,552^GB0,68,2^FS
+^FO285,268^GB145,0,2^FS
+^FO285,356^GB145,0,2^FS
+^FO285,444^GB145,0,2^FS
+^FO285,532^GB145,0,2^FS
+^FO60,190^BQN,2,4^FDQA,${val(p.internal_serial)}^FS
+^FO10,290^A0N,15,15^FB205,1,0,C^FDPNC/ML^FS
+^FO10,310^A0N,30,30^FB205,1,0,C^FD${val(p.pnc_ml)}^FS
+^FO10,358^A0N,15,15^FB102,1,0,C^FDGAS FRIGOR.^FS
+^FO10,380^A0N,22,22^FB102,1,0,C^FD${val(p.refrigerant_gas)}^FS
+^FO112,358^A0N,15,15^FB102,1,0,C^FDCARGA GAS^FS
+^FO112,380^A0N,22,22^FB102,1,0,C^FD${val(p.gas_charge)}^FS
+^FO10,426^A0N,15,15^FB102,1,0,C^FDVOL. FREEZER^FS
+^FO10,448^A0N,22,22^FB102,1,0,C^FD${val(p.volume_freezer)}^FS
+^FO112,426^A0N,15,15^FB102,1,0,C^FDVOL. REFRIG.^FS
+^FO112,448^A0N,22,22^FB102,1,0,C^FD${val(p.volume_refrigerator)}^FS
+^FO10,494^A0N,15,15^FB205,1,0,C^FDP. DE ALTA / P. DE BAIXA^FS
+^FO10,518^A0N,18,18^FB205,1,0,C^FD${val(p.pressure_high_low)}^FS
+^FO10,562^A0N,15,15^FB102,1,0,C^FDCORRENTE^FS
+^FO10,584^A0N,22,22^FB102,1,0,C^FD${val(p.electric_current)}^FS
+^FO112,562^A0N,15,15^FB102,1,0,C^FDPOT. DEGELO^FS
+^FO112,584^A0N,22,22^FB102,1,0,C^FD${val(p.defrost_power)}^FS
+^FO222,610^A0B,15,15^FDNUMERO DE SERIE AMBICOM:^FS
+^FO240,610^A0B,30,30^FD${val(p.internal_serial)}^FS
+^FO265,610^A0B,15,15^FD${val(p.commercial_code)}^FS
+^FO285,215^A0N,45,45^FB145,1,0,C^FD${val(p.frequency || '60 Hz')}^FS
+^FO285,288^A0N,15,15^FB145,1,0,C^FDCOMPRESSOR^FS
+^FO285,318^A0N,20,20^FB145,1,0,C^FD${val(p.compressor)}^FS
+^FO285,376^A0N,15,15^FB145,1,0,C^FDVOLUME TOTAL^FS
+^FO285,400^A0N,30,30^FB145,1,0,C^FD${formatTotalVolume(p.volume_freezer, p.volume_refrigerator, p.volume_total) || '-'}^FS
+^FO285,464^A0N,15,15^FB145,1,0,C^FDCAPAC. CONG.^FS
+^FO285,488^A0N,25,25^FB145,1,0,C^FD${val(p.freezing_capacity)}^FS
+^FO285,552^A0N,15,15^FB145,1,0,C^FDTAMANHO^FS
+^FO285,576^A0N,30,30^FB145,1,0,C^FD${displaySize}^FS
+^XZ`.replace(/\n/g, '');
+                                                        }
+
                                                         combinedZpl += zplCode;
                                                     }
 
