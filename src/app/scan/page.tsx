@@ -31,6 +31,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useScan } from "@/hooks/useScan";
 import { logger } from "@/lib/logger";
+import { formatTotalVolume } from "@/lib/product-utils";
 
 // ─── Constantes de Câmera ──────────────────────────────────────────────────
 // FIX: Resolução reduzida para evitar que o Chrome mobile entre em modo
@@ -557,7 +558,7 @@ const ScanPage = () => {
 ^FO150,425^A0N,15,15^FB140,1,0,C^FDVOL. REFRIG.^FS
 ^FO150,445^A0N,25,25^FB140,1,0,C^FD${val(data.volume_refrigerator)}^FS
 ^FO290,425^A0N,15,15^FB140,1,0,C^FDVOLUME TOTAL^FS
-^FO290,445^A0N,25,25^FB140,1,0,C^FD${val(data.volume_total).split('/').pop()?.trim() || '-'}^FS
+^FO290,445^A0N,25,25^FB140,1,0,C^FD${formatTotalVolume(data.volume_freezer, data.volume_refrigerator, data.volume_total)}^FS
 ^FO10,495^A0N,15,15^FB280,1,0,C^FDP. DE ALTA / P. DE BAIXA^FS
 ^FO10,515^A0N,20,20^FB280,1,0,C^FD${val(data.pressure_high_low || data.pressao_alta_baixa)}^FS
 ^FO290,495^A0N,15,15^FB140,1,0,C^FDCAPAC. CONG.^FS

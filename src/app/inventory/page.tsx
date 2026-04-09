@@ -40,7 +40,7 @@ import { handleError } from "@/lib/errors";
 
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Product, ProductLog } from "@/lib/types";
-import { calculateProductSize } from "@/lib/product-utils";
+import { calculateProductSize, formatTotalVolume } from "@/lib/product-utils";
 
 const statusConfig = {
     'CADASTRO': { label: 'Cadastro', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: Clock },
@@ -434,7 +434,7 @@ export default function InventoryPage() {
 ^FO150,425^A0N,15,15^FB140,1,0,C^FDVOL. REFRIG.^FS
 ^FO150,445^A0N,25,25^FB140,1,0,C^FD${val(p.volume_refrigerator)}^FS
 ^FO290,425^A0N,15,15^FB140,1,0,C^FDVOLUME TOTAL^FS
-^FO290,445^A0N,25,25^FB140,1,0,C^FD${val(p.volume_total).split('/').pop()?.trim() || '-'}^FS
+^FO290,445^A0N,25,25^FB140,1,0,C^FD${formatTotalVolume(p.volume_freezer, p.volume_refrigerator, p.volume_total)}^FS
 ^FO10,495^A0N,15,15^FB280,1,0,C^FDP. DE ALTA / P. DE BAIXA^FS
 ^FO10,515^A0N,20,20^FB280,1,0,C^FD${val(p.pressure_high_low)}^FS
 ^FO290,495^A0N,15,15^FB140,1,0,C^FDCAPAC. CONG.^FS

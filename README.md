@@ -50,9 +50,10 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.11.8**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.11.9**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.11.9:** Refinamento na formatação do "Volume Total" impresso nas etiquetas. O sistema agora extrai e soma inteligentemente os dados numéricos de `volume_freezer` e `volume_refrigerator` para compor o volume final impresso.
 - **v2.11.8:** Correção na formatação do "Volume Total" impresso nas etiquetas PDF e ZPL, para exibir apenas o valor final (filtrando o padrão "Volume X / Volume Y / Total").
 - **v2.11.7:** Implementação da impressão remota automática em lote diretamente da tela de Controle de Inventário, utilizando o Print Bridge configurado no perfil do usuário, com fallback para PDF.
 - **v2.11.6:** Refatoração do fluxo de Impressão Remota (Print Bridge) removendo dependência legada e adotando PowerShell nativo. Otimização da UI de scan com um novo Modal Pós-Scan intuitivo.

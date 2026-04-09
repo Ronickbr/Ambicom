@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import * as QRCode from 'qrcode';
-import { calculateProductSize } from './product-utils';
+import { calculateProductSize, formatTotalVolume } from './product-utils';
 
 export const exportToPDF = (title: string, headers: string[], data: (string | number | boolean | null)[][], fileName: string) => {
     const doc = new jsPDF();
@@ -182,7 +182,7 @@ export const printLabels = async (products: any[]) => {
         doc.setFontSize(6.5);
         doc.text("VOLUME TOTAL", 76, currentY + 2.5, { align: 'center' });
         doc.setFontSize(12);
-        doc.text(val(p.volume_total).split('/').pop()?.trim() || '-', 76, currentY + 8, { align: 'center' });
+        doc.text(formatTotalVolume(p.volume_freezer, p.volume_refrigerator, p.volume_total), 76, currentY + 8, { align: 'center' });
 
         currentY += 12;
         doc.line(8, currentY, 92, currentY);
