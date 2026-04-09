@@ -185,6 +185,25 @@ export default function ProfilePage() {
                                                 )}
                                             </select>
                                         </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (!selectedPrinter) return;
+                                                const zplCode = "^XA^FO50,50^A0N,50,50^FDTESTE AMBICOM^FS^XZ";
+                                                printService.submitPrintJob({
+                                                    payload_type: 'zpl',
+                                                    payload_data: zplCode,
+                                                    printer_target: selectedPrinter
+                                                });
+                                                toast.success("Página de teste enviada para " + selectedPrinter);
+                                            }}
+                                            disabled={!selectedPrinter}
+                                            className="w-full mt-2 py-3 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 shadow-lg transition-all"
+                                        >
+                                            <Printer className="w-4 h-4" />
+                                            Testar Impressora
+                                        </button>
                                     </div>
                                 ) : (
                                     <div className="bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 flex items-center gap-3 mt-4">

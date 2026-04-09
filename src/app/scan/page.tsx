@@ -233,7 +233,6 @@ const ScanPage = () => {
     const capsRef = useRef<any>(null);
 
     const [showOcrModal, setShowOcrModal] = useState(false);
-    const [printModalData, setPrintModalData] = useState<any>(null);
     const [isFullscreenImage, setIsFullscreenImage] = useState(false);
 
     const [labelPhoto, setLabelPhoto] = useState<string | null>(null);
@@ -575,8 +574,7 @@ const ScanPage = () => {
                 payload_data: zplCode,
                 printer_target: targetPrinter
             });
-            toast.success("Impressão enviada para fila!");
-            setPrintModalData(null); // Fechar após sucesso
+            toast.success("Impressão gerada e enviada para fila!");
         } catch (e) {
             toast.error("Erro ao enviar para fila de impressão");
             logger.error("Print submission failed", e);
@@ -1016,13 +1014,12 @@ const ScanPage = () => {
                                     const result = await registerProduct(ocrForm, capturedPhotos);
                                     if (result) {
                                         setShowOcrModal(false);
-                                        // Auto-print check: Se já há uma impressora padrão selecionada, imprime direto
+                                        // Verificação de Auto-Print via Impressora Padrão
                                         if (selectedPrinter) {
                                             handleRemotePrint(result, selectedPrinter);
-                                            toast.success(`Impressão direta na ${selectedPrinter}`, { id: 'autoprint' });
+                                            toast.success(`Impressão gerada para ${selectedPrinter}`, { id: 'autoprint' });
                                         } else {
-                                            // Abre o modal de impressão passando os dados recém-cadastrados
-                                            setPrintModalData(result);
+                                            toast.warning("Equipamento cadastrado! Configure sua impressora padrão em 'Meu Perfil' para imprimir etiquetas automaticamente nas próximas vezes.", { duration: 6000 });
                                         }
                                     }
                                 }}
@@ -1035,76 +1032,6 @@ const ScanPage = () => {
                                     <CheckCircle className="h-4 w-4" />
                                 )}
                                 {isProcessing ? "PROCESSANDO..." : "Confirmar e Cadastrar no Banco"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal de Impressão (Pós-Scan) */}
-            {printModalData && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-card border border-border/20 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl space-y-6 p-8 relative">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-sky-500 to-transparent" />
-
-                        <div className="text-center space-y-2">
-                            <div className="h-16 w-16 rounded-2xl bg-sky-500/10 flex items-center justify-center text-sky-500 mx-auto border border-sky-500/20 mb-4">
-                                <Printer className="h-8 w-8" />
-                            </div>
-                            <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Ativo Cadastrado!</h3>
-                            <p className="text-sm text-muted-foreground italic">Deseja imprimir a etiqueta agora?</p>
-                        </div>
-
-                        <div className="space-y-4 pt-2">
-                            <h4 className="text-[10px] font-black text-sky-500 uppercase tracking-widest border-l-2 border-sky-500 pl-2 flex items-center gap-2">
-                                <Globe className="w-3 h-3" /> Impressão Via Nuvem
-                            </h4>
-
-                            {activeBridges.length > 0 ? (
-                                <div className="space-y-3 bg-sky-500/5 p-4 rounded-xl border border-sky-500/10">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Selecionar Impressora Online</label>
-                                        <select
-                                            value={selectedPrinter}
-                                            onChange={(e) => setSelectedPrinter(e.target.value)}
-                                            className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-sky-500/50 outline-none transition-all font-bold"
-                                        >
-                                            <option value="">Selecione...</option>
-                                            {activeBridges.map(bridge =>
-                                                bridge.available_printers.map(printer => (
-                                                    <option key={`${bridge.id}-${printer}`} value={printer}>
-                                                        {printer} ({bridge.bridge_name})
-                                                    </option>
-                                                ))
-                                            )}
-                                        </select>
-                                    </div>
-
-                                    <button
-                                        onClick={() => handleRemotePrint(printModalData)}
-                                        disabled={isPrinting || !selectedPrinter}
-                                        className="w-full py-3 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 shadow-lg transition-all"
-                                    >
-                                        {isPrinting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
-                                        {isPrinting ? "Enviando..." : "Imprimir Etiqueta"}
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 flex items-center gap-3">
-                                    <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
-                                    <div className="text-[10px] text-amber-200/70 leading-relaxed font-medium">
-                                        Nenhuma ponte de impressão online.
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="pt-2">
-                            <button
-                                onClick={() => setPrintModalData(null)}
-                                className="w-full h-12 text-muted-foreground hover:text-foreground font-black text-[10px] uppercase transition-all tracking-widest"
-                            >
-                                Pular / Imprimir Depois
                             </button>
                         </div>
                     </div>
