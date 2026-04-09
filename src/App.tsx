@@ -11,6 +11,7 @@ import ManagerPage from '@/app/manager/page'
 import InventoryPage from '@/app/inventory/page'
 import ClientsPage from '@/app/clients/page'
 import OrdersPage from '@/app/orders/page'
+import ProfilePage from '@/app/profile/page'
 import UsersManagementPage from '@/app/admin/users/page'
 import AdminSettingsPage from '@/app/admin/settings/page'
 import AdminChecklistPage from '@/app/admin/checklist/page'
@@ -47,6 +48,7 @@ function App() {
         <Route path="/inventory" element={<PrivateRoute><InventoryPage /></PrivateRoute>} />
         <Route path="/clients" element={<PrivateRoute><ClientsPage /></PrivateRoute>} />
         <Route path="/orders" element={<PrivateRoute><OrdersPage /></PrivateRoute>} />
+        <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
         <Route path="/admin/users" element={<PrivateRoute><UsersManagementPage /></PrivateRoute>} />
         <Route path="/admin/checklist" element={<PrivateRoute><AdminChecklistPage /></PrivateRoute>} />
         <Route path="/admin/settings" element={<PrivateRoute><AdminSettingsPage /></PrivateRoute>} />

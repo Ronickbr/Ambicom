@@ -501,8 +501,9 @@ const ScanPage = () => {
     };
 
     // ── Impressão Remota ──────────────────────────────────────────────────
-    const handleRemotePrint = async (data: any) => {
-        if (!selectedPrinter) {
+    const handleRemotePrint = async (data: any, autoPrinterOverride?: string) => {
+        const targetPrinter = autoPrinterOverride || selectedPrinter;
+        if (!targetPrinter) {
             toast.error("Selecione uma impressora");
             return;
         }
@@ -518,10 +519,10 @@ const ScanPage = () => {
 ^FO15,65^A0N,15,15^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
 ^FO15,80^A0N,15,15^FDSao Jose dos Pinhais - PR, 83010-520^FS
 ^FO15,100^A0N,25,25^FDSAC: 041 - 3382-5410^FS
-^FO270,15^A0N,15,15^FDPRODUTO^FS
-^FO270,30^A0N,15,15^FDREMANUFATURADO^FS
-^FO270,45^A0N,15,15^FDGARANTIA^FS
-^FO270,60^A0N,15,15^FDAMBICOM^FS
+^FO270,15^A0N,15,15^FB160,1,0,C^FDPRODUTO^FS
+^FO270,30^A0N,15,15^FB160,1,0,C^FDREMANUFATURADO^FS
+^FO270,45^A0N,15,15^FB160,1,0,C^FDGARANTIA^FS
+^FO270,60^A0N,15,15^FB160,1,0,C^FDAMBICOM^FS
 ^FO10,120^GB420,500,2^FS
 ^FO10,180^GB420,0,2^FS
 ^FO10,280^GB420,0,2^FS
@@ -572,7 +573,7 @@ const ScanPage = () => {
             await printService.submitPrintJob({
                 payload_type: 'zpl',
                 payload_data: zplCode,
-                printer_target: selectedPrinter
+                printer_target: targetPrinter
             });
             toast.success("Impressão enviada para fila!");
             setPrintModalData(null); // Fechar após sucesso
@@ -1015,8 +1016,14 @@ const ScanPage = () => {
                                     const result = await registerProduct(ocrForm, capturedPhotos);
                                     if (result) {
                                         setShowOcrModal(false);
-                                        // Abre o modal de impressão passando os dados recém-cadastrados
-                                        setPrintModalData(result);
+                                        // Auto-print check: Se já há uma impressora padrão selecionada, imprime direto
+                                        if (selectedPrinter) {
+                                            handleRemotePrint(result, selectedPrinter);
+                                            toast.success(`Impressão direta na ${selectedPrinter}`, { id: 'autoprint' });
+                                        } else {
+                                            // Abre o modal de impressão passando os dados recém-cadastrados
+                                            setPrintModalData(result);
+                                        }
                                     }
                                 }}
                                 disabled={isProcessing}

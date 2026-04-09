@@ -13,7 +13,8 @@ import {
     X,
     Settings,
     Sun,
-    Moon
+    Moon,
+    UserCog
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -29,6 +30,7 @@ const navigation = [
     { name: "Estoque", href: "/inventory", icon: Package, roles: ["TECNICO", "SUPERVISOR", "GESTOR", "ADMIN"] },
     { name: "Clientes", href: "/clients", icon: Users, roles: ["GESTOR", "ADMIN"] },
     { name: "Pedidos", href: "/orders", icon: Package, roles: ["TECNICO", "SUPERVISOR", "GESTOR", "ADMIN"] },
+    { name: "Meu Perfil", href: "/profile", icon: UserCog, roles: ["TECNICO", "SUPERVISOR", "GESTOR", "ADMIN"] },
     { name: "Usuários", href: "/admin/users", icon: Users, roles: ["ADMIN"] },
     { name: "Configurações", href: "/admin/settings", icon: Settings, roles: ["ADMIN"] },
 ];

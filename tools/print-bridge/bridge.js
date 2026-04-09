@@ -8,8 +8,8 @@ import path from 'path';
 
 dotenv.config();
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
-const LOG_FILE = path.join(__dirname.replace(/^\/([a-zA-Z]:)/, '$1'), 'bridge.log');
+const __dirname = path.dirname(new URL(import.meta.url).pathname).replace(/^\/([a-zA-Z]:)/, '$1');
+const LOG_FILE = path.join(__dirname, 'bridge.log');
 
 function log(msg) {
     const line = `[${new Date().toISOString()}] ${msg}\n`;
