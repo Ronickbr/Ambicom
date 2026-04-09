@@ -61,6 +61,7 @@ export default function AdminChecklistPage() {
             const { data: itemsData, error: itemsError } = await supabase
                 .from("checklist_items")
                 .select("*")
+                .eq("is_active", true)
                 .order("category", { ascending: true })
                 .order("created_at", { ascending: true });
 
@@ -244,7 +245,7 @@ export default function AdminChecklistPage() {
         try {
             const { error } = await supabase
                 .from("checklist_items")
-                .delete()
+                .update({ is_active: false })
                 .eq("id", id);
 
             if (error) throw error;

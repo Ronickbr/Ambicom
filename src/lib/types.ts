@@ -112,6 +112,7 @@ export interface ChecklistItem {
     id: string;
     label: string;
     category: string;
+    is_active?: boolean;
     is_optional?: boolean;
     created_at?: string;
 }

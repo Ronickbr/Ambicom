@@ -50,9 +50,10 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.11.10**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.12.0:** Implementação de Soft Delete no protocolo técnico. Itens excluídos agora são marcados como inativos (`is_active: false`), preservando a integridade de logs históricos enquanto limpa a interface do Admin, Técnico e Central de Revisão. Contagem de status técnico na aba de aprovações agora reflete apenas itens ativos.
 - **v2.11.10:** Melhoria na Central de Revisão: implementada filtragem e agrupamento por categoria dos itens de checklist, garantindo que apenas itens do protocolo atual sejam exibidos no processo de aprovação.
 - **v2.11.9:** Refinamento na formatação do "Volume Total" impresso nas etiquetas. O sistema agora extrai e soma inteligentemente os dados numéricos de `volume_freezer` e `volume_refrigerator` para compor o volume final impresso.
 - **v2.11.8:** Correção na formatação do "Volume Total" impresso nas etiquetas PDF e ZPL, para exibir apenas o valor final (filtrando o padrão "Volume X / Volume Y / Total").

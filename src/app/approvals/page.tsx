@@ -71,6 +71,7 @@ export default function ApprovalsPage() {
             const { data, error } = await supabase
                 .from("checklist_items")
                 .select("*")
+                .eq("is_active", true)
                 .order("category", { ascending: true });
 
             if (error) throw error;
@@ -232,8 +233,9 @@ export default function ApprovalsPage() {
                             {filteredProducts.map((product) => {
                                 const lastLogWithChecklist = product.product_logs?.find(l => l.data?.checklist);
                                 const checklist = lastLogWithChecklist?.data?.checklist || {};
-                                const itemsCount = Object.keys(checklist).length || 0;
-                                const checkedCount = Object.values(checklist).filter(v => v === true).length || 0;
+                                const activeItemIds = checklistSchema.map(i => i.id);
+                                const itemsCount = activeItemIds.length || 0;
+                                const checkedCount = activeItemIds.filter(id => checklist[id] === true).length || 0;
                                 const isExpanded = expandedId === product.id;
 
                                 return (
@@ -361,8 +363,9 @@ export default function ApprovalsPage() {
                                         {filteredProducts.map((product) => {
                                             const lastLogWithChecklist = product.product_logs?.find(l => l.data?.checklist);
                                             const checklist = lastLogWithChecklist?.data?.checklist || {};
-                                            const itemsCount = Object.keys(checklist).length || 0;
-                                            const checkedCount = Object.values(checklist).filter(v => v === true).length || 0;
+                                            const activeItemIds = checklistSchema.map(i => i.id);
+                                            const itemsCount = activeItemIds.length || 0;
+                                            const checkedCount = activeItemIds.filter(id => checklist[id] === true).length || 0;
 
                                             return (
                                                 <tr

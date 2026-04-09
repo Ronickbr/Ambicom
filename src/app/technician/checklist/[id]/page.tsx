@@ -79,6 +79,7 @@ export default function TechnicianChecklist() {
                 const { data: itemsData, error: itemsError } = await supabase
                     .from("checklist_items")
                     .select("*")
+                    .eq("is_active", true)
                     .order("created_at", { ascending: true });
 
                 if (itemsError) throw itemsError;
