@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.13.1:**
+  - **Calibração de Dimensões PDF**: Ajuste do formato para 80x55mm seguindo especificações industriais.
+  - **Zero Margin Design**: Redução drástica das margens do PDF para garantir preenchimento total da bobina.
+  - **Aproveitamento de Espaço**: Recalibração de coordenadas e tamanhos de fonte para manutenção da legibilidade no formato compacto.
 - **v2.13.0:**
   - **Migração para PDF**: Substituição completa do motor de impressão de ZPL para PDF em todo o sistema.
   - **Fidelidade Visual Industrial**: Implementação de gerador centralizado de etiquetas via `jsPDF`, garantindo consistência entre scanner e inventário.
