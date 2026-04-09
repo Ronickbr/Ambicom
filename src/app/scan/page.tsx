@@ -512,9 +512,9 @@ const ScanPage = () => {
         try {
             const val = (v: any) => v || '-';
             const zplCode = `^XA
-^POI    
-^PW440
-^LL640
+^FWB
+^PW640
+^LL440
 ^CI28
 ^FO15,15^A0N,45,45^FDAmbicom^FS
 ^FO15,65^A0N,15,15^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS

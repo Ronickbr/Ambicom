@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.6**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.7**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.12.7:**
+  - **Ajuste de Rotação ZPL**: Substituição de `^POI` por `^FWB` para controle granular de orientação de campos.
+  - **Redimensionamento de Bobina**: Ajuste para 640x440 dots visando alinhamento horizontal preciso.
 - **v2.12.6:**
   - **Ajuste de Orientação ZPL**: Implementação do comando `^POI` (Print Orientation Inverted) para compatibilidade específica com a bobina física.
   - **Redimensionamento Vertical**: Ajuste de `^LL` para 640 dots visando melhor encaixe no papel atual.
