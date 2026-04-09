@@ -24,7 +24,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
-import { Product } from "@/lib/types";
+import { Product, ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 
@@ -50,6 +50,7 @@ export default function ApprovalsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedProduct, setSelectedProduct] = useState<ProductWithLogs | null>(null);
     const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
+    const [checklistSchema, setChecklistSchema] = useState<ChecklistItem[]>([]);
 
     const isAuthorized = profile?.role === "SUPERVISOR" || profile?.role === "GESTOR" || profile?.role === "ADMIN";
 
@@ -61,8 +62,23 @@ export default function ApprovalsPage() {
         }
         if (isAuthorized) {
             fetchPendingApprovals();
+            fetchChecklistSchema();
         }
     }, [authLoading, isAuthorized, navigate]);
+
+    const fetchChecklistSchema = async () => {
+        try {
+            const { data, error } = await supabase
+                .from("checklist_items")
+                .select("*")
+                .order("category", { ascending: true });
+
+            if (error) throw error;
+            setChecklistSchema(data || []);
+        } catch (error) {
+            logger.error("Erro ao buscar esquema do checklist:", error);
+        }
+    };
 
     const fetchPendingApprovals = async () => {
         setIsLoading(true);
@@ -507,35 +523,55 @@ export default function ApprovalsPage() {
                             {/* Reports & Data */}
                             <div className="grid lg:grid-cols-3 gap-8 sm:gap-12">
                                 <div className="space-y-6">
-                                    <div className="flex items-center gap-3">
-                                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Checklist Técnico</h3>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {(() => {
-                                            const lastLog = selectedProduct.product_logs?.find(l => l.data?.checklist);
-                                            const checklist = lastLog?.data?.checklist || {};
-                                            const labels = lastLog?.data?.checklist_labels || {};
+                                    {(() => {
+                                        const lastLog = selectedProduct.product_logs?.find(l => l.data?.checklist);
+                                        const checklist = lastLog?.data?.checklist || {};
+                                        const labels = lastLog?.data?.checklist_labels || {};
 
-                                            if (Object.keys(checklist).length === 0) {
-                                                return <p className="text-sm italic text-muted-foreground/40">Nenhum dado de checklist disponível.</p>;
-                                            }
+                                        if (Object.keys(checklist).length === 0) {
+                                            return <p className="text-sm italic text-muted-foreground/40">Nenhum dado de checklist disponível.</p>;
+                                        }
 
-                                            return Object.entries(checklist).map(([id, ok]) => (
-                                                <div key={id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-border/10">
-                                                    <span className="text-sm font-bold text-foreground/80 uppercase italic tracking-tight">{labels[id] || id}</span>
-                                                    <div className={cn(
-                                                        "h-6 w-12 rounded-full flex items-center justify-center text-[8px] font-black uppercase tracking-widest border",
-                                                        ok
-                                                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                                            : "bg-red-500/10 text-red-500 border-red-500/20"
-                                                    )}>
-                                                        {ok ? "OK" : "FALHA"}
-                                                    </div>
+                                        // Filtra os itens do log que ainda existem no esquema atual
+                                        const filteredItems = checklistSchema.filter(item => checklist.hasOwnProperty(item.id));
+
+                                        // Agrupa por categoria
+                                        const groupedItems = filteredItems.reduce((acc, item) => {
+                                            if (!acc[item.category]) acc[item.category] = [];
+                                            acc[item.category].push(item);
+                                            return acc;
+                                        }, {} as Record<string, ChecklistItem[]>);
+
+                                        const categories = Object.keys(groupedItems).sort();
+
+                                        if (categories.length === 0) {
+                                            return <p className="text-sm italic text-muted-foreground/40">Os itens deste checklist não coincidem com o protocolo atual.</p>;
+                                        }
+
+                                        return categories.map(category => (
+                                            <div key={category} className="space-y-3">
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary/60 border-b border-primary/10 pb-2 mb-4 italic">{category}</h4>
+                                                <div className="grid gap-2">
+                                                    {groupedItems[category].map((item) => {
+                                                        const ok = checklist[item.id];
+                                                        return (
+                                                            <div key={item.id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-border/10">
+                                                                <span className="text-xs font-bold text-foreground/80 uppercase italic tracking-tight">{item.label}</span>
+                                                                <div className={cn(
+                                                                    "h-6 w-12 rounded-full flex items-center justify-center text-[8px] font-black uppercase tracking-widest border",
+                                                                    ok
+                                                                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                                                        : "bg-red-500/10 text-red-500 border-red-500/20"
+                                                                )}>
+                                                                    {ok ? "OK" : "FALHA"}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
-                                            ));
-                                        })()}
-                                    </div>
+                                            </div>
+                                        ));
+                                    })()}
                                 </div>
 
                                 <div className="space-y-8">
