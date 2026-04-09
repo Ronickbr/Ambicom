@@ -182,7 +182,7 @@ export const printLabels = async (products: any[]) => {
         doc.setFontSize(6.5);
         doc.text("VOLUME TOTAL", 76, currentY + 2.5, { align: 'center' });
         doc.setFontSize(12);
-        doc.text(val(p.volume_total), 76, currentY + 8, { align: 'center' });
+        doc.text(val(p.volume_total).split('/').pop()?.trim() || '-', 76, currentY + 8, { align: 'center' });
 
         currentY += 12;
         doc.line(8, currentY, 92, currentY);
