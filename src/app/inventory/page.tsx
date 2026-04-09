@@ -403,9 +403,9 @@ export default function InventoryPage() {
 ^FO460,10^GB0,420,2^FS
 ^FO20,215^GB500,0,2^FS
 ^FO515,10^A0R,15,15^FB205,1,0,C^FDMODELO^FS
-^FO495,10^A0R,30,30^FB205,1,0,C^FD${val(p.model || p.modelo)}^FS
+^FO495,10^A0R,30,30^FB205,1,0,C^FD${val(p.model)}^FS
 ^FO515,215^A0R,15,15^FB205,1,0,C^FDVOLTAGEM^FS
-^FO495,215^A0R,30,30^FB205,1,0,C^FD${val(p.voltage || p.tensao)}^FS
+^FO495,215^A0R,30,30^FB205,1,0,C^FD${val(p.voltage)}^FS
 ^FO20,285^GB440,0,2^FS
 ^FO360,10^GB0,205,2^FS
 ^FO292,10^GB0,205,2^FS
@@ -423,29 +423,29 @@ export default function InventoryPage() {
 ^FO350,10^A0R,15,15^FB205,1,0,C^FDPNC/ML^FS
 ^FO330,10^A0R,30,30^FB205,1,0,C^FD${val(p.pnc_ml)}^FS
 ^FO282,10^A0R,15,15^FB102,1,0,C^FDGAS FRIGOR.^FS
-^FO260,10^A0R,22,22^FB102,1,0,C^FD${val(p.refrigerant_gas || p.gas_refrigerante)}^FS
+^FO260,10^A0R,22,22^FB102,1,0,C^FD${val(p.refrigerant_gas)}^FS
 ^FO282,112^A0R,15,15^FB102,1,0,C^FDCARGA GAS^FS
-^FO260,112^A0R,22,22^FB102,1,0,C^FD${val(p.gas_charge || p.carga_gas)}^FS
+^FO260,112^A0R,22,22^FB102,1,0,C^FD${val(p.gas_charge)}^FS
 ^FO214,10^A0R,15,15^FB102,1,0,C^FDVOL. FREEZER^FS
 ^FO192,10^A0R,22,22^FB102,1,0,C^FD${val(p.volume_freezer)}^FS
 ^FO214,112^A0R,15,15^FB102,1,0,C^FDVOL. REFRIG.^FS
 ^FO192,112^A0R,22,22^FB102,1,0,C^FD${val(p.volume_refrigerator)}^FS
 ^FO146,10^A0R,15,15^FB205,1,0,C^FDP. DE ALTA / P. DE BAIXA^FS
-^FO122,10^A0R,18,18^FB205,1,0,C^FD${val(p.pressure_high_low || p.pressao_alta_baixa)}^FS
+^FO122,10^A0R,18,18^FB205,1,0,C^FD${val(p.pressure_high_low)}^FS
 ^FO78,10^A0R,15,15^FB102,1,0,C^FDCORRENTE^FS
-^FO56,10^A0R,22,22^FB102,1,0,C^FD${val(p.electric_current || p.corrente_eletrica)}^FS
+^FO56,10^A0R,22,22^FB102,1,0,C^FD${val(p.electric_current)}^FS
 ^FO78,112^A0R,15,15^FB102,1,0,C^FDPOT. DEGELO^FS
-^FO56,112^A0R,22,22^FB102,1,0,C^FD${val(p.defrost_power || p.potencia_degelo)}^FS
+^FO56,112^A0R,22,22^FB102,1,0,C^FD${val(p.defrost_power)}^FS
 ^FO30,222^A0N,15,15^FDNUMERO DE SERIE AMBICOM:^FS
 ^FO30,240^A0N,30,30^FD${val(p.internal_serial)}^FS
-^FO30,265^A0N,15,15^FD${val(p.commercial_code || p.codigo_comercial)}^FS
-^FO425,285^A0R,45,45^FB145,1,0,C^FD${val(p.frequency || p.frequencia || '60 Hz')}^FS
+^FO30,265^A0N,15,15^FD${val(p.commercial_code)}^FS
+^FO425,285^A0R,45,45^FB145,1,0,C^FD${val(p.frequency || '60 Hz')}^FS
 ^FO352,285^A0R,15,15^FB145,1,0,C^FDCOMPRESSOR^FS
 ^FO322,285^A0R,20,20^FB145,1,0,C^FD${val(p.compressor)}^FS
 ^FO264,285^A0R,15,15^FB145,1,0,C^FDVOLUME TOTAL^FS
 ^FO240,285^A0R,30,30^FB145,1,0,C^FD${formatTotalVolume(p.volume_freezer, p.volume_refrigerator, p.volume_total) || '-'}^FS
 ^FO176,285^A0R,15,15^FB145,1,0,C^FDCAPAC. CONG.^FS
-^FO152,285^A0R,25,25^FB145,1,0,C^FD${val(p.freezing_capacity || p.capacidade_congelamento)}^FS
+^FO152,285^A0R,25,25^FB145,1,0,C^FD${val(p.freezing_capacity)}^FS
 ^FO88,285^A0R,15,15^FB145,1,0,C^FDTAMANHO^FS
 ^FO64,285^A0R,30,30^FB145,1,0,C^FD${displaySize}^FS
 ^XZ`.replace(/\n/g, '');
