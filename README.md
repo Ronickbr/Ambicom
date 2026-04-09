@@ -12,7 +12,7 @@ Uma plataforma moderna e intuitiva para gerenciamento de inventário, controle d
 - **📄 Exportação Avançada:** Geração de relatórios profissionais em formatos **PDF** (via jspdf) e **Excel** (via xlsx).
 - **📋 Gestão de Protocolos:** Personalização e ordenação dinâmica das categorias e itens do checklist de auditoria.
 - **📱 PWA Ready:** Aplicativo pronto para ser instalado e utilizado em dispositivos móveis, com suporte offline.
-- **🌐 Impressão Industrial Remota (Print Bridge):** Fila de impressão via nuvem com suporte ZPL e auditoria local.
+- **🌐 Impressão Industrial Remota (Print Bridge):** Fila de impressão via nuvem com suporte a **PDF de alta fidelidade** e auditoria local.
 - **📱 Scanner Industrial:** Otimizado para OCR de alta precisão e resiliência em hardware mid-range.
 - **☁️ Integração Supabase:** Backend escalável com autenticação segura e banco de dados em tempo real.
 
@@ -50,9 +50,14 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.8**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.13.0:**
+  - **Migração para PDF**: Substituição completa do motor de impressão de ZPL para PDF em todo o sistema.
+  - **Fidelidade Visual Industrial**: Implementação de gerador centralizado de etiquetas via `jsPDF`, garantindo consistência entre scanner e inventário.
+  - **Print Bridge v2**: Atualização da ponte local para renderização de jobs PDF via driver nativo do Windows (PowerShell), eliminando limitações de fontes das impressoras térmicas.
+  - **Impressão Multi-página**: Suporte nativo para impressão em lote enviando arquivos multi-página.
 - **v2.12.8:**
   - **Refinamento de Rotação ZPL**: Substituição de `^FWB` por `^FWT` para ajuste de orientação superior.
   - **Consolidação de Layout**: Manutenção das dimensões 640x440 para alinhamento horizontal.
