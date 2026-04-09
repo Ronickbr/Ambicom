@@ -512,7 +512,7 @@ const ScanPage = () => {
         try {
             const val = (v: any) => v || '-';
             const zplCode = `^XA
-^FWR    
+^POI    
 ^PW440
 ^LL640
 ^CI28

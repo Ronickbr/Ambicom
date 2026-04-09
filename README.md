@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.6**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.12.6:**
+  - **Ajuste de Orientação ZPL**: Implementação do comando `^POI` (Print Orientation Inverted) para compatibilidade específica com a bobina física.
+  - **Redimensionamento Vertical**: Ajuste de `^LL` para 640 dots visando melhor encaixe no papel atual.
 - **v2.12.5:** 
   - **Calibração Dimensional Final**: Ajuste rigoroso dos templates ZPL para 100x55mm.
   - **Zero Margin Design**: Remoção de todas as bordas e offsets no ZPL para garantir impressão full-bleed.

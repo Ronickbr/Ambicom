@@ -388,7 +388,7 @@ export default function InventoryPage() {
                                                         const displaySize = fullSize === 'Pequeno' ? 'P' : fullSize === 'Médio' ? 'M' : fullSize === 'Grande' ? 'G' : "-";
 
                                                         const zplCode = `^XA
-^FWR                                                        
+^POI                                                         
 ^PW440
 ^LL640
 ^CI28
