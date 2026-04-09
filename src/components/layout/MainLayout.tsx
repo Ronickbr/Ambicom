@@ -30,7 +30,6 @@ const navigation = [
     { name: "Estoque", href: "/inventory", icon: Package, roles: ["TECNICO", "SUPERVISOR", "GESTOR", "ADMIN"] },
     { name: "Clientes", href: "/clients", icon: Users, roles: ["GESTOR", "ADMIN"] },
     { name: "Pedidos", href: "/orders", icon: Package, roles: ["TECNICO", "SUPERVISOR", "GESTOR", "ADMIN"] },
-    { name: "Meu Perfil", href: "/profile", icon: UserCog, roles: ["TECNICO", "SUPERVISOR", "GESTOR", "ADMIN"] },
     { name: "Usuários", href: "/admin/users", icon: Users, roles: ["ADMIN"] },
     { name: "Configurações", href: "/admin/settings", icon: Settings, roles: ["ADMIN"] },
 ];
@@ -168,6 +167,20 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                     })}
                 </nav>
                 <div className={cn("absolute bottom-4 w-full transition-all duration-300 flex flex-col gap-2", isSidebarCollapsed ? "px-2" : "px-4")}>
+                    <Link
+                        to="/profile"
+                        className={cn(
+                            "flex items-center rounded-lg font-medium text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground group w-full",
+                            isSidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
+                            pathname === "/profile" && "bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary hover:text-primary-foreground"
+                        )}
+                        title={isSidebarCollapsed ? "Meu Perfil" : ""}
+                    >
+                        <UserCog className={cn("h-4 w-4 shrink-0 transition-transform group-hover:scale-110", pathname === "/profile" && "animate-pulse")} />
+                        {!isSidebarCollapsed && (
+                            <span className="text-sm truncate animate-in slide-in-from-left-1 duration-300">Meu Perfil</span>
+                        )}
+                    </Link>
                     <button
                         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                         className={cn(
@@ -206,7 +219,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                     <span className="text-lg font-bold text-primary">Ambicom</span>
                     {pathname !== '/' && (
                         <span className="text-xs text-muted-foreground border-l border-border pl-2 ml-2 uppercase font-bold tracking-wider">
-                            {navigation.find(n => n.href === pathname)?.name || 'Página'}
+                            {navigation.find(n => n.href === pathname)?.name || (pathname === '/profile' ? 'Meu Perfil' : 'Página')}
                         </span>
                     )}
                 </div>
@@ -258,6 +271,19 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                     </nav>
                 </div>
                 <div className="p-4 border-t border-border/10 flex flex-col gap-2">
+                    <Link
+                        to="/profile"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={cn(
+                            "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-all border border-transparent",
+                            pathname === "/profile"
+                                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                : "text-muted-foreground hover:bg-foreground/5 hover:border-border/10"
+                        )}
+                    >
+                        <UserCog className="h-4 w-4" />
+                        Meu Perfil
+                    </Link>
                     <button
                         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                         className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-muted-foreground hover:bg-foreground/5 transition-all border border-transparent hover:border-border/10"
