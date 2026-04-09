@@ -4,13 +4,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { KeyRound, Printer, Save, Loader2, Globe, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-
-interface ActiveBridge {
-    id: string;
-    bridge_name: string;
-    available_printers: string[];
-    last_ping: string;
-}
+import { printService, ActiveBridge } from "@/lib/print-service";
 
 export default function ProfilePage() {
     const { profile } = useAuth();
@@ -23,7 +17,7 @@ export default function ProfilePage() {
     const [selectedPrinter, setSelectedPrinter] = useState<string>("");
     const [isLoadingPrinters, setIsLoadingPrinters] = useState(true);
 
-    // Carregar impressora e assinar realtime
+    // Carregar impressora
     useEffect(() => {
         // Carrega impressora padrão
         if (typeof window !== 'undefined') {
@@ -31,41 +25,9 @@ export default function ProfilePage() {
             if (saved) setSelectedPrinter(saved);
         }
 
-        const fetchBridges = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('print_bridge_connections')
-                    .select('*')
-                    .eq('status', 'online');
-
-                if (error) throw error;
-
-                // Filtra bridges "zumbis" (sem ping há mais de 1 minuto)
-                const now = new Date().getTime();
-                const alive = (data || []).filter(b => {
-                    const pingTime = new Date(b.last_ping).getTime();
-                    return (now - pingTime) < 60000;
-                });
-
-                setActiveBridges(alive);
-            } catch (e) {
-                console.error('Erro ao buscar as pontes de impressão:', e);
-            } finally {
-                setIsLoadingPrinters(false);
-            }
-        };
-
-        fetchBridges();
-
-        const channel = supabase.channel('print_bridges_profile')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'print_bridge_connections' }, () => {
-                fetchBridges();
-            })
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        printService.getActiveBridges()
+            .then(setActiveBridges)
+            .finally(() => setIsLoadingPrinters(false));
     }, []);
 
     const handlePrinterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
