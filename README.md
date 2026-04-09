@@ -53,6 +53,7 @@ Siga os passos abaixo para rodar o projeto localmente:
 Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.12.1:** Rotação completa do layout ZPL da etiqueta industrial em 90 graus (retrato para paisagem) para suportar bobinas largas no perfil de impressão Print Bridge, aplicando um novo grid customizado de campos.
 - **v2.12.0:** Implementação de Soft Delete no protocolo técnico. Itens excluídos agora são marcados como inativos (`is_active: false`), preservando a integridade de logs históricos enquanto limpa a interface do Admin, Técnico e Central de Revisão. Contagem de status técnico na aba de aprovações agora reflete apenas itens ativos.
 - **v2.11.10:** Melhoria na Central de Revisão: implementada filtragem e agrupamento por categoria dos itens de checklist, garantindo que apenas itens do protocolo atual sejam exibidos no processo de aprovação.
 - **v2.11.9:** Refinamento na formatação do "Volume Total" impresso nas etiquetas. O sistema agora extrai e soma inteligentemente os dados numéricos de `volume_freezer` e `volume_refrigerator` para compor o volume final impresso.
