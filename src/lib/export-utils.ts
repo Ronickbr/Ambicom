@@ -40,13 +40,16 @@ export const exportToExcel = (data: Record<string, unknown>[], fileName: string)
     XLSX.writeFile(workbook, `${fileName}_${new Date().getTime()}.xlsx`);
 };
 
-export const printLabels = async (products: any[]) => {
+export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
     // Label dimensions: 100mm wide x 135mm tall approx for high fidelity
     const labelWidth = 100;
     const labelHeight = 135;
     const doc = new jsPDF({
         unit: 'mm',
-        format: [labelWidth, labelHeight]
+        format: [labelWidth, labelHeight],
+        orientation: 'p',
+        putOnlyUsedFonts: true,
+        compress: true
     });
 
     for (let index = 0; index < products.length; index++) {
@@ -91,12 +94,12 @@ export const printLabels = async (products: any[]) => {
         doc.setFontSize(6.5);
         doc.text("MODELO", 22, currentY + 4, { align: 'center' });
         doc.setFontSize(18);
-        doc.text(val(p.model), 22, currentY + 10, { align: 'center' });
+        doc.text(val(p.model || p.modelo), 22, currentY + 10, { align: 'center' });
 
         doc.setFontSize(6.5);
         doc.text("VOLTAGEM", 68.5, currentY + 4, { align: 'center' });
         doc.setFontSize(18);
-        doc.text(val(p.voltage), 68.5, currentY + 10, { align: 'center' });
+        doc.text(val(p.voltage || p.tensao), 68.5, currentY + 10, { align: 'center' });
 
         currentY += 12;
         doc.line(8, currentY, 92, currentY); // Divider
@@ -125,7 +128,7 @@ export const printLabels = async (products: any[]) => {
         doc.setFontSize(18);
         doc.text(val(p.internal_serial), 59, currentY + 9, { align: 'center' });
         doc.setFontSize(16);
-        doc.text(val(p.commercial_code), 59, currentY + 15, { align: 'center' });
+        doc.text(val(p.commercial_code || p.codigo_comercial), 59, currentY + 15, { align: 'center' });
 
         currentY += 17;
         doc.line(8, currentY, 92, currentY); // Divider
@@ -138,7 +141,7 @@ export const printLabels = async (products: any[]) => {
         doc.text(val(p.pnc_ml), 34, currentY + 8.5, { align: 'center' });
 
         doc.setFontSize(16);
-        doc.text(val(p.frequency) || "60 Hz", 76, currentY + 7.5, { align: 'center' });
+        doc.text(val(p.frequency || p.frequencia) || "60 Hz", 76, currentY + 7.5, { align: 'center' });
 
         currentY += 10;
         doc.line(8, currentY, 92, currentY); // Divider
@@ -150,12 +153,12 @@ export const printLabels = async (products: any[]) => {
         doc.setFontSize(6.5);
         doc.text("GÁS FRIGOR.", 21, currentY + 2.5, { align: 'center' });
         doc.setFontSize(12);
-        doc.text(val(p.refrigerant_gas), 21, currentY + 8, { align: 'center' });
+        doc.text(val(p.refrigerant_gas || p.gas_refrigerante), 21, currentY + 8, { align: 'center' });
 
         doc.setFontSize(6.5);
         doc.text("CARGA GÁS", 47, currentY + 2.5, { align: 'center' });
         doc.setFontSize(16);
-        doc.text(val(p.gas_charge), 47, currentY + 8, { align: 'center' });
+        doc.text(val(p.gas_charge || p.carga_gas), 47, currentY + 8, { align: 'center' });
 
         doc.setFontSize(6.5);
         doc.text("COMPRESSOR", 76, currentY + 2.5, { align: 'center' });
@@ -193,12 +196,12 @@ export const printLabels = async (products: any[]) => {
         doc.setFontSize(6.5);
         doc.text("P. DE ALTA / P. DE BAIXA", 34, currentY + 2.5, { align: 'center' });
         doc.setFontSize(8);
-        doc.text(val(p.pressure_high_low), 34, currentY + 8, { align: 'center' });
+        doc.text(val(p.pressure_high_low || p.pressao_alta_baixa), 34, currentY + 8, { align: 'center' });
 
         doc.setFontSize(6.5);
         doc.text("CAPAC. CONG.", 76, currentY + 2.5, { align: 'center' });
         doc.setFontSize(10);
-        doc.text(val(p.freezing_capacity), 76, currentY + 8, { align: 'center' });
+        doc.text(val(p.freezing_capacity || p.capacidade_congelamento), 76, currentY + 8, { align: 'center' });
 
         currentY += 12;
         doc.line(8, currentY, 92, currentY);
@@ -210,12 +213,12 @@ export const printLabels = async (products: any[]) => {
         doc.setFontSize(6.5);
         doc.text("CORRENTE", 21, currentY + 2.5, { align: 'center' });
         doc.setFontSize(12);
-        doc.text(val(p.electric_current), 21, currentY + 8, { align: 'center' });
+        doc.text(val(p.electric_current || p.corrente_eletrica), 21, currentY + 8, { align: 'center' });
 
         doc.setFontSize(6.5);
         doc.text("POT. DEGELO", 47, currentY + 2.5, { align: 'center' });
         doc.setFontSize(12);
-        doc.text(val(p.defrost_power), 47, currentY + 8, { align: 'center' });
+        doc.text(val(p.defrost_power || p.potencia_degelo), 47, currentY + 8, { align: 'center' });
 
         doc.setFontSize(6.5);
         doc.text("TAMANHO", 76, currentY + 2.5, { align: 'center' });
@@ -233,9 +236,14 @@ export const printLabels = async (products: any[]) => {
         doc.line(8, 28, 8, currentY);
         doc.line(92, 28, 92, currentY);
         doc.line(8, currentY, 92, currentY); // Bottom border line
-
     }
 
+    return doc;
+};
+
+export const printLabels = async (products: any[]) => {
+    const doc = await generateLabelsPDF(products);
     const timestamp = new Date().getTime();
     doc.save(`etiquetas_ambicom_${timestamp}.pdf`);
 };
+

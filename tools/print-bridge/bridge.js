@@ -101,7 +101,6 @@ async function executeJob(job) {
     try {
         if (job.payload_type === 'zpl') {
             // Impressão Direta ZPL (Assume Raw support ou porta direta)
-            // Para Windows usaremos node-printer printRaw
             await new Promise((resolve, reject) => {
                 const jobId = `ZPL-${Date.now()}`;
                 const tempFile = path.join(os.tmpdir(), `${jobId}.zpl`);
@@ -113,7 +112,28 @@ async function executeJob(job) {
                     if (error) {
                         reject(error);
                     } else {
-                        log(`✅ Job ${job.id} enviado com ID SO: ${jobId}`);
+                        log(`✅ Job ${job.id} (ZPL) enviado com sucesso`);
+                        resolve(jobId);
+                    }
+                });
+            });
+        } else if (job.payload_type === 'pdf') {
+            // Impressão PDF via Driver do Sistema
+            await new Promise((resolve, reject) => {
+                const jobId = `PDF-${Date.now()}`;
+                const tempFile = path.join(os.tmpdir(), `${jobId}.pdf`);
+
+                // Converte base64 para buffer binário
+                const pdfBuffer = Buffer.from(job.payload_data, 'base64');
+                fs.writeFileSync(tempFile, pdfBuffer);
+
+                const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${path.join(__dirname, 'print_pdf.ps1')}" -PrinterName "${job.printer_target}" -FilePath "${tempFile}"`;
+                exec(cmd, (error, stdout, stderr) => {
+                    if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+                    if (error) {
+                        reject(new Error(`Erro no PowerShell: ${stderr || error.message}`));
+                    } else {
+                        log(`✅ Job ${job.id} (PDF) enviado para o driver com sucesso`);
                         resolve(jobId);
                     }
                 });
