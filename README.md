@@ -50,9 +50,14 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.12.5:** 
+  - **Calibração Dimensional Final**: Ajuste rigoroso dos templates ZPL para 100x55mm.
+  - **Zero Margin Design**: Remoção de todas as bordas e offsets no ZPL para garantir impressão full-bleed.
+  - **Correção de Sincronia**: Alinhamento das chaves de dados do OCR com os campos do banco de dados (InventoryProduct).
+  - **ZPL Orientation Sync**: Sincronia modular entre `ScanPage` e `InventoryPage` respeitando a preferência do perfil.
 - **v2.12.4:** Ajuste dimensional rigoroso para etiquetas de 100 x 55 mm (800x440 dots) com remoção completa de margens (bleed zero) em todos os modos.
 - **v2.12.3:** Implementação de Orientação de Marcas Flexível: Restaurado layout vertical (v2.11.5) como padrão e adicionada opção de alternar para modo Paisagem (Horizontal) diretamente no Perfil do Usuário.
 - **v2.12.1:** Rotação completa do layout ZPL da etiqueta industrial em 90 graus (retrato para paisagem) para suportar bobinas largas no perfil de impressão Print Bridge, aplicando um novo grid customizado de campos.

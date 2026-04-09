@@ -375,11 +375,11 @@ export default function InventoryPage() {
                                     onClick={async () => {
                                         const selectedProducts = products.filter(p => selectedIds.has(p.id));
                                         const targetPrinter = localStorage.getItem('default_printer');
+
                                         if (targetPrinter) {
                                             const promise = new Promise(async (resolve, reject) => {
                                                 try {
                                                     const { printService } = await import("@/lib/print-service");
-                                                    const orientation = localStorage.getItem('print_orientation') || 'portrait';
                                                     let combinedZpl = "";
                                                     const val = (v: any) => v || '-';
 
@@ -387,134 +387,65 @@ export default function InventoryPage() {
                                                         const fullSize = p.size || await calculateProductSize(p.volume_total);
                                                         const displaySize = fullSize === 'Pequeno' ? 'P' : fullSize === 'Médio' ? 'M' : fullSize === 'Grande' ? 'G' : "-";
 
-                                                        let zplCode = "";
-
-                                                        if (orientation === 'landscape') {
-                                                            zplCode = `^XA
-^PW800
-^LL440
-^CI28
-^FO798,2^A0R,45,45^FDAmbicom^FS
-^FO748,2^A0R,15,15^FB300,1,0,L^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
-^FO733,2^A0R,15,15^FB300,1,0,L^FDSao Jose dos Pinhais - PR, 83010-520^FS
-^FO713,2^A0R,20,20^FB300,1,0,L^FDSAC: 041 - 3382-5410^FS
-^FO798,270^A0R,15,15^FB160,1,0,C^FDPRODUTO^FS
-^FO783,270^A0R,15,15^FB160,1,0,C^FDREMANUFATURADO^FS
-^FO768,270^A0R,15,15^FB160,1,0,C^FDGARANTIA^FS
-^FO753,270^A0R,15,15^FB160,1,0,C^FDAMBICOM^FS
-^FO0,0^GB675,440,2^FS
-^FO625,0^GB0,440,2^FS
-^FO0,215^GB675,0,2^FS
-^FO687,2^A0R,15,15^FB205,1,0,C^FDMODELO^FS
-^FO667,2^A0R,30,30^FB205,1,0,C^FD${val(p.model)}^FS
-^FO687,215^A0R,15,15^FB205,1,0,C^FDVOLTAGEM^FS
-^FO667,215^A0R,30,30^FB205,1,0,C^FD${val(p.voltage)}^FS
-^FO0,285^GB625,0,2^FS
-^FO480,0^GB0,215,2^FS
-^FO390,0^GB0,215,2^FS
-^FO300,0^GB0,215,2^FS
-^FO210,0^GB0,215,2^FS
-^FO120,0^GB0,215,2^FS
-^FO300,112^GB90,0,2^FS
-^FO210,112^GB90,0,2^FS
-^FO0,112^GB90,0,2^FS
-^FO510,285^GB0,155,2^FS
-^FO390,285^GB0,155,2^FS
-^FO270,285^GB0,155,2^FS
-^FO150,285^GB0,155,2^FS
-^FO485,75^BQN,2,4^FDQA,${val(p.internal_serial)}^FS
-^FO465,2^A0R,15,15^FB215,1,0,C^FDPNC/ML^FS
-^FO445,2^A0R,30,30^FB215,1,0,C^FD${val(p.pnc_ml)}^FS
-^FO377,2^A0R,15,15^FB120,1,0,C^FDGAS FRIGOR.^FS
-^FO355,2^A0R,22,22^FB120,1,0,C^FD${val(p.refrigerant_gas)}^FS
-^FO377,112^A0R,15,15^FB120,1,0,C^FDCARGA GAS^FS
-^FO355,112^A0R,22,22^FB120,1,0,C^FD${val(p.gas_charge)}^FS
-^FO287,2^A0R,15,15^FB120,1,0,C^FDVOL. FREEZER^FS
-^FO265,2^A0R,22,22^FB120,1,0,C^FD${val(p.volume_freezer)}^FS
-^FO287,112^A0R,15,15^FB120,1,0,C^FDVOL. REFRIG.^FS
-^FO265,112^A0R,22,22^FB120,1,0,C^FD${val(p.volume_refrigerator)}^FS
-^FO151,2^A0R,15,15^FB205,1,0,C^FDP. DE ALTA / P. DE BAIXA^FS
-^FO127,2^A0R,18,18^FB205,1,0,C^FD${val(p.pressure_high_low)}^FS
-^FO83,2^A0R,15,15^FB102,1,0,C^FDCORRENTE^FS
-^FO61,2^A0R,22,22^FB102,1,0,C^FD${val(p.electric_current)}^FS
-^FO83,107^A0R,15,15^FB102,1,0,C^FDPOT. DEGELO^FS
-^FO61,107^A0R,22,22^FB102,1,0,C^FD${val(p.defrost_power)}^FS
-^FO10,225^A0N,15,15^FDNUMERO DE SERIE AMBICOM:^FS
-^FO10,243^A0N,30,30^FD${val(p.internal_serial)}^FS
-^FO10,268^A0N,15,15^FD${val(p.commercial_code)}^FS
-^FO580,285^A0R,45,45^FB155,1,0,C^FD${val(p.frequency || '60 Hz')}^FS
-^FO470,285^A0R,15,15^FB155,1,0,C^FDCOMPRESSOR^FS
-^FO440,285^A0R,20,20^FB155,1,0,C^FD${val(p.compressor)}^FS
-^FO350,285^A0R,15,15^FB155,1,0,C^FDVOLUME TOTAL^FS
-^FO320,285^A0R,30,30^FB155,1,0,C^FD${formatTotalVolume(p.volume_freezer, p.volume_refrigerator, p.volume_total) || '-'}^FS
-^FO230,285^A0R,15,15^FB155,1,0,C^FDCAPAC. CONG.^FS
-^FO206,285^A0R,25,25^FB155,1,0,C^FD${val(p.freezing_capacity)}^FS
-^FO110,285^A0R,15,15^FB155,1,0,C^FDTAMANHO^FS
-^FO86,285^A0R,30,30^FB155,1,0,C^FD${displaySize}^FS
-^XZ`.replace(/\n/g, '');
-                                                        } else {
-                                                            zplCode = `^XA
+                                                        const zplCode = `^XA
 ^PW440
-^LL800
+^LL640
 ^CI28
-^FO5,5^A0N,45,45^FDAmbicom^FS
-^FO5,55^A0N,15,15^FB240,1,0,L^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
-^FO5,70^A0N,15,15^FB240,1,0,L^FDSao Jose dos Pinhais - PR, 83010-520^FS
-^FO5,90^A0N,20,20^FB240,1,0,L^FDSAC: 041 - 3382-5410^FS
-^FO270,5^A0N,15,15^FB160,1,0,C^FDPRODUTO^FS
-^FO270,20^A0N,15,15^FB160,1,0,C^FDREMANUFATURADO^FS
-^FO270,35^A0N,15,15^FB160,1,0,C^FDGARANTIA^FS
-^FO270,50^A0N,15,15^FB160,1,0,C^FDAMBICOM^FS
-^FO0,110^GB440,690,2^FS
-^FO0,170^GB440,0,2^FS
-^FO215,110^GB0,690,2^FS
-^FO0,115^A0N,15,15^FB205,1,0,C^FDMODELO^FS
-^FO0,135^A0N,30,30^FB205,1,0,C^FD${val(p.model)}^FS
-^FO215,115^A0N,15,15^FB205,1,0,C^FDVOLTAGEM^FS
-^FO215,135^A0N,30,30^FB205,1,0,C^FD${val(p.voltage)}^FS
-^FO285,170^GB0,630,2^FS
-^FO0,270^GB210,0,2^FS
-^FO0,370^GB210,0,2^FS
-^FO0,470^GB210,0,2^FS
-^FO0,570^GB210,0,2^FS
-^FO0,670^GB210,0,2^FS
-^FO105,370^GB0,430,2^FS
-^FO285,270^GB155,0,2^FS
-^FO285,400^GB155,0,2^FS
-^FO285,530^GB155,0,2^FS
-^FO285,660^GB155,0,2^FS
-^FO55,185^BQN,2,4^FDQA,${val(p.internal_serial)}^FS
-^FO0,285^A0N,15,15^FB210,1,0,C^FDPNC/ML^FS
-^FO0,310^A0N,30,30^FB210,1,0,C^FD${val(p.pnc_ml)}^FS
-^FO0,385^A0N,15,15^FB102,1,0,C^FDGAS FRIGOR.^FS
-^FO0,410^A0N,22,22^FB102,1,0,C^FD${val(p.refrigerant_gas)}^FS
-^FO107,385^A0N,15,15^FB102,1,0,C^FDCARGA GAS^FS
-^FO107,410^A0N,22,22^FB102,1,0,C^FD${val(p.gas_charge)}^FS
-^FO0,485^A0N,15,15^FB102,1,0,C^FDVOL. FREEZER^FS
-^FO0,510^A0N,22,22^FB102,1,0,C^FD${val(p.volume_freezer)}^FS
-^FO107,485^A0N,15,15^FB102,1,0,C^FDVOL. REFRIG.^FS
-^FO107,510^A0N,22,22^FB102,1,0,C^FD${val(p.volume_refrigerator)}^FS
-^FO0,585^A0N,15,15^FB210,1,0,C^FDP. DE ALTA / P. DE BAIXA^FS
-^FO0,615^A0N,18,18^FB210,1,0,C^FD${val(p.pressure_high_low)}^FS
-^FO0,685^A0N,15,15^FB102,1,0,C^FDCORRENTE^FS
-^FO0,710^A0N,22,22^FB102,1,0,C^FD${val(p.electric_current)}^FS
-^FO107,685^A0N,15,15^FB102,1,0,C^FDPOT. DEGELO^FS
-^FO107,710^A0N,22,22^FB102,1,0,C^FD${val(p.defrost_power)}^FS
-^FO222,770^A0B,15,15^FDNUMERO DE SERIE AMBICOM:^FS
-^FO240,770^A0B,30,30^FD${val(p.internal_serial)}^FS
-^FO265,770^A0B,15,15^FD${val(p.commercial_code)}^FS
-^FO285,185^A0N,45,45^FB155,1,0,C^FD${val(p.frequency || '60 Hz')}^FS
-^FO285,285^A0N,15,15^FB155,1,0,C^FDCOMPRESSOR^FS
-^FO285,320^A0N,20,20^FB155,1,0,C^FD${val(p.compressor)}^FS
-^FO285,415^A0N,15,15^FB155,1,0,C^FDVOLUME TOTAL^FS
-^FO285,445^A0N,30,30^FB155,1,0,C^FD${formatTotalVolume(p.volume_freezer, p.volume_refrigerator, p.volume_total) || '-'}^FS
-^FO285,545^A0N,15,15^FB155,1,0,C^FDCAPAC. CONG.^FS
-^FO285,575^A0N,25,25^FB155,1,0,C^FD${val(p.freezing_capacity)}^FS
-^FO285,675^A0N,15,15^FB155,1,0,C^FDTAMANHO^FS
-^FO285,705^A0N,30,30^FB155,1,0,C^FD${displaySize}^FS
+^FO15,15^A0N,45,45^FDAmbicom^FS
+^FO15,65^A0N,15,15^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
+^FO15,80^A0N,15,15^FDSao Jose dos Pinhais - PR, 83010-520^FS
+^FO15,100^A0N,25,25^FDSAC: 041 - 3382-5410^FS
+^FO270,15^A0N,15,15^FB160,1,0,C^FDPRODUTO^FS
+^FO270,30^A0N,15,15^FB160,1,0,C^FDREMANUFATURADO^FS
+^FO270,45^A0N,15,15^FB160,1,0,C^FDGARANTIA^FS
+^FO270,60^A0N,15,15^FB160,1,0,C^FDAMBICOM^FS
+^FO10,120^GB420,500,2^FS
+^FO10,180^GB420,0,2^FS
+^FO10,280^GB420,0,2^FS
+^FO10,350^GB420,0,2^FS
+^FO10,420^GB420,0,2^FS
+^FO10,490^GB420,0,2^FS
+^FO10,550^GB420,0,2^FS
+^FO215,120^GB0,60,2^FS
+^FO260,280^GB0,70,2^FS
+^FO150,350^GB0,140,2^FS
+^FO290,350^GB0,270,2^FS
+^FO150,550^GB0,70,2^FS
+^FO10,125^A0N,15,15^FB205,1,0,C^FDMODELO^FS
+^FO10,145^A0N,30,30^FB205,1,0,C^FD${val(p.model)}^FS
+^FO215,125^A0N,15,15^FB215,1,0,C^FDVOLTAGEM^FS
+^FO215,145^A0N,30,30^FB215,1,0,C^FD${val(p.voltage)}^FS
+^FO20,182^BQN,2,4^FDQA,${val(p.internal_serial)}^FS
+^FO100,185^A0N,15,15^FB330,1,0,C^FDNUMERO DE SERIE AMBICOM:^FS
+^FO100,205^A0N,35,35^FB330,1,0,C^FD${val(p.internal_serial)}^FS
+^FO100,245^A0N,25,25^FB330,1,0,C^FD${val(p.commercial_code)}^FS
+^FO10,285^A0N,15,15^FB250,1,0,C^FDPNC/ML^FS
+^FO10,305^A0N,40,40^FB250,1,0,C^FD${val(p.pnc_ml)}^FS
+^FO260,285^A0N,15,15^FB170,1,0,C^FDFREQUENCIA^FS
+^FO260,305^A0N,35,35^FB170,1,0,C^FD${val(p.frequency || '60 Hz')}^FS
+^FO10,355^A0N,15,15^FB140,1,0,C^FDGAS FRIGOR.^FS
+^FO10,375^A0N,25,25^FB140,1,0,C^FD${val(p.refrigerant_gas)}^FS
+^FO150,355^A0N,15,15^FB140,1,0,C^FDCARGA GAS^FS
+^FO150,375^A0N,25,25^FB140,1,0,C^FD${val(p.gas_charge)}^FS
+^FO290,355^A0N,15,15^FB140,1,0,C^FDCOMPRESSOR^FS
+^FO290,375^A0N,25,25^FB140,1,0,C^FD${val(p.compressor)}^FS
+^FO10,425^A0N,15,15^FB140,1,0,C^FDVOL. FREEZER^FS
+^FO10,445^A0N,25,25^FB140,1,0,C^FD${val(p.volume_freezer)}^FS
+^FO150,425^A0N,15,15^FB140,1,0,C^FDVOL. REFRIG.^FS
+^FO150,445^A0N,25,25^FB140,1,0,C^FD${val(p.volume_refrigerator)}^FS
+^FO290,425^A0N,15,15^FB140,1,0,C^FDVOLUME TOTAL^FS
+^FO290,445^A0N,25,25^FB140,1,0,C^FD${formatTotalVolume(p.volume_freezer, p.volume_refrigerator, p.volume_total)}^FS
+^FO10,495^A0N,15,15^FB280,1,0,C^FDP. DE ALTA / P. DE BAIXA^FS
+^FO10,515^A0N,20,20^FB280,1,0,C^FD${val(p.pressure_high_low)}^FS
+^FO290,495^A0N,15,15^FB140,1,0,C^FDCAPAC. CONG.^FS
+^FO290,515^A0N,25,25^FB140,1,0,C^FD${val(p.freezing_capacity)}^FS
+^FO10,555^A0N,15,15^FB140,1,0,C^FDCORRENTE^FS
+^FO10,575^A0N,25,25^FB140,1,0,C^FD${val(p.electric_current)}^FS
+^FO150,555^A0N,15,15^FB140,1,0,C^FDPOT. DEGELO^FS
+^FO150,575^A0N,25,25^FB140,1,0,C^FD${val(p.defrost_power)}^FS
+^FO290,555^A0N,15,15^FB140,1,0,C^FDTAMANHO^FS
+^FO290,575^A0N,30,30^FB140,1,0,C^FD${displaySize}^FS
 ^XZ`.replace(/\n/g, '');
-                                                        }
-
                                                         combinedZpl += zplCode;
                                                     }
 
