@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.7**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.12.8**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.12.8:**
+  - **Refinamento de Rotação ZPL**: Substituição de `^FWB` por `^FWT` para ajuste de orientação superior.
+  - **Consolidação de Layout**: Manutenção das dimensões 640x440 para alinhamento horizontal.
 - **v2.12.7:**
   - **Ajuste de Rotação ZPL**: Substituição de `^POI` por `^FWB` para controle granular de orientação de campos.
   - **Redimensionamento de Bobina**: Ajuste para 640x440 dots visando alinhamento horizontal preciso.
