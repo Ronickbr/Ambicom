@@ -373,9 +373,107 @@ export default function InventoryPage() {
                             {selectedIds.size > 0 && (
                                 <button
                                     onClick={async () => {
-                                        const { printLabels } = await import("@/lib/export-utils");
                                         const selectedProducts = products.filter(p => selectedIds.has(p.id));
-                                        await printLabels(selectedProducts);
+                                        const targetPrinter = localStorage.getItem('default_printer');
+
+                                        if (targetPrinter) {
+                                            const promise = new Promise(async (resolve, reject) => {
+                                                try {
+                                                    const { printService } = await import("@/lib/print-service");
+                                                    let combinedZpl = "";
+                                                    const val = (v: any) => v || '-';
+
+                                                    for (const p of selectedProducts) {
+                                                        const fullSize = p.size || await calculateProductSize(p.volume_total);
+                                                        const displaySize = fullSize === 'Pequeno' ? 'P' : fullSize === 'Médio' ? 'M' : fullSize === 'Grande' ? 'G' : "-";
+
+                                                        const zplCode = `^XA
+^PW440
+^LL640
+^CI28
+^FO15,15^A0N,45,45^FDAmbicom^FS
+^FO15,65^A0N,15,15^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
+^FO15,80^A0N,15,15^FDSao Jose dos Pinhais - PR, 83010-520^FS
+^FO15,100^A0N,25,25^FDSAC: 041 - 3382-5410^FS
+^FO270,15^A0N,15,15^FB160,1,0,C^FDPRODUTO^FS
+^FO270,30^A0N,15,15^FB160,1,0,C^FDREMANUFATURADO^FS
+^FO270,45^A0N,15,15^FB160,1,0,C^FDGARANTIA^FS
+^FO270,60^A0N,15,15^FB160,1,0,C^FDAMBICOM^FS
+^FO10,120^GB420,500,2^FS
+^FO10,180^GB420,0,2^FS
+^FO10,280^GB420,0,2^FS
+^FO10,350^GB420,0,2^FS
+^FO10,420^GB420,0,2^FS
+^FO10,490^GB420,0,2^FS
+^FO10,550^GB420,0,2^FS
+^FO215,120^GB0,60,2^FS
+^FO260,280^GB0,70,2^FS
+^FO150,350^GB0,140,2^FS
+^FO290,350^GB0,270,2^FS
+^FO150,550^GB0,70,2^FS
+^FO10,125^A0N,15,15^FB205,1,0,C^FDMODELO^FS
+^FO10,145^A0N,30,30^FB205,1,0,C^FD${val(p.model)}^FS
+^FO215,125^A0N,15,15^FB215,1,0,C^FDVOLTAGEM^FS
+^FO215,145^A0N,30,30^FB215,1,0,C^FD${val(p.voltage)}^FS
+^FO20,182^BQN,2,4^FDQA,${val(p.internal_serial)}^FS
+^FO100,185^A0N,15,15^FB330,1,0,C^FDNUMERO DE SERIE AMBICOM:^FS
+^FO100,205^A0N,35,35^FB330,1,0,C^FD${val(p.internal_serial)}^FS
+^FO100,245^A0N,25,25^FB330,1,0,C^FD${val(p.commercial_code)}^FS
+^FO10,285^A0N,15,15^FB250,1,0,C^FDPNC/ML^FS
+^FO10,305^A0N,40,40^FB250,1,0,C^FD${val(p.pnc_ml)}^FS
+^FO260,285^A0N,15,15^FB170,1,0,C^FDFREQUENCIA^FS
+^FO260,305^A0N,35,35^FB170,1,0,C^FD${val(p.frequency || '60 Hz')}^FS
+^FO10,355^A0N,15,15^FB140,1,0,C^FDGAS FRIGOR.^FS
+^FO10,375^A0N,25,25^FB140,1,0,C^FD${val(p.refrigerant_gas)}^FS
+^FO150,355^A0N,15,15^FB140,1,0,C^FDCARGA GAS^FS
+^FO150,375^A0N,25,25^FB140,1,0,C^FD${val(p.gas_charge)}^FS
+^FO290,355^A0N,15,15^FB140,1,0,C^FDCOMPRESSOR^FS
+^FO290,375^A0N,25,25^FB140,1,0,C^FD${val(p.compressor)}^FS
+^FO10,425^A0N,15,15^FB140,1,0,C^FDVOL. FREEZER^FS
+^FO10,445^A0N,25,25^FB140,1,0,C^FD${val(p.volume_freezer)}^FS
+^FO150,425^A0N,15,15^FB140,1,0,C^FDVOL. REFRIG.^FS
+^FO150,445^A0N,25,25^FB140,1,0,C^FD${val(p.volume_refrigerator)}^FS
+^FO290,425^A0N,15,15^FB140,1,0,C^FDVOLUME TOTAL^FS
+^FO290,445^A0N,25,25^FB140,1,0,C^FD${val(p.volume_total)}^FS
+^FO10,495^A0N,15,15^FB280,1,0,C^FDP. DE ALTA / P. DE BAIXA^FS
+^FO10,515^A0N,20,20^FB280,1,0,C^FD${val(p.pressure_high_low)}^FS
+^FO290,495^A0N,15,15^FB140,1,0,C^FDCAPAC. CONG.^FS
+^FO290,515^A0N,25,25^FB140,1,0,C^FD${val(p.freezing_capacity)}^FS
+^FO10,555^A0N,15,15^FB140,1,0,C^FDCORRENTE^FS
+^FO10,575^A0N,25,25^FB140,1,0,C^FD${val(p.electric_current)}^FS
+^FO150,555^A0N,15,15^FB140,1,0,C^FDPOT. DEGELO^FS
+^FO150,575^A0N,25,25^FB140,1,0,C^FD${val(p.defrost_power)}^FS
+^FO290,555^A0N,15,15^FB140,1,0,C^FDTAMANHO^FS
+^FO290,575^A0N,30,30^FB140,1,0,C^FD${displaySize}^FS
+^XZ`.replace(/\n/g, '');
+                                                        combinedZpl += zplCode;
+                                                    }
+
+                                                    await printService.submitPrintJob({
+                                                        payload_type: 'zpl',
+                                                        payload_data: combinedZpl,
+                                                        printer_target: targetPrinter
+                                                    });
+
+                                                    resolve(true);
+                                                } catch (err) {
+                                                    reject(err);
+                                                }
+                                            });
+
+                                            toast.promise(promise, {
+                                                loading: 'Enviando p/ fila de impressão...',
+                                                success: () => {
+                                                    setSelectedIds(new Set());
+                                                    return `Enviadas ${selectedProducts.length} etiquetas para impressão!`;
+                                                },
+                                                error: 'Erro na impressão automática'
+                                            });
+                                        } else {
+                                            // Fallback para baixar o PDF comum
+                                            const { printLabels } = await import("@/lib/export-utils");
+                                            await printLabels(selectedProducts);
+                                        }
                                     }}
                                     className="col-span-1 h-12 px-4 bg-primary text-primary-foreground rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 animate-in zoom-in"
                                 >

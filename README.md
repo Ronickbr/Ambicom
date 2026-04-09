@@ -50,9 +50,10 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.11.6**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.11.7**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.11.7:** Implementação da impressão remota automática em lote diretamente da tela de Controle de Inventário, utilizando o Print Bridge configurado no perfil do usuário, com fallback para PDF.
 - **v2.11.6:** Refatoração do fluxo de Impressão Remota (Print Bridge) removendo dependência legada e adotando PowerShell nativo. Otimização da UI de scan com um novo Modal Pós-Scan intuitivo.
 - **v2.11.5:** Implementação do sistema de Impressão Remota Industrial e estabilização de lifecycle.
 - **v2.11.4:** Correção de erro no script de `build` que impedia o build em ambientes baseados em Linux/sh (como Vercel). Implementação de script Node.js multiplataforma para compressão do build, configurado para rodar apenas em ambiente local (pula na Vercel).
