@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { printService, ActiveBridge } from "@/lib/print-service";
-import { generateLabelsPDF, pdfToBase64 } from "@/lib/export-utils";
+import { generateLabelsTSPL } from "@/lib/export-utils";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
@@ -55,15 +55,13 @@ export function useRemotePrint() {
         try {
             const items = Array.isArray(data) ? data : [data];
 
-            // Gera o PDF de Alta Fidelidade
-            const doc = await generateLabelsPDF(items);
-
-            // Converte para Base64 para envio via Supabase
-            const base64Data = pdfToBase64(doc);
+            // Gera TSPL nativo — sem PDF, sem problemas de orientação/rotação
+            // O bridge imprime via PowerShell raw print (payload_type: 'tspl')
+            const tsplData = generateLabelsTSPL(items);
 
             await printService.submitPrintJob({
-                payload_type: "pdf",
-                payload_data: base64Data,
+                payload_type: "tspl",
+                payload_data: tsplData,
                 printer_target: selectedPrinter
             });
 
