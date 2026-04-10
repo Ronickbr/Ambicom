@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.9**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.15.0**:
+  - **Layout Invertido (270°)**: Reorientação completa de todos os elementos da etiqueta para o ângulo de 270 graus.
+  - **Otimização de Fontes Nativas**: Substituição de fontes customizadas por fontes nativas do sistema TSPL (0-5) para nitidez industrial máxima.
+  - **Ajuste de Fluxo**: Inversão estratégica do cabeçalho e rodapé para melhor saída física na Elgin L42 Pro.
 - **v2.14.9**:
   - **Conversão ZPL p/ TSPL**: Mapeamento técnico de comandos legados `^GB` para a sintaxe `BAR`/`BOX`, replicando o layout industrial histórico no novo protocolo.
   - **Fontes Dinâmicas**: Implementação de fonte tipo "0" com escalonamento personalizado de largura e altura para campos de dados técnicos.
