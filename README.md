@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.23.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.24.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.24.0**:
+  - **Migração ZPL Master**: Substituição definitiva do motor TSPL por um gerador nativo ZPL (Zebra), utilizando o template de alta fidelidade fornecido pelo usuário.
+  - **Dinamização de Template**: Implementação de injeção automática de dados técnicos (Modelo, Serial, Gás, Volumes) dentro do código ZPL.
+  - **Estabilização de Hardware**: Correção definitiva de rotação e alinhamento de GAP através de comandos de baixo nível (^FWT, ^PW, ^LL).
 - **v2.23.0**:
   - **Calibração Master Landscape**: Retorno às dimensões físicas reais (80x55) para resolver definitivamente o salto de GAP e invasão de etiquetas próximas.
   - **Simulação Vertical via Software**: Rotação individual de 100% dos elementos (TEXT, BAR, BOX, QR) para 90 graus, atingindo fidelidade absoluta ao modelo 1086 em bobinas horizontais.

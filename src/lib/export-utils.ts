@@ -164,81 +164,96 @@ export const printLabels = async (products: any[]) => {
     doc.save(`etiquetas_ambicom_${timestamp}.pdf`);
 };
 
-export const generateLabelTSPL = (data: any): string => {
+export const generateLabelZPL = (data: any): string => {
     const v = (val: any) => {
         if (!val) return "-";
         return String(val).replace(/[VLgWAsig()]/g, "").trim();
     };
 
-    // LABELS: 80mm (Cabeçote) x 55mm (Avanço) 
-    // v2.23.0 - Rotação por Software para Fidelidade Industrial
-    return `SIZE 80 mm, 55 mm
-GAP 3 mm, 0
-DIRECTION 1,0
-REFERENCE 0,0
-CLS
+    const serial = v(data.internal_serial);
+    const model = v(data.model || data.modelo);
+    const voltage = v(data.voltage || data.tensao);
+    const pnc = v(data.pnc_ml);
+    const gas = v(data.refrigerant_gas);
+    const charge = v(data.gas_charge);
+    const compressor = v(data.compressor);
+    const volFrz = v(data.volume_freezer);
+    const volRef = v(data.volume_refrigerator);
+    const volTot = v(data.volume_total);
+    const press = v(data.pressure_high_low);
+    const current = v(data.electric_current);
+    const power = v(data.defrost_power);
+    const size = v(data.size || 'G');
 
-; --- TIRA LATERAL (TOPO DA ETIQUETA VERTICAL) ---
-TEXT 620, 20, "3", 90, 1, 1, "Ambicom"
-TEXT 595, 20, "1", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas"
-TEXT 580, 20, "1", 90, 1, 1, "SJP - PR | SAC: 041 3382-5410"
-TEXT 620, 310, "1", 90, 1, 1, "PRODUTO REMANUFATURADO - GARANTIA AMBICOM"
+    // TEMPLATE ZPL PROFISSIONAL (v2.24.0)
+    return `^XA
+^FWT
+^PW640
+^LL440
+^CI28
 
-; --- GRADE TÉCNICA PRINCIPAL (640x440 Dots) ---
-; Moldura
-BOX 20, 15, 560, 425, 4
+; --- INSTITUCIONAL (SIDELABEL) ---
+^FO22,256^A0B,45,45^FDAmbicom^FS
+^FO67,187^A0B,15,15^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
+^FO85,196^A0B,15,15^FDSao Jose dos Pinhais - PR^FS
+^FO102,216^A0B,25,25^FDSAC: 041 - 3382-5410^FS
 
-; DIVISORES HORIZONTAIS (Verticais na etiqueta física)
-BAR 420, 15, 4, 410   ; Divisor Col 1 / 2
-BAR 245, 15, 4, 410   ; Divisor Col 2 / 3
+; Bloco Garantia
+^FO26,-3^A0B,15,15^FB160,1,0,C^FDPRODUTO^FS
+^FO45,-3^A0B,15,15^FB160,1,0,C^FDREMANUFATURADO^FS
+^FO63,-3^A0B,15,15^FB160,1,0,C^FDGARANTIA^FS
+^FO80,-2^A0B,15,15^FB160,1,0,C^FDAMBICOM^FS
 
-; DIVISORES VERTICAIS (Horizontais na etiqueta física)
-BAR 420, 120, 140, 4  ; Linha Modelo
-BAR 20, 240, 540, 4   ; Linha Serial
-BAR 20, 290, 540, 4   ; Linha PNC/ML
-BAR 20, 340, 540, 4   ; Linha Dados 1
-BAR 20, 385, 540, 4   ; Linha Dados 2
+; --- GRADE TÉCNICA ---
+^FO131,16^GB500,420,4^FS
 
-; --- CONTEÚDO (90 GRAUS OBRIGATÓRIO) ---
+; LINHA 1: MODELO E VOLTAGEM
+^FO145,261^A0B,15,15^FDMODELO^FS
+^FO170,261^A0B,30,30^FD${model}^FS
+^FO147,-10^A0B,15,15^FDVOLTAGEM^FS
+^FO170,-10^A0B,35,35^FD${voltage}V^FS
 
-; BLOCO 1: IDENTIFICAÇÃO (X alto para ficar acima no vertical)
-TEXT 545, 25, "1", 90, 1, 1, "MODELO"
-TEXT 515, 25, "3", 90, 1, 1, "${v(data.model || data.modelo)}"
-TEXT 545, 260, "1", 90, 1, 1, "VOLTAGEM"
-TEXT 510, 260, "4", 90, 1, 1, "${v(data.voltage || data.tensao)}V"
+; LINHA 2: SERIE E PNC
+^FO209,58^A0B,15,15^FDNUMERO DE SERIE AMBICOM:^FS
+^FO235,58^A0B,45,45^FD${serial}^FS
+^FO209,350^BQN,2,4^FDQA,${serial}^FS
+^FO413,60^A0B,15,15^FDPNC/ML^FS
+^FO435,60^A0B,25,25^FD${pnc}^FS
 
-; BLOCO 2: RASTREABILIDADE
-TEXT 405, 25, "1", 90, 1, 1, "NUMERO DE SERIE AMBICOM:"
-TEXT 370, 25, "4", 90, 1, 1, "${v(data.internal_serial)}"
-QRCODE 300, 330, L, 4, 90, "${v(data.internal_serial)}"
-TEXT 285, 25, "2", 90, 1, 1, "PNC/ML: ${v(data.pnc_ml)}"
+; LINHA 3: GAS E FREQUENCIA
+^FO297,294^A0B,15,15^FDFREQUENCIA^FS
+^FO330,294^A0B,30,30^FD60 Hz^FS
+^FO416,311^A0B,15,15^FDGAS FRIGOR.^FS
+^FO440,311^A0B,25,25^FD${gas}^FS
+^FO361,315^A0B,15,15^FDCARGA GAS^FS
+^FO385,315^A0B,25,25^FD${charge} g^FS
 
-; BLOCO 3: MATRIZ TÉCNICA
-TEXT 235, 25, "1", 90, 1, 1, "GAS FRIG."
-TEXT 210, 25, "2", 90, 1, 1, "${v(data.refrigerant_gas)}"
-TEXT 235, 135, "1", 90, 1, 1, "CARGA GAS"
-TEXT 210, 135, "2", 90, 1, 1, "${v(data.gas_charge)} g"
-TEXT 235, 260, "4", 90, 1, 1, "60 Hz"
+; LINHA 4: COMPRESSOR E VOLUMES
+^FO294,157^A0B,15,15^FDCOMPRESSOR^FS
+^FO320,157^A0B,25,25^FD${compressor}^FS
+^FO472,191^A0B,15,15^FDVOL. FRZ^FS
+^FO495,191^A0B,25,25^FD${volFrz} L^FS
+^FO472,303^A0B,15,15^FDVOL. REF^FS
+^FO495,303^A0B,25,25^FD${volRef} L^FS
+^FO471,68^A0B,15,15^FDVOL. TOT^FS
+^FO495,68^A0B,35,35^FD${volTot} L^FS
 
-TEXT 180, 25, "1", 90, 1, 1, "VOL. FRZ"
-TEXT 155, 25, "2", 90, 1, 1, "${v(data.volume_freezer)} L"
-TEXT 180, 135, "1", 90, 1, 1, "VOL. REF"
-TEXT 155, 135, "2", 90, 1, 1, "${v(data.volume_refrigerator)} L"
-TEXT 180, 260, "1", 90, 1, 1, "VOL. TOT"
-TEXT 155, 260, "3", 90, 1, 1, "${v(data.volume_total)} L"
+; LINHA 5: PARAMETROS FB 
+^FO150,495^A0N,15,15^FDP. ALTA / P. BAIXA^FS
+^FO170,495^A0N,20,20^FD${press}^FS
 
-TEXT 115, 25, "1", 90, 1, 1, "CAPAC. CONG."
-TEXT 90, 25, "2", 90, 1, 1, "${v(data.freezing_capacity)}"
-TEXT 115, 260, "1", 90, 1, 1, "TAMANHO"
-TEXT 85, 260, "5", 90, 1, 1, "${v(data.size || 'G')}"
+; RADAPÉ
+^FO30,555^A0N,15,15^FDCORRENTE ^FS
+^FO30,575^A0N,25,25^FD${current} A^FS
+^FO180,555^A0N,15,15^FDPOT. DEGELO^FS
+^FO180,575^A0N,25,25^FD${power} W^FS
+^FO350,555^A0N,15,15^FDTAMANHO^FS
+^FO350,575^A0N,40,40^FD${size}^FS
 
-TEXT 60, 25, "1", 90, 1, 1, "CORRENTE"
-TEXT 35, 25, "3", 90, 1, 1, "${v(data.electric_current)} A"
-TEXT 60, 260, "1", 90, 1, 1, "POT. DEGELO"
-TEXT 35, 260, "3", 90, 1, 1, "${v(data.defrost_power)} W"
-
-PRINT 1
-`;
+^XZ`;
 };
+
+// Alias para compatibilidade com o sistema de exportação
+export const generateLabelTSPL = generateLabelZPL;
 
 
