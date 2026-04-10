@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { printService, ActiveBridge } from "@/lib/print-service";
-import { generateLabelTSPL } from "@/lib/export-utils";
+import { generateLabelsPDF, pdfToBase64 } from "@/lib/export-utils";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
@@ -22,9 +22,6 @@ export function useRemotePrint() {
         try {
             const bridges = await printService.getActiveBridges();
             setActiveBridges(bridges);
-
-            // Se a impressora selecionada não existir mais nas pontes, talvez limpar?
-            // Por enquanto mantemos a string para persistência
         } catch (error) {
             logger.error("Failed to fetch print bridges", error);
         } finally {
@@ -34,8 +31,6 @@ export function useRemotePrint() {
 
     useEffect(() => {
         refreshBridges();
-
-        // Polling leve para manter o status das pontes atualizado (opcional)
         const interval = setInterval(refreshBridges, 30000);
         return () => clearInterval(interval);
     }, [refreshBridges]);
@@ -48,7 +43,7 @@ export function useRemotePrint() {
     }, [selectedPrinter]);
 
     /**
-     * Envia uma ou mais etiquetas para a impressora selecionada
+     * Envia uma ou mais etiquetas para a impressora selecionada (via PDF)
      */
     const printLabels = async (data: any | any[]) => {
         if (!selectedPrinter) {
@@ -60,12 +55,15 @@ export function useRemotePrint() {
         try {
             const items = Array.isArray(data) ? data : [data];
 
-            // Gera TSPL concatenado
-            const tsplCode = items.map(item => generateLabelTSPL(item)).join("\n");
+            // Gera o PDF de Alta Fidelidade (Rotacionado 90°)
+            const doc = await generateLabelsPDF(items);
+
+            // Converte para Base64 para envio via Supabase
+            const base64Data = pdfToBase64(doc);
 
             await printService.submitPrintJob({
-                payload_type: "tspl",
-                payload_data: tsplCode,
+                payload_type: "pdf",
+                payload_data: base64Data,
                 printer_target: selectedPrinter
             });
 
