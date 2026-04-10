@@ -43,10 +43,10 @@ export const exportToExcel = (data: Record<string, unknown>[], fileName: string)
 
 export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
     // Label dimensions: 80mm wide x 55mm tall (Orientação Paisagem)
-    const labelWidth = 55;
-    const labelHeight = 80;
+    const labelWidth = 80;
+    const labelHeight = 55;
     const doc = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait',
         unit: 'mm',
         format: [labelWidth, labelHeight]
     });
