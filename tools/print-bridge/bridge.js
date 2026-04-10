@@ -30,19 +30,16 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function getPrinters() {
-    try {
-        const printers = await ptp.getPrinters();
-        return printers.map(p => p.name);
-    } catch (error) {
-        log(`⚠️ Erro lendo impressoras via pdf-to-printer: ${error.message}`);
-        // Fallback para powershell se necessário
-        return new Promise((resolve) => {
-            exec('powershell -NoProfile -Command "Get-Printer | Select-Object -ExpandProperty Name"', (err, stdout) => {
-                if (err) resolve([]);
-                else resolve(stdout.split('\n').map(p => p.trim()).filter(p => p.length > 0));
-            });
+    return new Promise((resolve) => {
+        exec('powershell -NoProfile -Command "Get-Printer | Select-Object -ExpandProperty Name"', (err, stdout) => {
+            if (err) {
+                log(`⚠️ Erro lendo impressoras via PowerShell: ${err.message}`);
+                resolve([]);
+            } else {
+                resolve(stdout.split('\n').map(p => p.trim()).filter(p => p.length > 0));
+            }
         });
-    }
+    });
 }
 
 // ─── Status da Ponte ────────────────────────────────────────────────────────
