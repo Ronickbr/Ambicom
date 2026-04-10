@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.6**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.13.6**:
+  - **Redesign Completo do Layout ZPL**: Implementação de novo grid vertical otimizado para etiquetas de 100x55mm, incluindo campos técnicos expandidos (Volume Freezer/Refrig, Pressões, Capacidade de Congelamento, Potência de Degelo e Carga de Gás).
 - **v2.13.5**:
   - **Refinamento de Layout ZPL**: Ajuste fino das coordenadas e margens para melhorar a legibilidade e o alinhamento das informações técnicas nas etiquetas.
 - **v2.13.4:**

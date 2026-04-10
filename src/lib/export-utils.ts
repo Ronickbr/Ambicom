@@ -172,57 +172,64 @@ export const generateLabelZPL = (data: any): string => {
     const val = (v: any) => v || "";
 
     return `^XA
+^FWT
+^PW640
+^LL440
 ^CI28
-^FWR            # Gira todo o conteúdo 90 graus (Paisagem)
-^PW440          # Largura física da etiqueta (55mm)
-^LL640          # Comprimento físico da etiqueta (80mm)
-^LH0,0          # Define a origem no canto
-
-# --- CABEÇALHO ---
-^FO380,15^A0R,45,45^FDAmbicom^FS
-^FO360,15^A0R,15,15^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
-^FO345,15^A0R,15,15^FDSao Jose dos Pinhais - PR, 83010-520^FS
-^FO320,15^A0R,25,25^FDSAC: 041 - 3382-5410^FS
-
-^FO380,450^A0R,15,15^FB160,1,0,C^FDPRODUTO^FS
-^FO365,450^A0R,15,15^FB160,1,0,C^FDREMANUFATURADO^FS
-^FO350,450^A0R,15,15^FB160,1,0,C^FDGARANTIA^FS
-^FO335,450^A0R,15,15^FB160,1,0,C^FDAMBICOM^FS
-
-# --- LINHAS DA GRADE (Invertidas para Rotação) ---
-^FO20,10^GB300,620,2^FS        # Borda externa
-^FO260,10^GB0,620,2^FS         # Linha abaixo do Modelo
-^FO160,10^GB0,620,2^FS         # Linha abaixo do Serial
-^FO90,10^GB0,620,2^FS          # Linha abaixo do PNC
-^FO20,10^GB300,0,2^FS          # Linha lateral esquerda
-^FO20,630^GB300,0,2^FS         # Linha lateral direita
-^FO260,320^GB60,0,2^FS         # Divisória Modelo/Voltagem
-
-# --- CONTEÚDO ---
-# MODELO / VOLTAGEM
-^FO295,10^A0R,15,15^FB205,1,0,C^FDMODELO^FS
-^FO270,10^A0R,30,30^FB205,1,0,C^FD${val(data.model || data.modelo)}^FS
-^FO295,320^A0R,15,15^FB215,1,0,C^FDVOLTAGEM^FS
-^FO270,320^A0R,30,30^FB215,1,0,C^FD${val(data.voltage || data.tensao)}^FS
-
-# QR CODE E SERIAL
-^FO180,20^BQR,2,4^FDQA,${val(data.internal_serial)}^FS
-^FO240,150^A0R,15,15^FB330,1,0,C^FDNUMERO DE SERIE AMBICOM:^FS
-^FO210,150^A0R,35,35^FB330,1,0,C^FD${val(data.internal_serial)}^FS
-^FO170,150^A0R,25,25^FB330,1,0,C^FD${val(data.commercial_code || data.codigo_comercial)}^FS
-
-# PNC / FREQUENCIA
-^FO130,10^A0R,15,15^FB250,1,0,C^FDPNC/ML^FS
-^FO100,10^A0R,40,40^FB250,1,0,C^FD${val(data.pnc_ml)}^FS
-^FO130,350^A0R,15,15^FB170,1,0,C^FDFREQUENCIA^FS
-^FO100,350^A0R,35,35^FB170,1,0,C^FD${val(data.frequency || data.frequencia || '60 Hz')}^FS
-
-# DADOS TÉCNICOS (GAS / COMPRESSOR)
-^FO65,10^A0R,15,15^FB140,1,0,C^FDGAS FRIGOR.^FS
-^FO40,10^A0R,25,25^FB140,1,0,C^FD${val(data.refrigerant_gas || data.gas_refrigerante)}^FS
-^FO65,450^A0R,15,15^FB140,1,0,C^FDCOMPRESSOR^FS
-^FO40,450^A0R,25,25^FB140,1,0,C^FD${val(data.compressor)}^FS
-
+^FO15,15^A0N,45,45^FDAmbicom^FS
+^FO15,65^A0N,15,15^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
+^FO15,80^A0N,15,15^FDSao Jose dos Pinhais - PR, 83010-520^FS
+^FO15,100^A0N,25,25^FDSAC: 041 - 3382-5410^FS
+^FO270,15^A0N,15,15^FB160,1,0,C^FDPRODUTO^FS
+^FO270,30^A0N,15,15^FB160,1,0,C^FDREMANUFATURADO^FS
+^FO270,45^A0N,15,15^FB160,1,0,C^FDGARANTIA^FS
+^FO270,60^A0N,15,15^FB160,1,0,C^FDAMBICOM^FS
+^FO10,120^GB420,500,2^FS
+^FO10,180^GB420,0,2^FS
+^FO10,280^GB420,0,2^FS
+^FO10,350^GB420,0,2^FS
+^FO10,420^GB420,0,2^FS
+^FO10,490^GB420,0,2^FS
+^FO10,550^GB420,0,2^FS
+^FO215,120^GB0,60,2^FS
+^FO260,280^GB0,70,2^FS
+^FO150,350^GB0,140,2^FS
+^FO290,350^GB0,270,2^FS
+^FO150,550^GB0,70,2^FS
+^FO10,125^A0N,15,15^FB205,1,0,C^FDMODELO^FS
+^FO10,145^A0N,30,30^FB205,1,0,C^FD${val(data.model || data.modelo)}^FS
+^FO215,125^A0N,15,15^FB215,1,0,C^FDVOLTAGEM^FS
+^FO215,145^A0N,30,30^FB215,1,0,C^FD${val(data.voltage || data.tensao)}^FS
+^FO20,182^BQN,2,4^FDQA,${val(data.internal_serial)}^FS
+^FO100,185^A0N,15,15^FB330,1,0,C^FDNUMERO DE SERIE AMBICOM:^FS
+^FO100,205^A0N,35,35^FB330,1,0,C^FD${val(data.internal_serial)}^FS
+^FO100,245^A0N,25,25^FB330,1,0,C^FD${val(data.commercial_code || data.codigo_comercial)}^FS
+^FO10,285^A0N,15,15^FB250,1,0,C^FDPNC/ML^FS
+^FO10,305^A0N,40,40^FB250,1,0,C^FD${val(data.pnc_ml)}^FS
+^FO260,285^A0N,15,15^FB170,1,0,C^FDFREQUENCIA^FS
+^FO260,305^A0N,35,35^FB170,1,0,C^FD${val(data.frequency || data.frequencia || '60 Hz')}^FS
+^FO10,355^A0N,15,15^FB140,1,0,C^FDGAS FRIGOR.^FS
+^FO10,375^A0N,25,25^FB140,1,0,C^FD${val(data.refrigerant_gas || data.gas_refrigerante)}^FS
+^FO150,355^A0N,15,15^FB140,1,0,C^FDCARGA GAS^FS
+^FO150,375^A0N,25,25^FB140,1,0,C^FD${val(data.gas_charge || data.carga_gas)}^FS
+^FO290,355^A0N,15,15^FB140,1,0,C^FDCOMPRESSOR^FS
+^FO290,375^A0N,25,25^FB140,1,0,C^FD${val(data.compressor)}^FS
+^FO10,425^A0N,15,15^FB140,1,0,C^FDVOL. FREEZER^FS
+^FO10,445^A0N,25,25^FB140,1,0,C^FD${val(data.volume_freezer)}^FS
+^FO150,425^A0N,15,15^FB140,1,0,C^FDVOL. REFRIG.^FS
+^FO150,445^A0N,25,25^FB140,1,0,C^FD${val(data.volume_refrigerator)}^FS
+^FO290,425^A0N,15,15^FB140,1,0,C^FDVOLUME TOTAL^FS
+^FO290,445^A0N,25,25^FB140,1,0,C^FD${formatTotalVolume(data.volume_freezer, data.volume_refrigerator, data.volume_total)}^FS
+^FO10,495^A0N,15,15^FB280,1,0,C^FDP. DE ALTA / P. DE BAIXA^FS
+^FO10,515^A0N,20,20^FB280,1,0,C^FD${val(data.pressure_high_low || data.pressao_alta_baixa)}^FS
+^FO290,495^A0N,15,15^FB140,1,0,C^FDCAPAC. CONG.^FS
+^FO290,515^A0N,25,25^FB140,1,0,C^FD${val(data.freezing_capacity || data.capacidade_congelamento)}^FS
+^FO10,555^A0N,15,15^FB140,1,0,C^FDCORRENTE^FS
+^FO10,575^A0N,25,25^FB140,1,0,C^FD${val(data.electric_current || data.corrente_eletrica)}^FS
+^FO150,555^A0N,15,15^FB140,1,0,C^FDPOT. DEGELO^FS
+^FO150,575^A0N,25,25^FB140,1,0,C^FD${val(data.defrost_power || data.potencia_degelo)}^FS
+^FO290,555^A0N,15,15^FB140,1,0,C^FDTAMANHO^FS
+^FO290,575^A0N,30,30^FB140,1,0,C^FD${data.size || data.tamanho ? String(data.size || data.tamanho).charAt(0).toUpperCase() : '-'}^FS
 ^XZ`;
 };
 
