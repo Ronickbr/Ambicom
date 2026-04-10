@@ -7,231 +7,258 @@ import { calculateProductSize } from './product-utils';
 // ─── Relatório A4 ─────────────────────────────────────────────────────────────
 export const exportToPDF = (title: string, headers: string[], data: (string | number | boolean | null)[][], fileName: string) => {
     const doc = new jsPDF();
-    doc.setFontSize(18); doc.text(title, 14, 22);
-    doc.setFontSize(11); doc.setTextColor(100);
-    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 30);
-    autoTable(doc, { head: [headers], body: data, startY: 35, theme: 'grid', headStyles: { fillColor: [14, 165, 233] }, alternateRowStyles: { fillColor: [245, 245, 245] } });
-    doc.save(`${fileName}_${Date.now()}.pdf`);
+
+    // Add Title
+    doc.setFontSize(18);
+    doc.text(title, 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+
+    // Add Date
+    const date = new Date().toLocaleString('pt-BR');
+    doc.text(`Gerado em: ${date}`, 14, 30);
+
+    autoTable(doc, {
+        head: [headers],
+        body: data,
+        startY: 35,
+        theme: 'grid',
+        headStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255] }, // primary sky-500
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 35 },
+    });
+
+    doc.save(`${fileName}_${new Date().getTime()}.pdf`);
 };
 
 export const exportToExcel = (data: Record<string, unknown>[], fileName: string) => {
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Dados');
-    XLSX.writeFile(wb, `${fileName}_${Date.now()}.xlsx`);
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Dados");
+
+    // Standard fixed formatting could be added here
+
+    XLSX.writeFile(workbook, `${fileName}_${new Date().getTime()}.xlsx`);
 };
 
-// ─── Constantes – 80×55mm Landscape ──────────────────────────────────────────
-const LW = 80;   // largura mm  (eixo horizontal da etiqueta)
-const LH = 55;   // altura  mm  (eixo vertical  da etiqueta)
-const X0 = 3;    // margem esquerda (aumentada para evitar corte)
-const X1 = 77;   // margem direita (reduzida para evitar corte)
-const CW = X1 - X0; // 74mm
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function sv(v: any): string { return String(v ?? '').trim() || '-'; }
-
-function drawLbl(doc: jsPDF, text: string, x: number, y: number, size = 3.5) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(size);
-    doc.setTextColor(80, 80, 80);
-    doc.text(text.toUpperCase(), x, y);
-}
-
-function drawVal(doc: jsPDF, text: string, x: number, y: number, size = 8, align: 'left' | 'center' = 'left') {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(size);
-    doc.setTextColor(0, 0, 0);
-    doc.text(text, x, y, { align });
-}
-
-function hLine(doc: jsPDF, y: number, x0 = X0, x1 = X1) {
-    doc.setDrawColor(0); doc.setLineWidth(0.2); doc.line(x0, y, x1, y);
-}
-function vLine(doc: jsPDF, x: number, y0: number, y1: number) {
-    doc.setDrawColor(0); doc.setLineWidth(0.2); doc.line(x, y0, x, y1);
-}
-
-// ─── Desenhador da etiqueta (coordenadas mm diretas) ─────────────────────────
-async function drawLabel(doc: jsPDF, p: any): Promise<void> {
-    const model = sv(p.model ?? p.modelo);
-    const voltage = sv(p.voltage ?? p.tensao);
-    const serial = sv(p.internal_serial);
-    const commCode = sv(p.commercial_code);
-    const pncMl = sv(p.pnc_ml);
-    const gas = sv(p.refrigerant_gas);
-    const gasChg = sv(p.gas_charge);
-    const comp = sv(p.compressor);
-    const volFrz = sv(p.volume_freezer);
-    const volRef = sv(p.volume_refrigerator);
-    const volTot = sv(p.volume_total);
-    const pressure = sv(p.pressure_high_low);
-    const freezCap = sv(p.freezing_capacity);
-    const current = sv(p.electric_current);
-    const defrost = sv(p.defrost_power);
-    const sizeFull = p.size ?? await calculateProductSize(p.volume_total);
-    const dispSize = sizeFull === 'Pequeno' ? 'P' : sizeFull === 'Médio' ? 'M' : sizeFull === 'Grande' ? 'G' : (sizeFull || '-');
-
-    // ── CABEÇALHO (y: 0 → 13.5mm) ────────────────────────────────────────────
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0);
-    doc.text('Ambicom', X0, 6.5);
-
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(4); doc.setTextColor(0);
-    doc.text('R. Wenceslau Marek, 10 - Águas Belas, SJP - PR, 83010-520', X0, 10);
-
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(0);
-    doc.text('SAC : 041 - 3382-5410', X0, 13);
-
-    // Stamp box (direita do cabeçalho)
-    doc.setDrawColor(0); doc.setLineWidth(0.3);
-    // Expandindo o tamanho da caixa de stamp para alinhar com a margem direita da tabela
-    // Margem direita da tabela = X1 (77)
-    // Largura antiga da stamp box: 25. Nova largura: X1 - 52 = 25. 
-    // Vamos manter em 25, mas mover para encostar no X1
-    const stampW = 25;
-    const stampX = X1 - stampW; // 77 - 25 = 52
-    doc.rect(stampX, 1, stampW, 12);
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(4); doc.setTextColor(0);
-    ['PRODUTO', 'REMANUFATURADO', 'GARANTIA', 'AMBICOM'].forEach((t, i) =>
-        doc.text(t, stampX + (stampW / 2), 3.5 + i * 2.8, { align: 'center' })
-    );
-
-    // ── GRADE DE DADOS ─────────────────────────────────────────────────────────
-    // Linhas horizontais: r[0]=topo, r[7]=fundo
-    // Alturas reduzidas ligeiramente para garantir margem inferior de ~2.5mm
-    const GY = 13.5;
-    const r = [
-        GY,           // r[0] 13.5
-        GY + 6,       // r[1] 19.5
-        GY + 15,      // r[2] 28.5 (QR 9mm)
-        GY + 20.5,    // r[3] 34.0
-        GY + 25,      // r[4] 39.0
-        GY + 29.5,    // r[5] 43.5
-        GY + 34,      // r[6] 48.0
-        GY + 38.5,    // r[7] 52.5 (Margem de 2.5mm no fundo)
-    ];
-
-    // Colunas terças (78mm / 3 ≈ 26mm)
-    const COL3 = CW / 3;
-    const c2 = X0 + COL3;       // ≈ 27
-    const c3 = X0 + COL3 * 2;   // ≈ 53
-
-    // Caixa externa
-    doc.setDrawColor(0); doc.setLineWidth(0.3);
-    doc.rect(X0, r[0], CW, r[7] - r[0]);
-
-    // ── Linha 1: MODELO | VOLTAGEM ────────────────────────────────────────────
-    const vMod = X0 + Math.floor(CW * 0.6); // 60% da largura para o modelo
-    hLine(doc, r[1]); vLine(doc, vMod, r[0], r[1]);
-    drawLbl(doc, 'Modelo', X0 + 1, r[0] + 2);
-    drawVal(doc, model, X0 + 1, r[0] + 5.5, 10);
-    drawLbl(doc, 'Voltagem', vMod + 1, r[0] + 2);
-    drawVal(doc, voltage + ' V', vMod + 1, r[0] + 5.5, 10);
-
-    // ── Linha 2: QR CODE | SERIAL ─────────────────────────────────────────────
-    const vQR = X0 + 10;
-    hLine(doc, r[2]); vLine(doc, vQR, r[1], r[2]);
-    if (serial !== '-') {
-        try {
-            const qrImg = await QRCode.toDataURL(serial, { margin: 0, width: 200 });
-            doc.addImage(qrImg, 'PNG', X0 + 0.5, r[1] + 0.5, 8.5, 8.5);
-        } catch { /* opcional */ }
-    }
-    drawLbl(doc, 'Número de Série Ambicom:', vQR + 1, r[1] + 2.5);
-    drawVal(doc, serial, vQR + 1, r[1] + 6.5, 9.5);
-    if (commCode !== '-') {
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(0);
-        doc.text(commCode, vQR + 1, r[2] - 1);
-    }
-
-    // ── Linha 3: PNC/ML | 60 Hz ───────────────────────────────────────────────
-    const vPNC = X0 + Math.floor(CW * 0.7); // 70% da largura
-    hLine(doc, r[3]); vLine(doc, vPNC, r[2], r[3]);
-    drawLbl(doc, 'PNC/ML', X0 + 1, r[2] + 2);
-    drawVal(doc, pncMl, X0 + 1, r[2] + 4.5, 9);
-    drawLbl(doc, 'Frequência', vPNC + 1, r[2] + 2);
-    drawVal(doc, '60 Hz', vPNC + 1, r[2] + 4.5, 8);
-
-    // ── Linha 4: GÁS FRIGOR. | CARGA GÁS | COMPRESSOR ────────────────────────
-    hLine(doc, r[4]); vLine(doc, c2, r[3], r[4]); vLine(doc, c3, r[3], r[4]);
-    drawLbl(doc, 'Gás Frigor.', X0 + 1, r[3] + 1.8);
-    drawVal(doc, gas, X0 + 1, r[3] + 4, 7.5);
-    drawLbl(doc, 'Carga Gás', c2 + 1, r[3] + 1.8);
-    drawVal(doc, gasChg !== '-' ? gasChg + ' g' : '-', c2 + 1, r[3] + 4, 7.5);
-    drawLbl(doc, 'Compressor', c3 + 1, r[3] + 1.8);
-    drawVal(doc, comp, c3 + 1, r[3] + 4, 6.5);
-
-    // ── Linha 5: VOL. FREEZER | VOL. REFRIG. | VOLUME TOTAL ──────────────────
-    hLine(doc, r[5]); vLine(doc, c2, r[4], r[5]); vLine(doc, c3, r[4], r[5]);
-    drawLbl(doc, 'Vol. Freezer', X0 + 1, r[4] + 1.8);
-    drawVal(doc, volFrz !== '-' ? volFrz + ' L' : '-', X0 + 1, r[4] + 4, 7.5);
-    drawLbl(doc, 'Vol. Refrig.', c2 + 1, r[4] + 1.8);
-    drawVal(doc, volRef !== '-' ? volRef + ' L' : '-', c2 + 1, r[4] + 4, 7.5);
-    drawLbl(doc, 'Volume Total', c3 + 1, r[4] + 1.8);
-    drawVal(doc, volTot !== '-' ? volTot + ' L' : '-', c3 + 1, r[4] + 4, 7.5);
-
-    // ── Linha 6: P. ALTA/BAIXA | CAPAC. CONG. ────────────────────────────────
-    const vP = X0 + Math.floor(CW * 0.55); // 55% da largura
-    hLine(doc, r[6]); vLine(doc, vP, r[5], r[6]);
-    drawLbl(doc, 'P. de Alta / P. de Baixa', X0 + 1, r[5] + 1.8);
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(5); doc.setTextColor(0);
-    doc.text(pressure !== '-' ? pressure : '-', X0 + 1, r[5] + 3.8, { maxWidth: vP - X0 - 2 });
-    drawLbl(doc, 'Capac. Cong.', vP + 1, r[5] + 1.8);
-    drawVal(doc, freezCap, vP + 1, r[5] + 4, 7);
-
-    // ── Linha 7: CORRENTE | POT. DEGELO | TAMANHO ────────────────────────────
-    vLine(doc, c2, r[6], r[7]); vLine(doc, c3, r[6], r[7]);
-    drawLbl(doc, 'Corrente', X0 + 1, r[6] + 1.8);
-    drawVal(doc, current !== '-' ? current + ' A' : '-', X0 + 1, r[6] + 4, 7.5);
-    drawLbl(doc, 'Pot. Degelo', c2 + 1, r[6] + 1.8);
-    drawVal(doc, defrost !== '-' ? defrost + ' W' : '-', c2 + 1, r[6] + 4, 7.5);
-    drawLbl(doc, 'Tamanho', c3 + 1, r[6] + 1.8);
-    const sizeCenter = c3 + (X1 - c3) / 2;
-    drawVal(doc, dispSize, sizeCenter, r[6] + 4, 11, 'center');
-}
-
-// ─── API pública ──────────────────────────────────────────────────────────────
-
-/** Gera PDF das etiquetas (80×55mm landscape, ou rotacionado 90° portrait) */
-export const generateLabelsPDF = async (products: any[], rotate90: boolean = false): Promise<jsPDF> => {
+export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
+    // Label dimensions: 100mm wide x 135mm tall approx for high fidelity 
+    const labelWidth = 100;
+    const labelHeight = 135;
     const doc = new jsPDF({
-        orientation: rotate90 ? 'portrait' : 'landscape',
         unit: 'mm',
-        format: rotate90 ? [LH, LW] : [LW, LH],
-        putOnlyUsedFonts: true,
-        compress: true,
+        format: [labelWidth, labelHeight]
     });
 
-    const k = doc.internal.scaleFactor;
+    for (let index = 0; index < products.length; index++) {
+        const p = products[index];
+        if (index > 0) doc.addPage([labelWidth, labelHeight]);
 
-    for (let i = 0; i < products.length; i++) {
-        if (i > 0) doc.addPage(rotate90 ? [LH, LW] : [LW, LH], rotate90 ? 'portrait' : 'landscape');
+        // Helper to get value or empty string 
+        const val = (v: any) => v || "";
 
-        if (rotate90) {
-            // Aplica matriz de transformação para rotacionar 90 graus no sentido anti-horário
-            // Mapeando a página landscape (80x55) para a página portrait (55x80)
-            // @ts-ignore
-            doc.setCurrentTransformationMatrix(new doc.Matrix(0, 1, -1, 0, LW * k, 0));
+        // --- Header Section --- 
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("Ambicom", 8, 12);
+
+        // Subtitle (Right aligned block) 
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        const subtitleX = 68;
+        doc.text("PRODUTO", subtitleX + 5, 10);
+        doc.text("REMANUFATURADO", subtitleX, 13);
+        doc.text("GARANTIA", subtitleX + 4, 16);
+        doc.text("AMBICOM", subtitleX + 4.5, 19);
+
+        // Address & SAC 
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6.5);
+        doc.text("R. Wenceslau Marek, 10 - Águas Belas,", 8, 17);
+        doc.text("São José dos Pinhais - PR, 83010-520", 8, 20);
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text(`SAC : 041 - 3382-5410`, 8, 26);
+
+        // --- Grid Section --- 
+        let currentY = 28;
+        doc.setLineWidth(0.4);
+
+        // Row 1: MODELO | VOLTAGEM 
+        doc.line(8, currentY, 92, currentY); // Horizontal Top 
+        doc.line(45, currentY, 45, currentY + 12); // Vertical Divider 
+
+        doc.setFontSize(6.5);
+        doc.text("MODELO", 22, currentY + 4, { align: 'center' });
+        doc.setFontSize(18);
+        doc.text(val(p.model), 22, currentY + 10, { align: 'center' });
+
+        doc.setFontSize(6.5);
+        doc.text("VOLTAGEM", 68.5, currentY + 4, { align: 'center' });
+        doc.setFontSize(18);
+        doc.text(val(p.voltage), 68.5, currentY + 10, { align: 'center' });
+
+        currentY += 12;
+        doc.line(8, currentY, 92, currentY); // Divider 
+
+        // Row 2: NÚMERO DE SÉRIE AMBICOM (With QR code on the left) 
+        const qrData = val(p.internal_serial).trim();
+        if (qrData) {
+            try {
+                const qrImgData = await QRCode.toDataURL(qrData, {
+                    margin: 0,
+                    width: 100,
+                    color: {
+                        dark: "#000000",
+                        light: "#ffffff"
+                    }
+                });
+                // QR code position: left of the serial number field 
+                doc.addImage(qrImgData, 'PNG', 10, currentY + 1, 15, 15);
+            } catch (err) {
+                // QR generation error handled silently 
+            }
         }
 
-        await drawLabel(doc, products[i]);
+        doc.setFontSize(6);
+        doc.text("NÚMERO DE SÉRIE AMBICOM:", 59, currentY + 3, { align: 'center' });
+        doc.setFontSize(18);
+        doc.text(val(p.internal_serial), 59, currentY + 9, { align: 'center' });
+        doc.setFontSize(16);
+        doc.text(val(p.commercial_code), 59, currentY + 15, { align: 'center' });
+
+        currentY += 17;
+        doc.line(8, currentY, 92, currentY); // Divider 
+
+        // Row 3: PNC/ML | Frequência 
+        doc.line(60, currentY, 60, currentY + 10); // Vertical 
+        doc.setFontSize(6.5);
+        doc.text("PNC/ML", 34, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(18);
+        doc.text(val(p.pnc_ml), 34, currentY + 8.5, { align: 'center' });
+
+        doc.setFontSize(16);
+        doc.text(val(p.frequency) || "60 Hz", 76, currentY + 7.5, { align: 'center' });
+
+        currentY += 10;
+        doc.line(8, currentY, 92, currentY); // Divider 
+
+        // Row 4: GÁS FRIGOR. | CARGA GÁS | COMPRESSOR 
+        doc.line(34, currentY, 34, currentY + 12);
+        doc.line(60, currentY, 60, currentY + 12);
+
+        doc.setFontSize(6.5);
+        doc.text("GÁS FRIGOR.", 21, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text(val(p.refrigerant_gas), 21, currentY + 8, { align: 'center' });
+
+        doc.setFontSize(6.5);
+        doc.text("CARGA GÁS", 47, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(16);
+        doc.text(val(p.gas_charge), 47, currentY + 8, { align: 'center' });
+
+        doc.setFontSize(6.5);
+        doc.text("COMPRESSOR", 76, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(10);
+        doc.text(val(p.compressor), 76, currentY + 8, { align: 'center' });
+
+        currentY += 12;
+        doc.line(8, currentY, 92, currentY);
+
+        // Row 5: VOL. FREEZER | VOL. REFRIG. | VOLUME TOTAL 
+        doc.line(34, currentY, 34, currentY + 12);
+        doc.line(60, currentY, 60, currentY + 12);
+
+        doc.setFontSize(6.5);
+        doc.text("VOL. FREEZER", 21, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text(val(p.volume_freezer), 21, currentY + 8, { align: 'center' });
+
+        doc.setFontSize(6.5);
+        doc.text("VOL. REFRIG.", 47, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text(val(p.volume_refrigerator), 47, currentY + 8, { align: 'center' });
+
+        doc.setFontSize(6.5);
+        doc.text("VOLUME TOTAL", 76, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text(val(p.volume_total), 76, currentY + 8, { align: 'center' });
+
+        currentY += 12;
+        doc.line(8, currentY, 92, currentY);
+
+        // Row 6: PRESSÃO ALTA | PRESSÃO BAIXA | CAPAC. CONG. 
+        doc.line(34, currentY, 34, currentY + 12);
+        doc.line(60, currentY, 60, currentY + 12);
+
+        doc.setFontSize(6.5);
+        doc.text("PRESSÃO ALTA", 21, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(9);
+
+        // Handle pressure splitting or custom logic 
+        const pressures = (p.pressure_high_low || "").split('/');
+        doc.text(val(pressures[0]), 21, currentY + 8, { align: 'center' });
+
+        doc.setFontSize(6.5);
+        doc.text("PRESSÃO BAIXA", 47, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(9);
+        doc.text(val(pressures[1] || ""), 47, currentY + 8, { align: 'center' });
+
+        doc.setFontSize(6.5);
+        doc.text("CAPAC. CONG.", 76, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(10);
+        doc.text(val(p.freezing_capacity), 76, currentY + 8, { align: 'center' });
+
+        currentY += 12;
+        doc.line(8, currentY, 92, currentY);
+
+        // Row 7: CORRENTE | POT. DEGELO | GRADE 
+        doc.line(34, currentY, 34, currentY + 12);
+        doc.line(60, currentY, 60, currentY + 12);
+
+        doc.setFontSize(6.5);
+        doc.text("CORRENTE", 21, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text(val(p.electric_current), 21, currentY + 8, { align: 'center' });
+
+        doc.setFontSize(6.5);
+        doc.text("POT. DEGELO", 47, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text(val(p.defrost_power), 47, currentY + 8, { align: 'center' });
+
+        doc.setFontSize(6.5);
+        doc.text("TAMANHO", 76, currentY + 2.5, { align: 'center' });
+        doc.setFontSize(14);
+
+        // Map size to initial 
+        const fullSize = p.size || await calculateProductSize(p.volume_total);
+        const displaySize = fullSize === 'Pequeno' ? 'P' : fullSize === 'Médio' ? 'M' : fullSize === 'Grande' ? 'G' : "";
+
+        doc.text(displaySize, 76, currentY + 9, { align: 'center' });
+
+        currentY += 12;
+
+        // Vertical Border edges 
+        doc.line(8, 28, 8, currentY);
+        doc.line(92, 28, 92, currentY);
+        doc.line(8, currentY, 92, currentY); // Bottom border line 
+
     }
+
     return doc;
 };
 
-/** Converte para Base64 (bridge remoto) */
 export const pdfToBase64 = (doc: jsPDF): string =>
     doc.output('datauristring').split(',')[1];
 
-/** Download do PDF */
-export const printLabels = async (products: any[], rotate90: boolean = false) => {
-    const doc = await generateLabelsPDF(products, rotate90);
+export const printLabels = async (products: any[]) => {
+    const doc = await generateLabelsPDF(products);
     doc.save(`etiquetas_ambicom_${Date.now()}.pdf`);
 };
 
-/** Impressão direta via diálogo do browser */
-export const printLabelsNative = async (products: any[], rotate90: boolean = false) => {
-    const doc = await generateLabelsPDF(products, rotate90);
+export const printLabelsNative = async (products: any[]) => {
+    const doc = await generateLabelsPDF(products);
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     const w = window.open(url, '_blank');

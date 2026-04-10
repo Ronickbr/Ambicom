@@ -55,8 +55,8 @@ export function useRemotePrint() {
         try {
             const items = Array.isArray(data) ? data : [data];
 
-            // Gera o PDF de Alta Fidelidade (Orientação Paisagem original para bater com o papel 80x55)
-            const doc = await generateLabelsPDF(items, false);
+            // Gera o PDF de Alta Fidelidade
+            const doc = await generateLabelsPDF(items);
 
             // Converte para Base64 para envio via Supabase
             const base64Data = pdfToBase64(doc);
