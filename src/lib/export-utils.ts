@@ -84,10 +84,16 @@ async function drawLabel(doc: jsPDF, p: any): Promise<void> {
 
     // Stamp box (direita do cabeçalho)
     doc.setDrawColor(0); doc.setLineWidth(0.3);
-    doc.rect(52, 1, 25, 12);
+    // Expandindo o tamanho da caixa de stamp para alinhar com a margem direita da tabela
+    // Margem direita da tabela = X1 (77)
+    // Largura antiga da stamp box: 25. Nova largura: X1 - 52 = 25. 
+    // Vamos manter em 25, mas mover para encostar no X1
+    const stampW = 25;
+    const stampX = X1 - stampW; // 77 - 25 = 52
+    doc.rect(stampX, 1, stampW, 12);
     doc.setFont('helvetica', 'bold'); doc.setFontSize(4); doc.setTextColor(0);
     ['PRODUTO', 'REMANUFATURADO', 'GARANTIA', 'AMBICOM'].forEach((t, i) =>
-        doc.text(t, 64.5, 3.5 + i * 2.8, { align: 'center' })
+        doc.text(t, stampX + (stampW / 2), 3.5 + i * 2.8, { align: 'center' })
     );
 
     // ── GRADE DE DADOS ─────────────────────────────────────────────────────────
@@ -115,7 +121,7 @@ async function drawLabel(doc: jsPDF, p: any): Promise<void> {
     doc.rect(X0, r[0], CW, r[7] - r[0]);
 
     // ── Linha 1: MODELO | VOLTAGEM ────────────────────────────────────────────
-    const vMod = X0 + 47;
+    const vMod = X0 + Math.floor(CW * 0.6); // 60% da largura para o modelo
     hLine(doc, r[1]); vLine(doc, vMod, r[0], r[1]);
     drawLbl(doc, 'Modelo', X0 + 1, r[0] + 2);
     drawVal(doc, model, X0 + 1, r[0] + 5.5, 10);
@@ -123,12 +129,12 @@ async function drawLabel(doc: jsPDF, p: any): Promise<void> {
     drawVal(doc, voltage + ' V', vMod + 1, r[0] + 5.5, 10);
 
     // ── Linha 2: QR CODE | SERIAL ─────────────────────────────────────────────
-    const vQR = X0 + 11;
+    const vQR = X0 + 10;
     hLine(doc, r[2]); vLine(doc, vQR, r[1], r[2]);
     if (serial !== '-') {
         try {
             const qrImg = await QRCode.toDataURL(serial, { margin: 0, width: 200 });
-            doc.addImage(qrImg, 'PNG', X0 + 0.5, r[1] + 0.5, 8, 8);
+            doc.addImage(qrImg, 'PNG', X0 + 0.5, r[1] + 0.5, 8.5, 8.5);
         } catch { /* opcional */ }
     }
     drawLbl(doc, 'Número de Série Ambicom:', vQR + 1, r[1] + 2.5);
@@ -139,7 +145,7 @@ async function drawLabel(doc: jsPDF, p: any): Promise<void> {
     }
 
     // ── Linha 3: PNC/ML | 60 Hz ───────────────────────────────────────────────
-    const vPNC = X0 + 54;
+    const vPNC = X0 + Math.floor(CW * 0.7); // 70% da largura
     hLine(doc, r[3]); vLine(doc, vPNC, r[2], r[3]);
     drawLbl(doc, 'PNC/ML', X0 + 1, r[2] + 2);
     drawVal(doc, pncMl, X0 + 1, r[2] + 4.5, 9);
@@ -165,7 +171,7 @@ async function drawLabel(doc: jsPDF, p: any): Promise<void> {
     drawVal(doc, volTot !== '-' ? volTot + ' L' : '-', c3 + 1, r[4] + 4, 7.5);
 
     // ── Linha 6: P. ALTA/BAIXA | CAPAC. CONG. ────────────────────────────────
-    const vP = X0 + 44;
+    const vP = X0 + Math.floor(CW * 0.55); // 55% da largura
     hLine(doc, r[6]); vLine(doc, vP, r[5], r[6]);
     drawLbl(doc, 'P. de Alta / P. de Baixa', X0 + 1, r[5] + 1.8);
     doc.setFont('helvetica', 'bold'); doc.setFontSize(5); doc.setTextColor(0);
