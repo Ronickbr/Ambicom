@@ -55,8 +55,8 @@ export function useRemotePrint() {
         try {
             const items = Array.isArray(data) ? data : [data];
 
-            // Gera o PDF de Alta Fidelidade (Rotacionado 90°)
-            const doc = await generateLabelsPDF(items);
+            // Gera o PDF de Alta Fidelidade (Rotacionado 90° portrait para impressoras térmicas)
+            const doc = await generateLabelsPDF(items, true);
 
             // Converte para Base64 para envio via Supabase
             const base64Data = pdfToBase64(doc);
