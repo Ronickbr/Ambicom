@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 export type PrintJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'dead_letter';
-export type PayloadType = 'zpl' | 'png' | 'pdf';
+export type PayloadType = 'zpl' | 'tspl' | 'png' | 'pdf';
 
 export interface PrintJob {
     id?: string;

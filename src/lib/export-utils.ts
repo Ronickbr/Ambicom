@@ -165,71 +165,91 @@ export const printLabels = async (products: any[]) => {
 };
 
 /**
- * Gera o código ZPL para uma etiqueta industrial (55x80mm)
+ * Gera o código TSPL para uma etiqueta industrial (80x55mm)
  */
-export const generateLabelZPL = (data: any): string => {
-    // Helper para evitar undefined
+export const generateLabelTSPL = (data: any): string => {
     const val = (v: any) => v || "";
+    const internalSerial = val(data.internal_serial);
+    const model = val(data.model || data.modelo);
+    const voltage = val(data.voltage || data.tensao);
+    const pnc_ml = val(data.pnc_ml);
+    const frequency = val(data.frequency || data.frequencia || '60 Hz');
+    const gas = val(data.refrigerant_gas || data.gas_refrigerante);
+    const gasCharge = val(data.gas_charge || data.carga_gas);
+    const compressor = val(data.compressor);
+    const volFreezer = val(data.volume_freezer);
+    const volRefrig = val(data.volume_refrigerator);
+    const volTotal = formatTotalVolume(data.volume_freezer, data.volume_refrigerator, data.volume_total);
+    const pressure = val(data.pressure_high_low || data.pressao_alta_baixa);
+    const capacCong = val(data.freezing_capacity || data.capacidade_congelamento);
+    const current = val(data.electric_current || data.corrente_eletrica);
+    const power = val(data.defrost_power || data.potencia_degelo);
+    const size = data.size || data.tamanho ? String(data.size || data.tamanho).charAt(0).toUpperCase() : '-';
 
-    return `^XA
-^FWR
-^PW640
-^LL440
-^CI28
-^FO15,15^A0N,45,45^FDAmbicom^FS
-^FO15,65^A0N,15,15^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
-^FO15,80^A0N,15,15^FDSao Jose dos Pinhais - PR, 83010-520^FS
-^FO15,100^A0N,25,25^FDSAC: 041 - 3382-5410^FS
-^FO270,15^A0N,15,15^FB160,1,0,C^FDPRODUTO^FS
-^FO270,30^A0N,15,15^FB160,1,0,C^FDREMANUFATURADO^FS
-^FO270,45^A0N,15,15^FB160,1,0,C^FDGARANTIA^FS
-^FO270,60^A0N,15,15^FB160,1,0,C^FDAMBICOM^FS
-^FO10,120^GB420,500,2^FS
-^FO10,180^GB420,0,2^FS
-^FO10,280^GB420,0,2^FS
-^FO10,350^GB420,0,2^FS
-^FO10,420^GB420,0,2^FS
-^FO10,490^GB420,0,2^FS
-^FO10,550^GB420,0,2^FS
-^FO215,120^GB0,60,2^FS
-^FO260,280^GB0,70,2^FS
-^FO150,350^GB0,140,2^FS
-^FO290,350^GB0,270,2^FS
-^FO150,550^GB0,70,2^FS
-^FO10,125^A0N,15,15^FB205,1,0,C^FDMODELO^FS
-^FO10,145^A0N,30,30^FB205,1,0,C^FD${val(data.model || data.modelo)}^FS
-^FO215,125^A0N,15,15^FB215,1,0,C^FDVOLTAGEM^FS
-^FO215,145^A0N,30,30^FB215,1,0,C^FD${val(data.voltage || data.tensao)}^FS
-^FO20,182^BQN,2,4^FDQA,${val(data.internal_serial)}^FS
-^FO100,185^A0N,15,15^FB330,1,0,C^FDNUMERO DE SERIE AMBICOM:^FS
-^FO100,205^A0N,35,35^FB330,1,0,C^FD${val(data.internal_serial)}^FS
-^FO100,245^A0N,25,25^FB330,1,0,C^FD${val(data.commercial_code || data.codigo_comercial)}^FS
-^FO10,285^A0N,15,15^FB250,1,0,C^FDPNC/ML^FS
-^FO10,305^A0N,40,40^FB250,1,0,C^FD${val(data.pnc_ml)}^FS
-^FO260,285^A0N,15,15^FB170,1,0,C^FDFREQUENCIA^FS
-^FO260,305^A0N,35,35^FB170,1,0,C^FD${val(data.frequency || data.frequencia || '60 Hz')}^FS
-^FO10,355^A0N,15,15^FB140,1,0,C^FDGAS FRIGOR.^FS
-^FO10,375^A0N,25,25^FB140,1,0,C^FD${val(data.refrigerant_gas || data.gas_refrigerante)}^FS
-^FO150,355^A0N,15,15^FB140,1,0,C^FDCARGA GAS^FS
-^FO150,375^A0N,25,25^FB140,1,0,C^FD${val(data.gas_charge || data.carga_gas)}^FS
-^FO290,355^A0N,15,15^FB140,1,0,C^FDCOMPRESSOR^FS
-^FO290,375^A0N,25,25^FB140,1,0,C^FD${val(data.compressor)}^FS
-^FO10,425^A0N,15,15^FB140,1,0,C^FDVOL. FREEZER^FS
-^FO10,445^A0N,25,25^FB140,1,0,C^FD${val(data.volume_freezer)}^FS
-^FO150,425^A0N,15,15^FB140,1,0,C^FDVOL. REFRIG.^FS
-^FO150,445^A0N,25,25^FB140,1,0,C^FD${val(data.volume_refrigerator)}^FS
-^FO290,425^A0N,15,15^FB140,1,0,C^FDVOLUME TOTAL^FS
-^FO290,445^A0N,25,25^FB140,1,0,C^FD${formatTotalVolume(data.volume_freezer, data.volume_refrigerator, data.volume_total)}^FS
-^FO10,495^A0N,15,15^FB280,1,0,C^FDP. DE ALTA / P. DE BAIXA^FS
-^FO10,515^A0N,20,20^FB280,1,0,C^FD${val(data.pressure_high_low || data.pressao_alta_baixa)}^FS
-^FO290,495^A0N,15,15^FB140,1,0,C^FDCAPAC. CONG.^FS
-^FO290,515^A0N,25,25^FB140,1,0,C^FD${val(data.freezing_capacity || data.capacidade_congelamento)}^FS
-^FO10,555^A0N,15,15^FB140,1,0,C^FDCORRENTE^FS
-^FO10,575^A0N,25,25^FB140,1,0,C^FD${val(data.electric_current || data.corrente_eletrica)}^FS
-^FO150,555^A0N,15,15^FB140,1,0,C^FDPOT. DEGELO^FS
-^FO150,575^A0N,25,25^FB140,1,0,C^FD${val(data.defrost_power || data.potencia_degelo)}^FS
-^FO290,555^A0N,15,15^FB140,1,0,C^FDTAMANHO^FS
-^FO290,575^A0N,30,30^FB140,1,0,C^FD${data.size || data.tamanho ? String(data.size || data.tamanho).charAt(0).toUpperCase() : '-'}^FS
-^XZ`;
+    return `SIZE 80 mm, 55 mm
+GAP 3 mm, 0 mm
+DIRECTION 1
+OFFSET 0
+CLS
+TEXT 15,15,"0",0,3,3,"Ambicom"
+TEXT 15,65,"0",0,1,1,"R. Wenceslau Marek, 10 - Aguas Belas,"
+TEXT 15,80,"0",0,1,1,"Sao Jose dos Pinhais - PR, 83010-520"
+TEXT 15,100,"0",0,2,2,"SAC: 041 - 3382-5410"
+TEXT 440,15,"0",0,1,1,"PRODUTO"
+TEXT 440,30,"0",0,1,1,"REMANUFATURADO"
+TEXT 440,45,"0",0,1,1,"GARANTIA"
+TEXT 440,60,"0",0,1,1,"AMBICOM"
+BAR 10,120,620,2
+BAR 10,180,620,2
+BAR 10,280,620,2
+BAR 10,350,620,2
+BAR 10,420,620,2
+BAR 10,490,620,2
+BAR 10,550,620,2
+BAR 10,610,620,2
+BAR 10,120,2,490
+BAR 630,120,2,490
+BAR 310,120,2,60
+BAR 310,280,2,70
+BAR 210,350,2,140
+BAR 420,350,2,260
+BAR 210,550,2,60
+BAR 420,550,2,60
+TEXT 30,130,"0",0,1,1,"MODELO"
+TEXT 30,150,"0",0,2,2,"${model}"
+TEXT 330,130,"0",0,1,1,"VOLTAGEM"
+TEXT 330,150,"0",0,2,2,"${voltage}"
+QRCODE 30,195,L,5,A,0,"${internalSerial}"
+TEXT 260,195,"0",0,1,1,"SERIE AMBICOM:"
+TEXT 260,225,"0",0,2,2,"${internalSerial}"
+TEXT 260,255,"0",0,1,1,"${val(data.commercial_code || data.codigo_comercial)}"
+TEXT 30,290,"0",0,1,1,"PNC/ML"
+TEXT 30,315,"0",0,3,3,"${pnc_ml}"
+TEXT 330,290,"0",0,1,1,"FREQUENCIA"
+TEXT 330,315,"0",0,2,2,"${frequency}"
+TEXT 20,360,"0",0,1,1,"GAS FRIGOR."
+TEXT 20,385,"0",0,1,1,"${gas}"
+TEXT 225,360,"0",0,1,1,"CARGA GAS"
+TEXT 225,385,"0",0,1,1,"${gasCharge}"
+TEXT 440,360,"0",0,1,1,"COMPRESSOR"
+TEXT 440,385,"0",0,1,1,"${compressor}"
+TEXT 20,430,"0",0,1,1,"VOL. FREEZER"
+TEXT 20,455,"0",0,1,1,"${volFreezer}"
+TEXT 225,430,"0",0,1,1,"VOL. REFRIG."
+TEXT 225,455,"0",0,1,1,"${volRefrig}"
+TEXT 440,430,"0",0,1,1,"VOL. TOTAL"
+TEXT 440,455,"0",0,1,1,"${volTotal}"
+TEXT 30,500,"0",0,1,1,"P. DE ALTA / P. DE BAIXA"
+TEXT 30,525,"0",0,2,2,"${pressure}"
+TEXT 440,500,"0",0,1,1,"CAPAC. CONG."
+TEXT 440,525,"0",0,1,1,"${capacCong}"
+TEXT 20,560,"0",0,1,1,"CORRENTE"
+TEXT 20,585,"0",0,1,1,"${current}"
+TEXT 225,560,"0",0,1,1,"POT. DEGELO"
+TEXT 225,585,"0",0,1,1,"${power}"
+TEXT 440,560,"0",0,1,1,"TAMANHO"
+TEXT 440,585,"0",0,3,3,"${size}"
+PRINT 1,1
+`;
 };
 

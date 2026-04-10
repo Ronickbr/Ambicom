@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { printService, ActiveBridge } from "@/lib/print-service";
-import { generateLabelZPL } from "@/lib/export-utils";
+import { generateLabelTSPL } from "@/lib/export-utils";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
@@ -60,12 +60,12 @@ export function useRemotePrint() {
         try {
             const items = Array.isArray(data) ? data : [data];
 
-            // Gera ZPL concatenado
-            const zplCode = items.map(item => generateLabelZPL(item)).join("\n");
+            // Gera TSPL concatenado
+            const tsplCode = items.map(item => generateLabelTSPL(item)).join("\n");
 
             await printService.submitPrintJob({
-                payload_type: "zpl",
-                payload_data: zplCode,
+                payload_type: "tspl",
+                payload_data: tsplCode,
                 printer_target: selectedPrinter
             });
 

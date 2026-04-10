@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.8**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.14.0**:
+  - **Migração Completa para TSPL**: Substituição do motor de impressão ZPL pelo padrão TSPL (Taiwan Semiconductor Printing Language) em todo o sistema, visando 100% de compatibilidade e fidelidade com a impressora Elgin L42 Pro.
+  - **Atualização do Print Bridge**: Fila de impressão industrial agora processa jobs TSPL nativamente via PowerShell RAW.
+  - **Precisão Dimensional**: Ajuste fino de coordenadas TSPL para bobinas de 80x55mm com layout técnico expandido.
 - **v2.13.8**:
   - **Retorno à Orientação Paisagem (ZPL)**: Reversão do layout industrial para o modo Paisagem (640x440) para melhor compatibilidade com o hardware Elgin L42 Pro.
   - **Ajuste de Rotação**: Implementação da flag `^FWR` para alinhamento correto das etiquetas na bobina.

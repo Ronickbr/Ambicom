@@ -45,9 +45,9 @@ public class RawPrinterHelper
         DOCINFOA di = new DOCINFOA();
         bool bSuccess = false;
 
-        di.pDocName = "RAW ZPL Label";
+        di.pDocName = "RAW Label";
         di.pDataType = "RAW";
-
+ 
         if (OpenPrinter(szPrinterName.Normalize(), out hPrinter, IntPtr.Zero))
         {
             if (StartDocPrinter(hPrinter, 1, di))
@@ -68,10 +68,10 @@ public class RawPrinterHelper
     }
 }
 '@
-
+ 
 Add-Type -TypeDefinition $code -Language CSharp
-$ZplString = [System.IO.File]::ReadAllText($FilePath)
-$result = [RawPrinterHelper]::SendStringToPrinter($PrinterName, $ZplString)
+$RawString = [System.IO.File]::ReadAllText($FilePath)
+$result = [RawPrinterHelper]::SendStringToPrinter($PrinterName, $RawString)
 if (-not $result) {
     Write-Error "Failed to send RAW data to printer."
     exit 1

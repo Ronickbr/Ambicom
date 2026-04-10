@@ -101,23 +101,24 @@ async function executeJob(job) {
     try {
         const type = (job.payload_type || "").trim().toLowerCase();
 
-        if (type === 'zpl') {
-            // Impressão Direta ZPL (Assume Raw support ou porta direta)
+        if (type === 'zpl' || type === 'tspl') {
+            // Impressão Direta (ZPL ou TSPL)
             await new Promise((resolve, reject) => {
-                const jobId = `ZPL-${Date.now()}`;
-                const tempFile = path.join(os.tmpdir(), `${jobId}.zpl`);
+                const extension = type === 'zpl' ? 'zpl' : 'tspl';
+                const jobId = `${type.toUpperCase()}-${Date.now()}`;
+                const tempFile = path.join(os.tmpdir(), `${jobId}.${extension}`);
 
-                // Força UTF-8 para evitar problemas com caracteres especiais no ZPL
+                // Força UTF-8 para evitar problemas com caracteres especiais
                 fs.writeFileSync(tempFile, job.payload_data, 'utf8');
 
                 const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${path.join(__dirname, 'print_raw.ps1')}" -PrinterName "${job.printer_target}" -FilePath "${tempFile}"`;
                 exec(cmd, (error, stdout, stderr) => {
                     if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
                     if (error) {
-                        log(`❌ Erro no PowerShell (ZPL): ${stderr || error.message}`);
+                        log(`❌ Erro no PowerShell (${type.toUpperCase()}): ${stderr || error.message}`);
                         reject(error);
                     } else {
-                        log(`✅ Job ${job.id} (ZPL) enviado com sucesso para ${job.printer_target}`);
+                        log(`✅ Job ${job.id} (${type.toUpperCase()}) enviado com sucesso para ${job.printer_target}`);
                         resolve(jobId);
                     }
                 });

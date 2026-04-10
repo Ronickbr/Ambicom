@@ -190,10 +190,15 @@ export default function ProfilePage() {
                                             type="button"
                                             onClick={() => {
                                                 if (!selectedPrinter) return;
-                                                const zplCode = "^XA^FO50,50^A0N,50,50^FDTESTE AMBICOM^FS^XZ";
+                                                const tsplCode = `SIZE 80 mm, 55 mm
+GAP 3 mm, 0 mm
+CLS
+TEXT 50,50,"0",0,2,2,"TESTE AMBICOM"
+PRINT 1,1
+`;
                                                 printService.submitPrintJob({
-                                                    payload_type: 'zpl',
-                                                    payload_data: zplCode,
+                                                    payload_type: 'tspl',
+                                                    payload_data: tsplCode,
                                                     printer_target: selectedPrinter
                                                 });
                                                 toast.success("Página de teste enviada para " + selectedPrinter);
