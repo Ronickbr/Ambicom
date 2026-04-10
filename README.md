@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.14.5**:
+  - **Estruturação de Tabela Técnica (BOX)**: Implementação de moldura completa via comando `BOX` e realinhamento de todas as células técnicas em formato tabular avançado.
+  - **Header e Rodapé Dinâmicos**: Reposicionamento do bloco Ambicom e dados de garantia para as margens, maximizando a área central para dados técnicos.
+  - **Aprimoramento de QR Code**: Ajuste de posição e escala do QR Code dentro da nova estrutura de grade industrial girada.
 - **v2.14.4**:
   - **Ajuste de Grade TSPL**: Reestruturação das colunas verticais e divisórias horizontais internas para otimizar o preenchimento da bobina.
   - **Padronização de Rótulos**: Consolidação de campos técnicos e ajustes de alinhamento para melhor aproveitamento de espaço.
