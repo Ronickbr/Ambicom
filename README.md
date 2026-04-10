@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.3**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.14.4**:
+  - **Ajuste de Grade TSPL**: Reestruturação das colunas verticais e divisórias horizontais internas para otimizar o preenchimento da bobina.
+  - **Padronização de Rótulos**: Consolidação de campos técnicos e ajustes de alinhamento para melhor aproveitamento de espaço.
 - **v2.14.3**:
   - **Otimização de Coordenadas TSPL**: Ajuste fino de alinhamento e espaçamento em todas as células da grade técnica.
   - **Melhoria de Legibilidade**: Aumento estratégico de fontes em campos críticos e padronização de rótulos técnicos.
