@@ -171,74 +171,83 @@ export const generateLabelTSPL = (data: any): string => {
     };
 
     // LABELS: 80mm (L) x 55mm (A)
-    // Rotação 90 para leitura vertical (Portrait Look on Landscape Ribbon)
+    // Motor v2.20.0 - Foco em Geometria Industrial
     return `SIZE 80 mm, 55 mm
 GAP 3 mm, 0
 DIRECTION 1,0
 REFERENCE 0,0
 CLS
 
-; --- ZONA 1 (ESQUERDA): INSTITUCIONAL ---
-TEXT 620, 10, "3", 90, 1, 1, "Ambicom"
-TEXT 595, 10, "1", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas"
-TEXT 580, 10, "1", 90, 1, 1, "SJP - PR | SAC: 041 3382-5410"
+; --- CABEÇALHO INSTITUCIONAL ---
+TEXT 620, 15, "3", 90, 1, 1, "Ambicom"
+TEXT 595, 15, "1", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas"
+TEXT 580, 15, "1", 90, 1, 1, "Sao Jose dos Pinhais - PR | SAC: 041 3382-5410"
 
-; Bloco Garantia (Vertical no canto oposto)
-TEXT 625, 300, "1", 90, 1, 1, "PRODUTO REMANUFATURADO"
-TEXT 610, 300, "1", 90, 1, 1, "GARANTIA AMBICOM"
+; Bloco Garantia (Topo Direito no produto)
+TEXT 625, 310, "1", 90, 1, 1, "PRODUTO REMANUFATURADO"
+TEXT 610, 310, "1", 90, 1, 1, "GARANTIA AMBICOM"
 
-; --- GRADE TÉCNICA PRINCIPAL (v2.19.0) ---
-; Moldura Externa
-BOX 15, 10, 565, 430, 4
+; --- MOLDURA DA GRADE ---
+BOX 20, 10, 560, 435, 6
 
-; DIVISORES DE COLUNA (Verticais na etiqueta vertical)
-BAR 445, 10, 4, 420   ; Col 1 / 2
-BAR 330, 10, 4, 420   ; Col 2 / 3
-BAR 215, 10, 4, 420   ; Col 3 / 4
+; --- DIVISORES HORIZONTAIS (Na etiqueta vertical) ---
+BAR 20, 155, 540, 6   ; Linha 1 (Modelo/Volt)
+BAR 20, 260, 540, 6   ; Linha 2 (Serial/PNC)
+BAR 20, 310, 540, 6   ; Linha 3 (Gás/Carga)
+BAR 20, 360, 540, 6   ; Linha 4 (Compressor/Volumes)
+BAR 20, 400, 540, 6   ; Linha 5 (Corrente/Tamanho)
 
-; DIVISORES DE LINHA (Horizontais na etiqueta vertical)
-BAR 15, 95, 550, 4    ; Linha 1 (Modelo/Voltagem...)
-BAR 15, 175, 550, 4   ; Linha 2 (PNC/Carga...)
-BAR 15, 260, 550, 4   ; Linha 3 (Gás/Refrig...)
-BAR 15, 345, 550, 4   ; Linha 4 (Pressão...)
+; --- DIVISORES VERTICAIS ---
+BAR 380, 10, 6, 145   ; Entre Modelo e Voltagem
+BAR 380, 260, 6, 175  ; Entre seções de dados na base
+BAR 200, 10, 6, 145   ; Terceira coluna no topo (Serial area)
+BAR 200, 260, 6, 175  ; Divisor central na base
 
-; --- COLUNA 1: DADOS PRIMÁRIOS ---
+; --- CONTEÚDO TÉCNICO (ROTAÇÃO 90 OBRIGATÓRIA) ---
+
+; BLOCO 1: IDENTIFICAÇÃO
 TEXT 550, 20, "1", 90, 1, 1, "MODELO"
 TEXT 525, 20, "3", 90, 1, 1, "${v(data.model || data.modelo)}"
-TEXT 435, 20, "1", 90, 1, 1, "VOLTAGEM"
-TEXT 410, 20, "4", 90, 1, 1, "${v(data.voltage || data.tensao)}V"
-TEXT 320, 20, "1", 90, 1, 1, "GAS FRIGOR."
-TEXT 295, 20, "2", 90, 1, 1, "${v(data.refrigerant_gas)}"
-TEXT 205, 20, "1", 90, 1, 1, "VOL. FREEZER"
-TEXT 180, 20, "3", 90, 1, 1, "${v(data.volume_freezer)}L"
-TEXT 90, 20, "1", 90, 1, 1, "CORRENTE"
-TEXT 65, 20, "3", 90, 1, 1, "${v(data.electric_current)}A"
 
-; --- COLUNA 2: DADOS SECUNDÁRIOS ---
-TEXT 550, 105, "1", 90, 1, 1, "PNC/ML"
-TEXT 515, 105, "2", 90, 1, 1, "${v(data.pnc_ml)}"
-TEXT 435, 105, "1", 90, 1, 1, "CARGA GAS"
-TEXT 410, 105, "3", 90, 1, 1, "${v(data.gas_charge)}g"
-TEXT 320, 105, "1", 90, 1, 1, "VOL. REFRIG."
-TEXT 295, 105, "3", 90, 1, 1, "${v(data.volume_refrigerator)}L"
-TEXT 205, 105, "1", 90, 1, 1, "P. DE ALTA"
-TEXT 180, 105, "1", 90, 1, 1, "(${v(data.pressure_high_low)})"
-TEXT 90, 105, "1", 90, 1, 1, "POT. DEGELO"
-TEXT 65, 105, "3", 90, 1, 1, "${v(data.defrost_power)}W"
+TEXT 550, 165, "1", 90, 1, 1, "VOLTAGEM"
+TEXT 515, 165, "4", 90, 1, 1, "${v(data.voltage || data.tensao)} V"
 
-; --- COLUNA 3: RASTREABILIDADE (SERIAL GRANDE) ---
-QRCODE 550, 230, L, 4, 90, "${v(data.internal_serial)}"
-TEXT 550, 310, "0", 90, 1, 1, "SERIAL AMBICOM:"
-TEXT 525, 310, "4", 90, 1, 1, "${v(data.internal_serial)}"
-TEXT 495, 310, "2", 90, 1, 1, "${v(data.commercial_code)}"
+; BLOCO 2: RASTREABILIDADE (SERIAL GRANDE)
+TEXT 370, 20, "1", 90, 1, 1, "N. SERIE AMBICOM:"
+TEXT 340, 20, "4", 90, 1, 2, "${v(data.internal_serial)}"
+QRCODE 370, 350, L, 4, 90, "${v(data.internal_serial)}"
+TEXT 290, 20, "2", 90, 1, 1, "PNC/ML: ${v(data.pnc_ml)}"
 
-TEXT 435, 230, "1", 90, 1, 1, "VOLUME TOTAL"
-TEXT 405, 230, "4", 90, 1, 1, "${v(data.volume_total)}L"
-TEXT 320, 230, "1", 90, 1, 1, "CAPAC. CONG."
-TEXT 295, 230, "2", 90, 1, 1, "${v(data.freezing_capacity)}"
-TEXT 205, 230, "1", 90, 1, 1, "TAMANHO"
-TEXT 175, 230, "5", 90, 1, 1, "${v(data.size || 'G')}"
-TEXT 90, 230, "5", 90, 1, 1, "60 Hz"
+; BLOCO 3: DADOS FLUIDOS
+TEXT 250, 20, "1", 90, 1, 1, "GAS FRIG."
+TEXT 230, 20, "2", 90, 1, 1, "${v(data.refrigerant_gas)}"
+TEXT 250, 145, "1", 90, 1, 1, "CARGA GAS"
+TEXT 230, 145, "2", 90, 1, 1, "${v(data.gas_charge)} g"
+TEXT 250, 290, "4", 90, 1, 1, "60 Hz"
+
+; BLOCO 4: COMPRESSOR E VOLUMES
+TEXT 200, 20, "1", 90, 1, 1, "COMPRESSOR"
+TEXT 180, 20, "2", 90, 1, 1, "${v(data.compressor)}"
+TEXT 200, 165, "1", 90, 1, 1, "VOL. FREEZER"
+TEXT 185, 165, "2", 90, 1, 1, "${v(data.volume_freezer)} L"
+TEXT 200, 310, "1", 90, 1, 1, "VOL. REFRIG."
+TEXT 185, 310, "2", 90, 1, 1, "${v(data.volume_refrigerator)} L"
+
+; BLOCO 5: EFICIÊNCIA E TAMANHO
+TEXT 150, 20, "1", 90, 1, 1, "VOLUME TOTAL"
+TEXT 130, 20, "3", 90, 1, 1, "${v(data.volume_total)} L"
+TEXT 150, 165, "1", 90, 1, 1, "CAPAC. CONG."
+TEXT 130, 165, "2", 90, 1, 1, "${v(data.freezing_capacity)}"
+TEXT 150, 310, "1", 90, 1, 1, "PRESSÃO (H/L)"
+TEXT 130, 310, "1", 90, 1, 1, "${v(data.pressure_high_low)}"
+
+; BLOCO 6: RODAPÉ FINAL
+TEXT 100, 20, "1", 90, 1, 1, "CORRENTE"
+TEXT 75, 20, "3", 90, 1, 1, "${v(data.electric_current)} A"
+TEXT 100, 165, "1", 90, 1, 1, "POT. DEGELO"
+TEXT 75, 165, "3", 90, 1, 1, "${v(data.defrost_power)} W"
+TEXT 100, 310, "1", 90, 1, 1, "TAMANHO"
+TEXT 70, 310, "5", 90, 1, 1, "${v(data.size || 'G')}"
 
 PRINT 1
 `;

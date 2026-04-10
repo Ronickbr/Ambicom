@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.19.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.20.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.20.0**:
+  - **Reconstrução Master de Layout**: Migração do motor de design para uma grade modular de linhas e colunas combinadas (multi-box). Reorganização de Modelo e Voltagem para posicionamento horizontal paralelo.
+  - **Destaque de Rastreabilidade**: Serial Ambicom e QR Code centralizados com hierarquia tipográfica reforçada.
+  - **Matriz Técnica Industrial**: Implementação de sub-grades para Gás, Compressores e Eficiência Energética, atingindo fidelidade máxima ao modelo de referência.
 - **v2.19.0**:
   - **Reconstrução de Fidelidade Absoluta**: Motor TSPL redesenhado do zero para replicar exatamente a grade industrial técnica de 5 colunas lógicas.
   - **Mapeamento de Linhas HQ**: Implementação de divisórias reforçadas (espessura 4 e 6) para evitar falhas de impressão em bobinas térmicas industriais.
