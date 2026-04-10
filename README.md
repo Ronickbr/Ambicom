@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.15.5**:
+  - **Ajuste de Buffer**: Adição de espaço final no template TSPL para otimizar o processamento do comando de fechamento pela impressora.
 - **v2.15.4**:
   - **Refinamento de Grade com BAR**: Substituição da estrutura de tabela por comandos `BAR` granulares para bordas e divisórias, permitindo maior controle milimétrico.
   - **Cabeçalho Otimizado**: Consolidação de endereço e SAC em formato linear para melhor aproveitamento da largura da bobina.
