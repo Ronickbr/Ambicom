@@ -172,9 +172,9 @@ export const generateLabelZPL = (data: any): string => {
     const val = (v: any) => v || "";
 
     return `^XA
-^FWT
-^PW440
-^LL640
+^FWR
+^PW640
+^LL440
 ^CI28
 ^FO15,15^A0N,45,45^FDAmbicom^FS
 ^FO15,65^A0N,15,15^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
