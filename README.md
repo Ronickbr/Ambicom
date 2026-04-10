@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.26.1**:
+  - **Correção de Build**: Removido importação não utilizada do `generateLabelTSPL` que causava falha no processo de compilação da aplicação.
 - **v2.26.0**:
   - **Redesign Industrial (PDF Rotacionado)**: Reconstrução total da etiqueta baseada na imagem de referência, utilizando rotação de 90° para saída vertical em bobinas industriais horizontais (80x55mm).
   - **Limpeza de Código Legado**: Remoção definitiva de todos os motores de geração ZPL e TSPL, consolidando o PDF como padrão único de alta fidelidade.

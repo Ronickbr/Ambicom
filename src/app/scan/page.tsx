@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { useScan } from "@/hooks/useScan";
 import { logger } from "@/lib/logger";
 import { formatTotalVolume } from "@/lib/product-utils";
-import { generateLabelTSPL } from "@/lib/export-utils";
+
 import { RemotePrinterSelector } from "@/components/printing/RemotePrinterSelector";
 import { useRemotePrint } from "@/hooks/useRemotePrint";
 
