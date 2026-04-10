@@ -31,47 +31,52 @@ export const exportToExcel = (data: Record<string, unknown>[], fileName: string)
     XLSX.writeFile(workbook, `${fileName}_${new Date().getTime()}.xlsx`);
 };
 
-// ─── TSPL Generator — Elgin L42 Pro (203 DPI, 8 dots/mm) ────────────────────
-// Linguagem nativa da impressora: elimina 100% dos problemas de orientação/PDF.
-// O firmware da Elgin processa TSPL diretamente — sem driver, sem SumatraPDF.
+// ─── TSPL Generator — Elgin L42 Pro ──────────────────────────────────────────
+// Etiqueta: 55mm de LARGURA × 80mm de ALTURA (portrait)
+// A linguagem TSPL é processada pelo firmware da impressora — sem PDF, sem rotação.
 //
-// Layout: 80×55mm = 640×440 dots @ 203 DPI
-// Fontes internas: "1"=8×12 | "2"=12×20 | "3"=16×24 | "4"=24×32 | "5"=32×48 dots
+// @ 203 DPI (8 dots/mm):
+//   Largura = 55mm × 8 = 440 dots (eixo X, horizontal)
+//   Altura  = 80mm × 8 = 640 dots (eixo Y, feed direction)
 //
-// Uso: const tspl = generateLabelsTSPL([product]);
-//      await printService.submitPrintJob({ payload_type: 'tspl', payload_data: tspl, ... });
+// Layout:
+//   Cabeçalho: y=0..96    (12mm) — Ambicom + endereço + SAC + stamp box
+//   Grade    : y=100..620 (65mm) — 7 linhas de dados técnicos
+//   Margem   : y=620..640 (2.5mm)
 
 export function generateLabelsTSPL(products: any[]): string {
     const sv = (v: any) => String(v ?? '').trim().replace(/"/g, "'").replace(/\r?\n/g, ' ') || '-';
 
-    // ── Constantes de layout (dots, 8 dots = 1mm) ────────────────────────────
-    const X0 = 24;    // margem esquerda 3mm
-    const X1 = 616;   // margem direita  77mm
-    const GW = X1 - X0; // 592 dots = 74mm
+    // ── Limites do eixo X (largura 55mm = 440 dots) ──────────────────────────
+    const X0 = 16;    // 2mm margem esquerda
+    const X1 = 424;   // 53mm (2mm margem direita — evita corte mecânico)
+    const GW = X1 - X0; // 408 dots = 51mm úteis
 
-    const GY = 112;   // topo da grade = 14mm
+    // ── Grade: linhas horizontais no eixo Y (altura 80mm = 640 dots) ─────────
+    const GY = 100; // topo da grade = 12.5mm
     const r = [
-        GY,           // r[0] = 112  topo da grade
-        GY + 40,      // r[1] = 152  fim Modelo/Voltagem (5mm)
-        GY + 120,     // r[2] = 232  fim QR/Serial (10mm)
-        GY + 156,     // r[3] = 268  fim PNC/Freq (4.5mm)
-        GY + 192,     // r[4] = 304  fim Gás/Comp (4.5mm)
-        GY + 228,     // r[5] = 340  fim Volumes (4.5mm)
-        GY + 264,     // r[6] = 376  fim Pressão (4.5mm)
-        GY + 304,     // r[7] = 416  fundo = 52mm (+3mm margem = 55mm ✓)
+        GY,           // r[0] = 100 — linha superior da grade
+        GY + 72,      // r[1] = 172 — Modelo / Voltagem        (9mm)
+        GY + 160,     // r[2] = 260 — QR Code / Serial         (11mm)
+        GY + 220,     // r[3] = 320 — PNC/ML / Frequência      (7.5mm)
+        GY + 280,     // r[4] = 380 — Gás / Carga / Compressor (7.5mm)
+        GY + 340,     // r[5] = 440 — Volumes                  (7.5mm)
+        GY + 400,     // r[6] = 500 — Pressões                 (7.5mm)
+        GY + 520,     // r[7] = 620 — Corrente / Tamanho       (15mm — fonte 5)
     ];
 
-    // Splits de coluna
-    const c1 = X0 + Math.floor(GW / 3);           // ≈221 (3 colunas iguais)
-    const c2 = X0 + Math.floor((GW / 3) * 2);     // ≈418
-    const cMod = X0 + Math.floor(GW * 0.50);         // =320 (50% Modelo/Voltagem)
-    const cPnc = X0 + Math.floor(GW * 0.67);         // ≈420 (67% PNC)
-    const cSer = X0 + 84;                            // após QR de 10.5mm
+    // ── Divisores de coluna ───────────────────────────────────────────────────
+    const colPart = Math.floor(GW / 3);          // 136 dots = 17mm (3 colunas iguais)
+    const c1 = X0 + colPart;                // 152 dots = 19mm
+    const c2 = X0 + colPart * 2;            // 288 dots = 36mm
+    const cMod = X0 + Math.floor(GW * 0.50);  // 220 dots = 27.5mm (50% Modelo|Voltagem)
+    const cPnc = X0 + Math.floor(GW * 0.70);  // 302 dots = 37.8mm (70% PNC|Frequência)
+    const cSer = X0 + 88;                     // 104 dots = 13mm  (após QR ~10mm)
 
     const lines: string[] = [
-        'SIZE 80 mm,55 mm',
+        'SIZE 55 mm,80 mm',   // 55mm largura × 80mm altura
         'GAP 3 mm,0 mm',
-        'DIRECTION 1',      // Sem rotação — feed direction normal
+        'DIRECTION 1',         // feed normal, sem rotação
         'OFFSET 0 mm',
         'SPEED 4',
         'DENSITY 10',
@@ -106,101 +111,105 @@ export function generateLabelsTSPL(products: any[]): string {
 
         lines.push('CLS');
         lines.push('');
-        lines.push('; === CABECALHO ===');
 
-        // "AMBICOM" em fonte 4 (24×32 dots)
-        lines.push(`TEXT ${X0},24,"4",0,1,1,"AMBICOM"`);
-        lines.push(`TEXT ${X0},64,"1",0,1,1,"R. Wenceslau Marek, 10 - Aguas Belas, SJP-PR, 83010-520"`);
-        lines.push(`TEXT ${X0},80,"2",0,1,1,"SAC: 041-3382-5410"`);
+        // ── CABEÇALHO (y=0..96) ──────────────────────────────────────────────
+        // "AMBICOM" em fonte 3 (16×24 dots)
+        lines.push(`TEXT ${X0},8,"3",0,1,1,"AMBICOM"`);
 
-        // Stamp box (53mm a 77mm)
-        lines.push(`BOX 424,8,616,108,2`);
-        const stampCX = 520; // centro da stamp box
+        // Address (font 1 = 8×12 dots — 2 linhas curtas)
+        lines.push(`TEXT ${X0},40,"1",0,1,1,"R. Wenceslau Marek, 10 - Aguas Belas"`);
+        lines.push(`TEXT ${X0},54,"1",0,1,1,"SJP - PR, 83010-520"`);
+
+        // SAC (font 2 = 12×20 dots)
+        lines.push(`TEXT ${X0},70,"2",0,1,1,"SAC: 041-3382-5410"`);
+
+        // Stamp box (x=248..424, y=4..96 = 22mm × 11.5mm)
+        lines.push(`BOX 248,4,${X1},96,2`);
+        const stampCX = Math.floor((248 + X1) / 2); // centro da caixa
         ['PRODUTO', 'REMANUFATURADO', 'GARANTIA', 'AMBICOM'].forEach((t, i) => {
             const tw = t.length * 8;
             const tx = stampCX - Math.floor(tw / 2);
-            lines.push(`TEXT ${tx},${16 + i * 22},"1",0,1,1,"${t}"`);
+            lines.push(`TEXT ${tx},${14 + i * 20},"1",0,1,1,"${t}"`);
         });
 
         lines.push('');
-        lines.push('; === GRADE TECNICA ===');
+
+        // ── GRADE TÉCNICA (y=100..620) ────────────────────────────────────────
         lines.push(`BOX ${X0},${r[0]},${X1},${r[7]},2`);
 
-        // Linha 1: MODELO | VOLTAGEM (split 50%)
+        // Linha 1: MODELO (50%) | VOLTAGEM (50%) — 9mm
         lines.push(`LINE ${X0},${r[1]},${X1},${r[1]},2`);
         lines.push(`LINE ${cMod},${r[0]},${cMod},${r[1]},2`);
-        lines.push(`TEXT ${X0 + 4},${r[0] + 4},"1",0,1,1,"MODELO"`);
-        lines.push(`TEXT ${X0 + 4},${r[0] + 18},"3",0,1,1,"${model}"`);
-        lines.push(`TEXT ${cMod + 4},${r[0] + 4},"1",0,1,1,"VOLTAGEM"`);
-        lines.push(`TEXT ${cMod + 4},${r[0] + 18},"3",0,1,1,"${voltage} V"`);
+        lines.push(`TEXT ${X0 + 4},${r[0] + 6},"1",0,1,1,"MODELO"`);
+        lines.push(`TEXT ${X0 + 4},${r[0] + 26},"3",0,1,1,"${model}"`);
+        lines.push(`TEXT ${cMod + 4},${r[0] + 6},"1",0,1,1,"VOLTAGEM"`);
+        lines.push(`TEXT ${cMod + 4},${r[0] + 26},"3",0,1,1,"${voltage} V"`);
 
-        // Linha 2: QR CODE | SERIAL
+        // Linha 2: QR | SERIAL — 11mm
         lines.push(`LINE ${X0},${r[2]},${X1},${r[2]},2`);
         lines.push(`LINE ${cSer},${r[1]},${cSer},${r[2]},2`);
         if (serial !== '-') {
             // QRCODE x,y,correcao,tamanhoCell,modo,rotacao,"dados"
             lines.push(`QRCODE ${X0 + 2},${r[1] + 2},L,4,A,0,"${serial}"`);
         }
-        lines.push(`TEXT ${cSer + 4},${r[1] + 4},"1",0,1,1,"NUMERO DE SERIE AMBICOM:"`);
-        lines.push(`TEXT ${cSer + 4},${r[1] + 20},"3",0,1,1,"${serial}"`);
+        lines.push(`TEXT ${cSer + 4},${r[1] + 6},"1",0,1,1,"NUMERO DE SERIE AMBICOM:"`);
+        lines.push(`TEXT ${cSer + 4},${r[1] + 24},"2",0,1,1,"${serial}"`);
         if (commCode !== '-') {
-            lines.push(`TEXT ${cSer + 4},${r[1] + 56},"2",0,1,1,"${commCode}"`);
+            lines.push(`TEXT ${cSer + 4},${r[1] + 56},"1",0,1,1,"${commCode}"`);
         }
 
-        // Linha 3: PNC/ML | FREQUÊNCIA (split 67%)
+        // Linha 3: PNC/ML (70%) | FREQUÊNCIA (30%) — 7.5mm
         lines.push(`LINE ${X0},${r[3]},${X1},${r[3]},2`);
         lines.push(`LINE ${cPnc},${r[2]},${cPnc},${r[3]},2`);
-        lines.push(`TEXT ${X0 + 4},${r[2] + 4},"1",0,1,1,"PNC/ML"`);
-        lines.push(`TEXT ${X0 + 4},${r[2] + 16},"2",0,1,1,"${pncMl}"`);
-        lines.push(`TEXT ${cPnc + 4},${r[2] + 4},"1",0,1,1,"FREQUENCIA"`);
-        lines.push(`TEXT ${cPnc + 4},${r[2] + 16},"3",0,1,1,"60 HZ"`);
+        lines.push(`TEXT ${X0 + 4},${r[2] + 6},"1",0,1,1,"PNC/ML"`);
+        lines.push(`TEXT ${X0 + 4},${r[2] + 22},"2",0,1,1,"${pncMl}"`);
+        lines.push(`TEXT ${cPnc + 4},${r[2] + 6},"1",0,1,1,"FREQUENCIA"`);
+        lines.push(`TEXT ${cPnc + 4},${r[2] + 24},"3",0,1,1,"60HZ"`);
 
-        // Linha 4: GÁS | CARGA GÁS | COMPRESSOR (3 colunas)
+        // Linha 4: GÁS FRIGOR. | CARGA GÁS | COMPRESSOR — 7.5mm
         lines.push(`LINE ${X0},${r[4]},${X1},${r[4]},2`);
         lines.push(`LINE ${c1},${r[3]},${c1},${r[4]},2`);
         lines.push(`LINE ${c2},${r[3]},${c2},${r[4]},2`);
-        lines.push(`TEXT ${X0 + 4},${r[3] + 4},"1",0,1,1,"GAS FRIGOR."`);
-        lines.push(`TEXT ${X0 + 4},${r[3] + 16},"2",0,1,1,"${gas}"`);
-        lines.push(`TEXT ${c1 + 4},${r[3] + 4},"1",0,1,1,"CARGA GAS"`);
-        lines.push(`TEXT ${c1 + 4},${r[3] + 16},"2",0,1,1,"${gasChg !== '-' ? gasChg + ' g' : '-'}"`);
-        lines.push(`TEXT ${c2 + 4},${r[3] + 4},"1",0,1,1,"COMPRESSOR"`);
-        lines.push(`TEXT ${c2 + 4},${r[3] + 16},"2",0,1,1,"${comp}"`);
+        lines.push(`TEXT ${X0 + 4},${r[3] + 6},"1",0,1,1,"GAS FRIGOR."`);
+        lines.push(`TEXT ${X0 + 4},${r[3] + 22},"2",0,1,1,"${gas}"`);
+        lines.push(`TEXT ${c1 + 4},${r[3] + 6},"1",0,1,1,"CARGA GAS"`);
+        lines.push(`TEXT ${c1 + 4},${r[3] + 22},"2",0,1,1,"${gasChg !== '-' ? gasChg + ' g' : '-'}"`);
+        lines.push(`TEXT ${c2 + 4},${r[3] + 6},"1",0,1,1,"COMPRESSOR"`);
+        lines.push(`TEXT ${c2 + 4},${r[3] + 22},"2",0,1,1,"${comp}"`);
 
-        // Linha 5: VOL. FREEZER | VOL. REFRIG. | VOL. TOTAL (3 colunas)
+        // Linha 5: VOL. FREEZER | VOL. REFRIG. | VOL. TOTAL — 7.5mm
         lines.push(`LINE ${X0},${r[5]},${X1},${r[5]},2`);
         lines.push(`LINE ${c1},${r[4]},${c1},${r[5]},2`);
         lines.push(`LINE ${c2},${r[4]},${c2},${r[5]},2`);
-        lines.push(`TEXT ${X0 + 4},${r[4] + 4},"1",0,1,1,"VOL. FREEZER"`);
-        lines.push(`TEXT ${X0 + 4},${r[4] + 16},"2",0,1,1,"${volFrz !== '-' ? volFrz + ' L' : '-'}"`);
-        lines.push(`TEXT ${c1 + 4},${r[4] + 4},"1",0,1,1,"VOL. REFRIG."`);
-        lines.push(`TEXT ${c1 + 4},${r[4] + 16},"2",0,1,1,"${volRef !== '-' ? volRef + ' L' : '-'}"`);
-        lines.push(`TEXT ${c2 + 4},${r[4] + 4},"1",0,1,1,"VOLUME TOTAL"`);
-        lines.push(`TEXT ${c2 + 4},${r[4] + 16},"2",0,1,1,"${volTot !== '-' ? volTot + ' L' : '-'}"`);
+        lines.push(`TEXT ${X0 + 4},${r[4] + 6},"1",0,1,1,"VOL. FREEZER"`);
+        lines.push(`TEXT ${X0 + 4},${r[4] + 22},"2",0,1,1,"${volFrz !== '-' ? volFrz + ' L' : '-'}"`);
+        lines.push(`TEXT ${c1 + 4},${r[4] + 6},"1",0,1,1,"VOL. REFRIG."`);
+        lines.push(`TEXT ${c1 + 4},${r[4] + 22},"2",0,1,1,"${volRef !== '-' ? volRef + ' L' : '-'}"`);
+        lines.push(`TEXT ${c2 + 4},${r[4] + 6},"1",0,1,1,"VOLUME TOTAL"`);
+        lines.push(`TEXT ${c2 + 4},${r[4] + 22},"2",0,1,1,"${volTot !== '-' ? volTot + ' L' : '-'}"`);
 
-        // Linha 6: P. ALTA | P. BAIXA | CAPAC. CONG. (3 colunas)
+        // Linha 6: P. ALTA | P. BAIXA | CAPAC. CONG. — 7.5mm
         lines.push(`LINE ${X0},${r[6]},${X1},${r[6]},2`);
         lines.push(`LINE ${c1},${r[5]},${c1},${r[6]},2`);
         lines.push(`LINE ${c2},${r[5]},${c2},${r[6]},2`);
-        lines.push(`TEXT ${X0 + 4},${r[5] + 4},"1",0,1,1,"P. ALTA"`);
-        lines.push(`TEXT ${X0 + 4},${r[5] + 16},"1",0,1,1,"${pressH}"`);
-        lines.push(`TEXT ${c1 + 4},${r[5] + 4},"1",0,1,1,"P. BAIXA"`);
-        lines.push(`TEXT ${c1 + 4},${r[5] + 16},"1",0,1,1,"${pressL}"`);
-        lines.push(`TEXT ${c2 + 4},${r[5] + 4},"1",0,1,1,"CAPAC. CONG."`);
-        lines.push(`TEXT ${c2 + 4},${r[5] + 16},"2",0,1,1,"${freezCap}"`);
+        lines.push(`TEXT ${X0 + 4},${r[5] + 6},"1",0,1,1,"P. ALTA"`);
+        lines.push(`TEXT ${X0 + 4},${r[5] + 22},"1",0,1,1,"${pressH}"`);
+        lines.push(`TEXT ${c1 + 4},${r[5] + 6},"1",0,1,1,"P. BAIXA"`);
+        lines.push(`TEXT ${c1 + 4},${r[5] + 22},"1",0,1,1,"${pressL}"`);
+        lines.push(`TEXT ${c2 + 4},${r[5] + 6},"1",0,1,1,"CAPAC. CONG."`);
+        lines.push(`TEXT ${c2 + 4},${r[5] + 22},"2",0,1,1,"${freezCap}"`);
 
-        // Linha 7: CORRENTE | POT. DEGELO | TAMANHO (3 colunas)
+        // Linha 7: CORRENTE | POT. DEGELO | TAMANHO — 15mm (font 5 = 32×48 dots)
         lines.push(`LINE ${c1},${r[6]},${c1},${r[7]},2`);
         lines.push(`LINE ${c2},${r[6]},${c2},${r[7]},2`);
-        lines.push(`TEXT ${X0 + 4},${r[6] + 4},"1",0,1,1,"CORRENTE"`);
-        lines.push(`TEXT ${X0 + 4},${r[6] + 16},"2",0,1,1,"${current !== '-' ? current + ' A' : '-'}"`);
-        lines.push(`TEXT ${c1 + 4},${r[6] + 4},"1",0,1,1,"POT. DEGELO"`);
-        lines.push(`TEXT ${c1 + 4},${r[6] + 16},"2",0,1,1,"${defrost !== '-' ? defrost + ' W' : '-'}"`);
-        lines.push(`TEXT ${c2 + 4},${r[6] + 4},"1",0,1,1,"TAMANHO"`);
-
-        // Tamanho em fonte 5 (32×48 dots) — grande e centralizado na coluna
-        const colWidthDots = Math.floor(GW / 3);
-        const sizeCX = c2 + Math.floor(colWidthDots / 2) - 16;
-        lines.push(`TEXT ${sizeCX},${r[6] + 8},"5",0,1,1,"${dispSize}"`);
+        lines.push(`TEXT ${X0 + 4},${r[6] + 6},"1",0,1,1,"CORRENTE"`);
+        lines.push(`TEXT ${X0 + 4},${r[6] + 22},"2",0,1,1,"${current !== '-' ? current + ' A' : '-'}"`);
+        lines.push(`TEXT ${c1 + 4},${r[6] + 6},"1",0,1,1,"POT. DEGELO"`);
+        lines.push(`TEXT ${c1 + 4},${r[6] + 22},"2",0,1,1,"${defrost !== '-' ? defrost + ' W' : '-'}"`);
+        lines.push(`TEXT ${c2 + 4},${r[6] + 6},"1",0,1,1,"TAMANHO"`);
+        // Letra G/M/P em fonte 5 (32×48 dots) centralizada na 3ª coluna
+        const col3CX = c2 + Math.floor(colPart / 2) - 16;
+        lines.push(`TEXT ${col3CX},${r[6] + 44},"5",0,1,1,"${dispSize}"`);
 
         lines.push('');
         lines.push('PRINT 1,1');
@@ -210,105 +219,107 @@ export function generateLabelsTSPL(products: any[]): string {
     return lines.join('\r\n');
 }
 
-// ─── PDF (download local apenas) ─────────────────────────────────────────────
-// Para impressão use generateLabelsTSPL → bridge (payload_type: 'tspl')
+// ─── PDF (apenas para download local) ────────────────────────────────────────
+// Para impressão remota use generateLabelsTSPL + bridge (payload_type: 'tspl')
 export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
-    const doc = new jsPDF({ unit: 'mm', format: [80, 55], putOnlyUsedFonts: true, compress: true });
+    // PDF em portrait 55×80mm (equivalente visual ao TSPL acima)
+    const doc = new jsPDF({ unit: 'mm', format: [55, 80], putOnlyUsedFonts: true, compress: true });
 
-    const X0 = 3, X1 = 77, CW = X1 - X0;
-    const GY = 14;
-    const r = [GY, GY + 4.5, GY + 14.5, GY + 19, GY + 23.5, GY + 28, GY + 32.5, GY + 37];
+    // Limites (mm)
+    const X0 = 2, X1 = 53, CW = X1 - X0;
+    const GY = 12.5;
+    const r = [GY, GY + 9, GY + 20, GY + 27.5, GY + 35, GY + 42.5, GY + 50, GY + 65];
 
     for (let idx = 0; idx < products.length; idx++) {
         const p = products[idx];
-        if (idx > 0) doc.addPage([80, 55]);
+        if (idx > 0) doc.addPage([55, 80]);
         const val = (v: any) => String(v ?? '').trim() || '-';
 
         // Cabeçalho
-        doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(0);
-        doc.text("Ambicom", X0, 5.5);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(0);
+        doc.text("Ambicom", X0, 6);
         doc.setFont("helvetica", "normal"); doc.setFontSize(4);
-        doc.text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR, 83010-520", X0, 8.5);
-        doc.setFont("helvetica", "bold"); doc.setFontSize(7);
-        doc.text("SAC : 041 - 3382-5410", X0, 12);
+        doc.text("R. Wenceslau Marek, 10 - Aguas Belas", X0, 9);
+        doc.text("SJP - PR, 83010-520", X0, 11.5);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(6.5);
+        doc.text("SAC: 041-3382-5410", X0, 14);
 
-        // Stamp (sem borda para caber melhor)
-        doc.setFontSize(4.5);
+        // Stamp
+        doc.setFontSize(4); doc.setFont("helvetica", "normal");
         ["PRODUTO", "REMANUFATURADO", "GARANTIA", "AMBICOM"].forEach((t, i) =>
-            doc.text(t, 69, 4 + i * 2.8, { align: 'center' })
+            doc.text(t, 40, 5 + i * 2.5, { align: 'center' })
         );
 
         doc.setLineWidth(0.25);
-
-        // Grade
-        const cMod = X0 + Math.floor(CW * 0.5);
-        const cPnc = X0 + Math.floor(CW * 0.67);
+        const cMod = X0 + Math.floor(CW * 0.50);
+        const cPnc = X0 + Math.floor(CW * 0.70);
         const colW = CW / 3;
-        const c1 = X0 + colW;
-        const c2 = X0 + colW * 2;
-        const qrW = 9.5;
-        const cSer = X0 + qrW + 1;
+        const c1 = X0 + colW, c2 = X0 + colW * 2;
+        const qrW = 8;
+        const cSer = X0 + qrW + 2;
 
-        const hLine = (y: number) => doc.line(X0, y, X1, y);
-        const vLine = (x: number, y0: number, y1: number) => doc.line(x, y0, x, y1);
-        const lbl = (txt: string, x: number, y: number) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(3.5); doc.setTextColor(80, 80, 80); doc.text(txt.toUpperCase(), x, y); };
-        const valu = (txt: string, x: number, y: number, sz: number, align: 'left' | 'center' = 'left') => { doc.setFont('helvetica', 'bold'); doc.setFontSize(sz); doc.setTextColor(0); doc.text(txt, x, y, { align }); };
+        const hL = (y: number) => doc.line(X0, y, X1, y);
+        const vL = (x: number, y0: number, y1: number) => doc.line(x, y0, x, y1);
+        const lbl = (t: string, x: number, y: number) => { doc.setFont('h', 'normal'); doc.setFontSize(3); doc.setTextColor(80, 80, 80); doc.text(t, x, y); };
+        const val2 = (t: string, x: number, y: number, sz: number) => { doc.setFont('h', 'bold'); doc.setFontSize(sz); doc.setTextColor(0); doc.text(t, x, y); };
 
-        // Borda externa
         doc.rect(X0, r[0], CW, r[7] - r[0]);
 
         // L1
-        hLine(r[1]); vLine(cMod, r[0], r[1]);
-        lbl('Modelo', X0 + 1, r[0] + 1.8); valu(val(p.model), X0 + 1, r[0] + 5, 9);
-        lbl('Voltagem', cMod + 1, r[0] + 1.8); valu(val(p.voltage) + ' V', cMod + 1, r[0] + 5, 9);
+        hL(r[1]); vL(cMod, r[0], r[1]);
+        lbl('Modelo', X0 + 1, r[0] + 2); val2(val(p.model), X0 + 1, r[0] + 7, 8);
+        lbl('Voltagem', cMod + 1, r[0] + 2); val2(val(p.voltage) + ' V', cMod + 1, r[0] + 7, 8);
 
         // L2
-        hLine(r[2]); vLine(cSer, r[1], r[2]);
+        hL(r[2]); vL(cSer, r[1], r[2]);
         if (val(p.internal_serial) !== '-') {
             try {
-                const qr = await QRCode.toDataURL(val(p.internal_serial), { margin: 0, width: 120 });
+                const qr = await QRCode.toDataURL(val(p.internal_serial), { margin: 0, width: 100 });
                 doc.addImage(qr, 'PNG', X0 + 0.5, r[1] + 0.5, qrW, qrW);
-            } catch { /* silencioso */ }
+            } catch { /* silent */ }
         }
-        lbl('Número de Série Ambicom:', cSer + 1, r[1] + 2);
-        valu(val(p.internal_serial), cSer + 1, r[1] + 6, 9);
-        if (val(p.commercial_code) !== '-') { doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.text(val(p.commercial_code), cSer + 1, r[2] - 1); }
+        lbl('Nr. Serie Ambicom:', cSer + 1, r[1] + 2.5);
+        doc.setFontSize(7.5); doc.setFont('h', 'bold'); doc.setTextColor(0);
+        doc.text(val(p.internal_serial), cSer + 1, r[1] + 8);
+        if (val(p.commercial_code) !== '-') {
+            doc.setFontSize(5.5); doc.text(val(p.commercial_code), cSer + 1, r[2] - 1);
+        }
 
         // L3
-        hLine(r[3]); vLine(cPnc, r[2], r[3]);
-        lbl('PNC/ML', X0 + 1, r[2] + 1.8); valu(val(p.pnc_ml), X0 + 1, r[2] + 4.5, 8);
-        lbl('Frequência', cPnc + 1, r[2] + 1.8); valu('60 Hz', cPnc + 1, r[2] + 4.5, 7.5);
+        hL(r[3]); vL(cPnc, r[2], r[3]);
+        lbl('PNC/ML', X0 + 1, r[2] + 2); val2(val(p.pnc_ml), X0 + 1, r[2] + 6, 7);
+        lbl('Freq.', cPnc + 1, r[2] + 2); val2('60 Hz', cPnc + 1, r[2] + 6, 7);
 
         // L4, L5
-        [[r[3], r[4], 'GÁS FRIGOR.', val(p.refrigerant_gas), 'CARGA GÁS', val(p.gas_charge) !== '-' ? val(p.gas_charge) + ' g' : '-', 'COMPRESSOR', val(p.compressor)],
-        [r[4], r[5], 'VOL. FREEZER', val(p.volume_freezer) !== '-' ? val(p.volume_freezer) + ' L' : '-', 'VOL. REFRIG.', val(p.volume_refrigerator) !== '-' ? val(p.volume_refrigerator) + ' L' : '-', 'VOL. TOTAL', val(p.volume_total) !== '-' ? val(p.volume_total) + ' L' : '-']
-        ].forEach(([r0, r1, l1, v1, l2, v2, l3, v3]) => {
-            hLine(r1 as number);
-            vLine(c1, r0 as number, r1 as number); vLine(c2, r0 as number, r1 as number);
+        const gridsAB = [
+            [r[3], r[4], 'GAS FRIGOR.', val(p.refrigerant_gas), 'CARGA GAS', val(p.gas_charge) !== '-' ? val(p.gas_charge) + ' g' : '-', 'COMPRESSOR', val(p.compressor)],
+            [r[4], r[5], 'VOL.FREEZER', val(p.volume_freezer) !== '-' ? val(p.volume_freezer) + ' L' : '-', 'VOL.REFRIG.', val(p.volume_refrigerator) !== '-' ? val(p.volume_refrigerator) + ' L' : '-', 'VOL.TOTAL', val(p.volume_total) !== '-' ? val(p.volume_total) + ' L' : '-'],
+        ] as const;
+        gridsAB.forEach(([ry0, ry1, l1, v1, l2, v2, l3, v3]) => {
+            hL(ry1 as number); vL(c1, ry0 as number, ry1 as number); vL(c2, ry0 as number, ry1 as number);
             [[X0, l1, v1], [c1, l2, v2], [c2, l3, v3]].forEach(([cx, lb, vl]) => {
-                lbl(lb as string, (cx as number) + 1, (r0 as number) + 1.8);
-                valu(vl as string, (cx as number) + 1, (r0 as number) + 4.5, 7.5);
+                lbl(lb as string, (cx as number) + 1, (ry0 as number) + 2);
+                val2(vl as string, (cx as number) + 1, (ry0 as number) + 6, 6.5);
             });
         });
 
         // L6
-        hLine(r[6]); vLine(c1, r[5], r[6]); vLine(c2, r[5], r[6]);
         const ps = val(p.pressure_high_low).split('/');
-        [[X0, 'P. ALTA', ps[0]?.trim() || '-'], [c1, 'P. BAIXA', ps[1]?.trim() || '-'], [c2, 'CAPAC. CONG.', val(p.freezing_capacity)]].forEach(([cx, lb, vl]) => {
-            lbl(lb as string, (cx as number) + 1, r[5] + 1.8);
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.setTextColor(0);
-            doc.text(vl as string, (cx as number) + 1, r[5] + 4.5);
+        hL(r[6]); vL(c1, r[5], r[6]); vL(c2, r[5], r[6]);
+        [[X0, 'P.ALTA', ps[0]?.trim() || '-'], [c1, 'P.BAIXA', ps[1]?.trim() || '-'], [c2, 'CAPAC.CONG.', val(p.freezing_capacity)]].forEach(([cx, lb, vl]) => {
+            lbl(lb as string, (cx as number) + 1, r[5] + 2);
+            doc.setFontSize(5.5); doc.setFont('h', 'bold'); doc.setTextColor(0);
+            doc.text(vl as string, (cx as number) + 1, r[5] + 6);
         });
 
         // L7
-        vLine(c1, r[6], r[7]); vLine(c2, r[6], r[7]);
-        lbl('Corrente', X0 + 1, r[6] + 1.8); valu(val(p.electric_current) !== '-' ? val(p.electric_current) + ' A' : '-', X0 + 1, r[6] + 4.5, 7.5);
-        lbl('Pot. Degelo', c1 + 1, r[6] + 1.8); valu(val(p.defrost_power) !== '-' ? val(p.defrost_power) + ' W' : '-', c1 + 1, r[6] + 4.5, 7.5);
-        lbl('Tamanho', c2 + 1, r[6] + 1.8);
-
-        const sz = p.size;
-        const ds = sz === 'Pequeno' ? 'P' : sz === 'Médio' ? 'M' : sz === 'Grande' ? 'G' : (sz || '-');
-        valu(ds, c2 + (X1 - c2) / 2, r[6] + 5, 10, 'center');
+        vL(c1, r[6], r[7]); vL(c2, r[6], r[7]);
+        lbl('Corrente', X0 + 1, r[6] + 2); val2(val(p.electric_current) !== '-' ? val(p.electric_current) + ' A' : '-', X0 + 1, r[6] + 7, 7);
+        lbl('Pot.Degelo', c1 + 1, r[6] + 2); val2(val(p.defrost_power) !== '-' ? val(p.defrost_power) + ' W' : '-', c1 + 1, r[6] + 7, 7);
+        lbl('Tamanho', c2 + 1, r[6] + 2);
+        const ds = p.size === 'Pequeno' ? 'P' : p.size === 'Médio' ? 'M' : p.size === 'Grande' ? 'G' : (p.size || '-');
+        doc.setFontSize(18); doc.setFont('h', 'bold'); doc.setTextColor(0);
+        doc.text(ds, c2 + colW / 2, r[6] + 12, { align: 'center' });
     }
 
     return doc;
@@ -317,13 +328,13 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
 export const pdfToBase64 = (doc: jsPDF): string =>
     doc.output('datauristring').split(',')[1];
 
-/** Baixar etiqueta como PDF (apenas local, sem impressão via bridge) */
+/** Download local como PDF */
 export const printLabels = async (products: any[]) => {
     const doc = await generateLabelsPDF(products);
     doc.save(`etiquetas_ambicom_${Date.now()}.pdf`);
 };
 
-/** Abrir diálogo de impressão nativo do browser (para testes locais) */
+/** Abrir diálogo de impressão do browser (para testes locais) */
 export const printLabelsNative = async (products: any[]) => {
     const doc = await generateLabelsPDF(products);
     const blob = doc.output('blob');
