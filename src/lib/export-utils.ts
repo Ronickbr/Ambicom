@@ -455,13 +455,14 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
                         width: LABEL_W_MM,
                         windowWidth: LABEL_W_PX,
                         html2canvas: {
-                            scale: 3.78,           // 96 → 360 dpi (qualidade industrial)
+                            // scale padrão = 1: mapeamento 1:1 entre px e pontos PDF.
+                            // scale > 1 causa zoom proporcional ao valor → NÃO usar!
                             useCORS: true,
                             backgroundColor: '#ffffff',
                             logging: false,
-                            // Captura até a altura real medida
-                            height: Math.ceil(renderedPx),
-                            windowHeight: IFRAME_MAX_H_PX,
+                            // scrollY / scrollX zero garante captura do topo
+                            scrollY: 0,
+                            scrollX: 0,
                         },
                         autoPaging: false,
                     });
