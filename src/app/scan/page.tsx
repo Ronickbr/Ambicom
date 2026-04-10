@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { useScan } from "@/hooks/useScan";
 import { logger } from "@/lib/logger";
 import { formatTotalVolume } from "@/lib/product-utils";
-import { generateLabelsPDF } from "@/lib/export-utils";
+import { generateLabelZPL } from "@/lib/export-utils";
 
 // ─── Constantes de Câmera ──────────────────────────────────────────────────
 // FIX: Resolução reduzida para evitar que o Chrome mobile entre em modo
@@ -511,16 +511,15 @@ const ScanPage = () => {
 
         setIsPrinting(true);
         try {
-            // Gerar PDF da etiqueta usando a nova lógica centralizada
-            const pdfDoc = await generateLabelsPDF([data]);
-            const pdfBase64 = pdfDoc.output('datauristring').split(',')[1];
+            // Gerar o código ZPL da etiqueta usando o novo template centralizado
+            const zplCode = generateLabelZPL(data);
 
             await printService.submitPrintJob({
-                payload_type: 'pdf',
-                payload_data: pdfBase64,
+                payload_type: 'zpl',
+                payload_data: zplCode,
                 printer_target: targetPrinter
             });
-            toast.success("Impressão gerada e enviada para fila!");
+            toast.success("Impressão ZPL enviada para fila!");
         } catch (e) {
             toast.error("Erro ao enviar para fila de impressão");
             logger.error("Print submission failed", e);

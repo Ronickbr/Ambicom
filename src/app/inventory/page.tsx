@@ -380,15 +380,14 @@ export default function InventoryPage() {
                                             const promise = new Promise(async (resolve, reject) => {
                                                 try {
                                                     const { printService } = await import("@/lib/print-service");
-                                                    const { generateLabelsPDF } = await import("@/lib/export-utils");
+                                                    const { generateLabelZPL } = await import("@/lib/export-utils");
 
-                                                    // Gerar PDF das etiquetas selecionadas
-                                                    const pdfDoc = await generateLabelsPDF(selectedProducts);
-                                                    const pdfBase64 = pdfDoc.output('datauristring').split(',')[1];
+                                                    // Gerar ZPL concatenado para todas as etiquetas selecionadas
+                                                    const zplCode = selectedProducts.map(p => generateLabelZPL(p)).join('\n');
 
                                                     await printService.submitPrintJob({
-                                                        payload_type: 'pdf',
-                                                        payload_data: pdfBase64,
+                                                        payload_type: 'zpl',
+                                                        payload_data: zplCode,
                                                         printer_target: targetPrinter
                                                     });
 

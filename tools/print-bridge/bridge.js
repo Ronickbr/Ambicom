@@ -99,7 +99,9 @@ async function executeJob(job) {
     }
 
     try {
-        if (job.payload_type === 'zpl') {
+        const type = (job.payload_type || "").trim().toLowerCase();
+
+        if (type === 'zpl') {
             // Impressão Direta ZPL (Assume Raw support ou porta direta)
             await new Promise((resolve, reject) => {
                 const jobId = `ZPL-${Date.now()}`;
@@ -117,7 +119,7 @@ async function executeJob(job) {
                     }
                 });
             });
-        } else if (job.payload_type === 'pdf') {
+        } else if (type === 'pdf') {
             // Impressão PDF via Driver do Sistema
             await new Promise((resolve, reject) => {
                 const jobId = `PDF-${Date.now()}`;
@@ -129,6 +131,9 @@ async function executeJob(job) {
 
                 const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${path.join(__dirname, 'print_pdf.ps1')}" -PrinterName "${job.printer_target}" -FilePath "${tempFile}"`;
                 exec(cmd, (error, stdout, stderr) => {
+                    if (stdout) log(`[PS Out]: ${stdout}`);
+                    if (stderr) log(`[PS Err]: ${stderr}`);
+
                     if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
                     if (error) {
                         reject(new Error(`Erro no PowerShell: ${stderr || error.message}`));
@@ -139,7 +144,7 @@ async function executeJob(job) {
                 });
             });
         } else {
-            throw new Error(`Tipo de payload não suportado: ${job.payload_type}`);
+            throw new Error(`Tipo de payload não suportado: ${type}`);
         }
 
         // Sucesso

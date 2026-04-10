@@ -10,35 +10,64 @@ if (-not (Test-Path $FilePath)) {
 }
 
 try {
-    Write-Host "Enviando PDF para impressora: $PrinterName"
-    
-    # Tenta usar o verbo 'PrintTo' que permite especificar a impressora
-    # Este verbo é suportado por visualizadores como Adobe Reader, SumatraPDF, etc.
-    $process = Start-Process -FilePath $FilePath -Verb PrintTo -ArgumentList $PrinterName -PassThru -ErrorAction SilentlyContinue
-    
-    if ($null -eq $process) {
-        Write-Host "Verbo PrintTo não suportado. Tentando alterar impressora padrão temporariamente..."
+    # 1. Prioridade: SumatraPDF (Melhor para automação invisível)
+    # Procura na pasta atual ou no PATH
+    $sumatraPath = Join-Path $PSScriptRoot "SumatraPDF.exe"
+    if (-not (Test-Path $sumatraPath)) {
+        $sumatraPath = "SumatraPDF.exe"
+    }
+
+    if (Get-Command $sumatraPath -ErrorAction SilentlyContinue) {
+        Write-Host "Usando SumatraPDF para impressão silenciosa..."
+        $process = Start-Process -FilePath $sumatraPath -ArgumentList "-print-to `"$PrinterName`" -silent `"$FilePath`"" -PassThru -Wait
+        Write-Host "Comando enviado via SumatraPDF."
+        exit 0
+    }
+
+    # 2. Fallback: Microsoft Edge (Pode mostrar janela rapida)
+    Write-Host "SumatraPDF não encontrado. Tentando Microsoft Edge..."
+    $edgePath = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
+    if (-not (Test-Path $edgePath)) {
+        $edgePath = "${env:ProgramFiles}\Microsoft\Edge\Application\msedge.exe"
+    }
+
+    if (Test-Path $edgePath) {
+        Write-Host "Iniciando renderização via Edge para: $PrinterName"
+        $fileUri = "file://" + $FilePath.Replace("\", "/")
         
-        # Fallback: Altera a impressora padrão, imprime e restaura
-        $originalPrinter = (Get-Printer | Where-Object { $_.IsDefault }).Name
+        # O modo headless NAO imprime em papel fisico, por isso usamos kiosk
+        $argList = "--kiosk-printing --new-window --no-pdf-header --printer-name=""$PrinterName"" ""$fileUri"""
         
-        (Get-WmiObject -Query "Select * from Win32_Printer Where Name = '$PrinterName'").SetDefaultPrinter()
-        Start-Process -FilePath $FilePath -Verb Print -Wait
+        $process = Start-Process -FilePath $edgePath -ArgumentList $argList -PassThru
         
-        if ($originalPrinter) {
-            (Get-WmiObject -Query "Select * from Win32_Printer Where Name = '$originalPrinter'").SetDefaultPrinter()
+        # Aguarda no máximo 15 segundos para o spooler receber
+        $timeout = 0
+        while (-not $process.HasExited -and $timeout -lt 15) {
+            Start-Sleep -Seconds 1
+            $timeout++
         }
-    } else {
-        # Aguarda um pouco para o spooler processar e fecha se o processo não fechar sozinho
-        Start-Sleep -Seconds 5
+        
         if (-not $process.HasExited) {
+            Write-Host "Encerrando processo do navegador..."
             $process | Stop-Process -Force
         }
+        
+        Write-Host "Comando finalizado via Edge."
+        exit 0
+    }
+
+    # 3. Fallback Final: Sistema padrão
+    Write-Host "Tentando método padrão do sistema..."
+    $process = Start-Process -FilePath $FilePath -Verb PrintTo -ArgumentList $PrinterName -PassThru -ErrorAction SilentlyContinue
+    if ($null -eq $process) {
+         $originalPrinter = (Get-Printer | Where-Object { $_.IsDefault }).Name
+         (Get-WmiObject -Query "Select * from Win32_Printer Where Name = '$PrinterName'").SetDefaultPrinter()
+         Start-Process -FilePath $FilePath -Verb Print -Wait
+         (Get-WmiObject -Query "Select * from Win32_Printer Where Name = '$originalPrinter'").SetDefaultPrinter()
     }
     
-    Write-Host "Sucesso ao enviar PDF para o spooler."
     exit 0
 } catch {
-    Write-Error "Erro ao imprimir PDF: $($_.Exception.Message)"
+    Write-Error "Erro fatal no script de impressão: $($_.Exception.Message)"
     exit 1
 }
