@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.7**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.8**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.14.8**:
+  - **Layout TSPL Homologado**: Implementação da versão oficial da tabela industrial com moldura `BOX` e divisórias `BAR` calibradas.
+  - **Ajuste de Hardware**: Configuração de `GAP 3mm` e realinhamento de coordenadas para garantir estabilidade na Elgin L42 Pro.
+  - **Refinamento de Dados**: Posicionamento preciso de QR Code, Seriais e informações técnicas para máxima conformidade visual.
 - **v2.14.7**:
   - **Layout TSPL Definitivo**: Consolidação da estrutura técnica da etiqueta industrial utilizando uma combinação avançada de `BOX` e `BAR`.
   - **Cálculo de Volume Inteligente**: Integração da função `formatTotalVolume` diretamente no template para exibição precisa de volumes.

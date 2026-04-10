@@ -186,86 +186,90 @@ export const generateLabelTSPL = (data: any): string => {
     const power = val(data.defrost_power || data.potencia_degelo);
     const size = data.size || data.tamanho ? String(data.size || data.tamanho).charAt(0).toUpperCase() : '-';
 
-    return `SIZE 80 mm,55 mm
-GAP 0 mm,0 mm
+    return `SIZE 80 mm, 55 mm
+GAP 3 mm, 0
 DIRECTION 1,0
 REFERENCE 0,0
 CLS
 
-TEXT 15,15,"4",90,1,1,"Ambicom"
-TEXT 65,15,"0",90,1,1,"R. Wenceslau Marek, 10 - Aguas Belas,"
-TEXT 80,15,"0",90,1,1,"Sao Jose dos Pinhais - PR, 83010-520"
-TEXT 100,15,"3",90,1,1,"SAC: 041 - 3382-5410"
+; --- CABEÇALHO (LOGO E ENDEREÇO) ---
+TEXT 15, 15, "3", 90, 1, 1, "Ambicom"
+TEXT 65, 15, "2", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas,"
+TEXT 80, 15, "2", 90, 1, 1, "Sao Jose dos Pinhais - PR, 83010-520"
+TEXT 100, 15, "2", 90, 1, 1, "SAC: 041 - 3382-5410"
 
-TEXT 15,270,"0",90,1,1,"PRODUTO"
-TEXT 30,270,"0",90,1,1,"REMANUFATURADO"
-TEXT 45,270,"0",90,1,1,"GARANTIA"
-TEXT 60,270,"0",90,1,1,"AMBICOM"
+; --- BLOCO DIREITO (PRODUTO/GARANTIA) ---
+TEXT 15, 270, "1", 90, 1, 1, "PRODUTO"
+TEXT 30, 270, "1", 90, 1, 1, "REMANUFATURADO"
+TEXT 45, 270, "1", 90, 1, 1, "GARANTIA"
+TEXT 60, 270, "1", 90, 1, 1, "AMBICOM"
 
-BOX 120,10,620,430,2
+; --- GRADE PRINCIPAL (TABELA HOMOLOGADA) ---
+; Desenha a moldura externa (X_inicio, Y_inicio, X_fim, Y_fim, espessura)
+BOX 120, 10, 620, 430, 4
 
-BAR 180,10,2,420
-BAR 280,10,2,420
-BAR 350,10,2,420
-BAR 420,10,2,420
-BAR 490,10,2,420
-BAR 550,10,2,420
+; Linhas Divisórias Horizontais (no original) -> Agora são Verticais (X constante)
+BAR 180, 10, 4, 420  ; Linha abaixo do Modelo
+BAR 280, 10, 4, 420  ; Linha abaixo do Serial
+BAR 350, 10, 4, 420  ; Linha abaixo do PNC
+BAR 420, 10, 4, 420  ; Linha abaixo do Gás
+BAR 490, 10, 4, 420  ; Linha abaixo dos Volumes
+BAR 550, 10, 4, 420  ; Linha abaixo da Pressão
 
-BAR 120,215,60,2
-BAR 280,260,70,2
-BAR 350,150,140,2
-BAR 350,290,270,2
-BAR 550,150,70,2
+; Linhas Divisórias Verticais (no original) -> Agora são Horizontais (Y constante)
+BAR 120, 215, 60, 4   ; Divisória Modelo / Voltagem
+BAR 280, 260, 70, 4   ; Divisória PNC / Frequência
+BAR 350, 150, 140, 4  ; Divisória Gás / Carga Gás
+BAR 350, 290, 270, 4  ; Divisória Compressor / Vol Total / Cap Cong
+BAR 550, 150, 70, 4   ; Divisória Corrente / Potência
 
-TEXT 125,10,"0",90,1,1,"MODELO"
-TEXT 145,10,"4",90,1,1,"${val(data.model || data.modelo)}"
+; --- CONTEÚDO DENTRO DA GRADE ---
+; Fila 1: Modelo e Voltagem
+TEXT 125, 15, "2", 90, 1, 1, "MODELO"
+TEXT 145, 15, "3", 90, 1, 1, "${val(data.model || data.modelo)}"
+TEXT 125, 225, "2", 90, 1, 1, "VOLTAGEM"
+TEXT 145, 225, "3", 90, 1, 1, "${val(data.voltage || data.tensao)}"
 
-TEXT 125,215,"0",90,1,1,"VOLTAGEM"
-TEXT 145,215,"4",90,1,1,"${val(data.voltage || data.tensao)}"
+; Fila 2: Serial e QR Code
+QRCODE 185, 20, L, 4, A, 90, "${val(data.internal_serial)}"
+TEXT 185, 120, "1", 90, 1, 1, "NÚMERO DE SÉRIE AMBICOM:"
+TEXT 215, 120, "3", 90, 1, 1, "${val(data.internal_serial)}"
+TEXT 250, 120, "2", 90, 1, 1, "${val(data.commercial_code)}"
 
-QRCODE 182,20,H,4,A,90,M2,S7,"${val(data.internal_serial)}"
-TEXT 185,100,"0",90,1,1,"NUMERO DE SERIE AMBICOM:"
-TEXT 205,100,"5",90,1,1,"${val(data.internal_serial)}"
-TEXT 245,100,"3",90,1,1,"${val(data.commercial_code || data.codigo_comercial)}"
+; Fila 3: PNC e Frequência
+TEXT 285, 15, "2", 90, 1, 1, "PNC/ML"
+TEXT 310, 15, "4", 90, 1, 1, "${val(data.pnc_ml)}"
+TEXT 285, 270, "2", 90, 1, 1, "60 Hz"
 
-TEXT 285,10,"0",90,1,1,"PNC/ML"
-TEXT 305,10,"5",90,1,1,"${val(data.pnc_ml)}"
+; Fila 4: Gás / Carga / Compressor
+TEXT 355, 15, "1", 90, 1, 1, "GAS FRIGOR."
+TEXT 375, 15, "2", 90, 1, 1, "${val(data.refrigerant_gas)}"
+TEXT 355, 160, "1", 90, 1, 1, "CARGA GÁS"
+TEXT 375, 160, "2", 90, 1, 1, "${val(data.gas_charge)}"
+TEXT 355, 300, "1", 90, 1, 1, "COMPRESSOR"
+TEXT 375, 300, "2", 90, 1, 1, "${val(data.compressor)}"
 
-TEXT 285,260,"0",90,1,1,"FREQUENCIA"
-TEXT 305,260,"4",90,1,1,"${val(data.frequency || data.frequencia || '60 Hz')}"
+; Fila 5: Volumes
+TEXT 425, 15, "1", 90, 1, 1, "VOL. FREEZER"
+TEXT 445, 15, "2", 90, 1, 1, "${val(data.volume_freezer)}"
+TEXT 425, 160, "1", 90, 1, 1, "VOL. REFRIG."
+TEXT 445, 160, "2", 90, 1, 1, "${val(data.volume_refrigerator)}"
+TEXT 425, 300, "1", 90, 1, 1, "VOLUME TOTAL"
+TEXT 445, 300, "2", 90, 1, 1, "${val(data.volume_total)}"
 
-TEXT 355,10,"0",90,1,1,"GAS FRIGOR."
-TEXT 375,10,"3",90,1,1,"${val(data.refrigerant_gas || data.gas_refrigerante)}"
+; Fila 6: Pressão e Capacidade
+TEXT 495, 15, "1", 90, 1, 1, "P. DE ALTA / P. DE BAIXA"
+TEXT 515, 15, "1", 90, 1, 1, "${val(data.pressure_high_low)}"
+TEXT 495, 300, "1", 90, 1, 1, "CAPAC. CONG."
+TEXT 515, 300, "2", 90, 1, 1, "${val(data.freezing_capacity)}"
 
-TEXT 355,150,"0",90,1,1,"CARGA GAS"
-TEXT 375,150,"3",90,1,1,"${val(data.gas_charge || data.carga_gas)}"
-
-TEXT 355,290,"0",90,1,1,"COMPRESSOR"
-TEXT 375,290,"3",90,1,1,"${val(data.compressor)}"
-
-TEXT 425,10,"0",90,1,1,"VOL. FREEZER"
-TEXT 445,10,"3",90,1,1,"${val(data.volume_freezer)}"
-
-TEXT 425,150,"0",90,1,1,"VOL. REFRIG."
-TEXT 445,150,"3",90,1,1,"${val(data.volume_refrigerator)}"
-
-TEXT 425,290,"0",90,1,1,"VOLUME TOTAL"
-TEXT 445,290,"3",90,1,1,"${formatTotalVolume(data.volume_freezer, data.volume_refrigerator, data.volume_total)}"
-
-TEXT 495,10,"0",90,1,1,"P. DE ALTA / P. DE BAIXA"
-TEXT 515,10,"2",90,1,1,"${val(data.pressure_high_low || data.pressao_alta_baixa)}"
-
-TEXT 495,290,"0",90,1,1,"CAPAC. CONG."
-TEXT 515,290,"3",90,1,1,"${val(data.freezing_capacity || data.capacidade_congelamento)}"
-
-TEXT 555,10,"0",90,1,1,"CORRENTE"
-TEXT 575,10,"3",90,1,1,"${val(data.electric_current || data.corrente_eletrica)}"
-
-TEXT 555,150,"0",90,1,1,"POT. DEGELO"
-TEXT 575,150,"3",90,1,1,"${val(data.defrost_power || data.potencia_degelo)}"
-
-TEXT 555,290,"0",90,1,1,"TAMANHO"
-TEXT 575,290,"4",90,1,1,"${data.size || data.tamanho ? String(data.size || data.tamanho).charAt(0).toUpperCase() : '-'}"
+; Fila 7: Rodapé
+TEXT 555, 15, "1", 90, 1, 1, "CORRENTE"
+TEXT 575, 15, "2", 90, 1, 1, "${val(data.electric_current)}"
+TEXT 555, 160, "1", 90, 1, 1, "POT. DEGELO"
+TEXT 575, 160, "2", 90, 1, 1, "${val(data.defrost_power)}"
+TEXT 555, 300, "1", 90, 1, 1, "TAMANHO"
+TEXT 575, 300, "4", 90, 1, 1, "${data.size || '-'}"
 
 PRINT 1
 `;
