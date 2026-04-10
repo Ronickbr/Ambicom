@@ -41,224 +41,138 @@ export const exportToExcel = (data: Record<string, unknown>[], fileName: string)
     XLSX.writeFile(workbook, `${fileName}_${new Date().getTime()}.xlsx`);
 };
 
+// ─── Geração de Etiquetas Corrigida (Uso total dos 80mm) ──────────────────────
 export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
-    // Label dimensions: 80mm wide x 55mm tall (Orientação Paisagem)
-    const labelWidth = 55;
-    const labelHeight = 80;
+    // Definimos a largura maior que a altura, mas em modo 'p' (Portrait)
+    // Isso evita que o driver tente "espremer" o conteúdo em 55mm.
+    const labelWidth = 80;
+    const labelHeight = 55;
+
     const doc = new jsPDF({
-        orientation: 'portrait',
+        orientation: 'p', // Mantemos 'p' para o driver não escalar
         unit: 'mm',
         format: [labelWidth, labelHeight]
     });
 
-    // Margens e limites horizontais
-    const X0 = 3;
-    const X1 = 77;
-    const CW = X1 - X0;
-
-    // Alturas e linhas
-    // Total disponível: 55mm - margem 3 = 52. Começamos grid em 14. 
-    // Grid: 7 linhas. 52 - 14 = 38mm de grid.
-    // L1: 4.5mm, L2: 10mm, L3..7: 4.5mm (Total: 4.5*6 + 10 = 37mm)
-    const Y_START = 14;
-    const r = [
-        Y_START,               // 14.0
-        Y_START + 4.5,         // 18.5
-        Y_START + 14.5,        // 28.5 (QR Code com 10mm)
-        Y_START + 19,          // 33.0
-        Y_START + 23.5,        // 37.5
-        Y_START + 28,          // 42.0
-        Y_START + 32.5,        // 46.5
-        Y_START + 37           // 51.0 (Margem fundo de 4mm)
-    ];
-
     for (let index = 0; index < products.length; index++) {
         const p = products[index];
-        if (index > 0) doc.addPage([labelWidth, labelHeight], 'landscape');
+        if (index > 0) doc.addPage([labelWidth, labelHeight], 'p');
 
-        const val = (v: any) => v || "";
+        const val = (v: any) => v || "-";
+        doc.setLineWidth(0.3); // Linhas um pouco mais grossas para nitidez térmica
 
-        // --- Header Section --- 
+        // --- CABEÇALHO ---
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(14);
-        doc.text("Ambicom", X0, 5.5);
+        doc.setFontSize(16);
+        doc.text("Ambicom", 4, 8);
 
-        // Subtitle (Right aligned block) 
+        doc.setFontSize(5.5);
+        doc.text("R. Wenceslau Marek, 10 - Águas Belas,", 4, 11.5);
+        doc.text("São José dos Pinhais - PR, 83010-520", 4, 14);
+
+        doc.setFontSize(9);
+        doc.text("SAC: 041 - 3382-5410", 4, 19);
+
+        // Caixa de Status (Lado Direito - Puxada mais para o final dos 80mm)
+        doc.rect(53, 3, 24, 16);
+        doc.setFontSize(5.5);
+        doc.text("PRODUTO", 65, 6.5, { align: 'center' });
+        doc.text("REMANUFATURADO", 65, 9.5, { align: 'center' });
+        doc.text("GARANTIA", 65, 12.5, { align: 'center' });
+        doc.text("AMBICOM", 65, 15.5, { align: 'center' });
+
+        // --- GRADE TÉCNICA EXPANDIDA ---
+        let currentY = 21;
+        const marginX = 3; // Margem menor para ganhar espaço
+        const tableWidth = 74; // AGORA USA 74mm DOS 80mm DISPONÍVEIS
+
+        doc.rect(marginX, currentY, tableWidth, 31);
+
+        // Linha 1: MODELO | VOLTAGEM
+        doc.line(marginX, currentY + 6, marginX + tableWidth, currentY + 6);
+        doc.line(marginX + 48, currentY, marginX + 48, currentY + 6); // Divisória em 48mm
+
         doc.setFontSize(5);
-        doc.setFont("helvetica", "bold");
-        const subtitleX = 58;
-        doc.text("PRODUTO", subtitleX + 3.5, 4.5);
-        doc.text("REMANUFATURADO", subtitleX, 6.5);
-        doc.text("GARANTIA", subtitleX + 3, 8.5);
-        doc.text("AMBICOM", subtitleX + 3.5, 10.5);
-
-        // Address & SAC 
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(4);
-        doc.text("R. Wenceslau Marek, 10 - Águas Belas,", X0, 8.5);
-        doc.text("São José dos Pinhais - PR, 83010-520", X0, 10.5);
-
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        doc.text(`SAC : 041 - 3382-5410`, X0, 13);
-
-        // --- Grid Section --- 
-        doc.setLineWidth(0.3);
-
-        // Row 1: MODELO | VOLTAGEM 
-        const cMod = X0 + (CW * 0.5);
-        doc.line(X0, r[0], X1, r[0]); // Horizontal Top 
-        doc.line(cMod, r[0], cMod, r[1]); // Vertical Divider 
-
-        doc.setFontSize(4.5);
-        doc.text("MODELO", X0 + ((cMod - X0) / 2), r[0] + 1.5, { align: 'center' });
+        doc.text("MODELO", marginX + 2, currentY + 2);
         doc.setFontSize(10);
-        doc.text(val(p.model), X0 + ((cMod - X0) / 2), r[0] + 3.8, { align: 'center' });
+        doc.text(val(p.model), marginX + 2, currentY + 5.5);
 
-        doc.setFontSize(4.5);
-        doc.text("VOLTAGEM", cMod + ((X1 - cMod) / 2), r[0] + 1.5, { align: 'center' });
+        doc.setFontSize(5);
+        doc.text("VOLTAGEM", marginX + 50, currentY + 2);
         doc.setFontSize(10);
-        doc.text(val(p.voltage), cMod + ((X1 - cMod) / 2), r[0] + 3.8, { align: 'center' });
+        doc.text(`${val(p.voltage)} V`, marginX + 50, currentY + 5.5);
 
-        doc.line(X0, r[1], X1, r[1]); // Divider 
+        currentY += 6;
 
-        // Row 2: NÚMERO DE SÉRIE AMBICOM (With QR code on the left) 
+        // Linha 2: QR CODE | SERIAL (Célula maior)
+        doc.line(marginX, currentY + 12, marginX + tableWidth, currentY + 12);
+        doc.line(marginX + 18, currentY, marginX + 18, currentY + 12);
+
         const qrData = val(p.internal_serial).trim();
-        const qrW = 9.5;
-        if (qrData) {
+        if (qrData !== "-") {
             try {
-                const qrImgData = await QRCode.toDataURL(qrData, { margin: 0, width: 100, color: { dark: "#000000", light: "#ffffff" } });
-                doc.addImage(qrImgData, 'PNG', X0 + 0.5, r[1] + 0.25, qrW, qrW);
-            } catch (err) { }
+                const qrImgData = await QRCode.toDataURL(qrData, { margin: 1 });
+                // QR Code agora centralizado no novo espaço
+                doc.addImage(qrImgData, 'PNG', marginX + 1, currentY + 0.5, 16, 11);
+            } catch (e) { }
         }
-        const cSer = X0 + qrW + 1;
-        doc.line(cSer, r[1], cSer, r[2]); // QR border
 
-        doc.setFontSize(4.5);
-        doc.text("NÚMERO DE SÉRIE AMBICOM:", cSer + ((X1 - cSer) / 2), r[1] + 2, { align: 'center' });
-        doc.setFontSize(10);
-        doc.text(val(p.internal_serial), cSer + ((X1 - cSer) / 2), r[1] + 5.5, { align: 'center' });
-        doc.setFontSize(8);
-        doc.text(val(p.commercial_code), cSer + ((X1 - cSer) / 2), r[1] + 8.5, { align: 'center' });
+        doc.setFontSize(5.5);
+        doc.text("NÚMERO DE SÉRIE AMBICOM:", marginX + 20, currentY + 3);
+        doc.setFontSize(12); // Serial maior
+        doc.text(val(p.internal_serial), marginX + 20, currentY + 8);
+        doc.setFontSize(7);
+        doc.text(val(p.commercial_code), marginX + 20, currentY + 11);
 
-        doc.line(X0, r[2], X1, r[2]); // Divider 
+        currentY += 12;
 
-        // Row 3: PNC/ML | Frequência 
-        const cPnc = X0 + (CW * 0.65);
-        doc.line(cPnc, r[2], cPnc, r[3]); // Vertical 
+        // Linha 3: PNC/ML | FREQUÊNCIA | GÁS
+        doc.line(marginX, currentY + 6.5, marginX + tableWidth, currentY + 6.5);
+        doc.line(marginX + 28, currentY, marginX + 28, currentY + 6.5);
+        doc.line(marginX + 53, currentY, marginX + 53, currentY + 6.5);
 
-        doc.setFontSize(4.5);
-        doc.text("PNC/ML", X0 + ((cPnc - X0) / 2), r[2] + 1.5, { align: 'center' });
-        doc.setFontSize(10);
-        doc.text(val(p.pnc_ml), X0 + ((cPnc - X0) / 2), r[2] + 3.8, { align: 'center' });
-
-        doc.setFontSize(9);
-        doc.text(val(p.frequency) || "60 Hz", cPnc + ((X1 - cPnc) / 2), r[2] + 3.2, { align: 'center' });
-
-        doc.line(X0, r[3], X1, r[3]); // Divider 
-
-        // Helpers for 3 columns
-        const colW = CW / 3;
-        const c1 = X0 + colW;
-        const c2 = X0 + colW * 2;
-
-        // Row 4: GÁS FRIGOR. | CARGA GÁS | COMPRESSOR 
-        doc.line(c1, r[3], c1, r[4]);
-        doc.line(c2, r[3], c2, r[4]);
-
-        doc.setFontSize(4.5);
-        doc.text("GÁS FRIGOR.", X0 + (colW / 2), r[3] + 1.5, { align: 'center' });
-        doc.setFontSize(8);
-        doc.text(val(p.refrigerant_gas), X0 + (colW / 2), r[3] + 3.8, { align: 'center' });
-
-        doc.setFontSize(4.5);
-        doc.text("CARGA GÁS", c1 + (colW / 2), r[3] + 1.5, { align: 'center' });
-        doc.setFontSize(9);
-        doc.text(val(p.gas_charge), c1 + (colW / 2), r[3] + 3.8, { align: 'center' });
-
-        doc.setFontSize(4.5);
-        doc.text("COMPRESSOR", c2 + (colW / 2), r[3] + 1.5, { align: 'center' });
-        doc.setFontSize(6.5);
-        doc.text(val(p.compressor), c2 + (colW / 2), r[3] + 3.8, { align: 'center' });
-
-        doc.line(X0, r[4], X1, r[4]);
-
-        // Row 5: VOL. FREEZER | VOL. REFRIG. | VOLUME TOTAL 
-        doc.line(c1, r[4], c1, r[5]);
-        doc.line(c2, r[4], c2, r[5]);
-
-        doc.setFontSize(4.5);
-        doc.text("VOL. FREEZER", X0 + (colW / 2), r[4] + 1.5, { align: 'center' });
-        doc.setFontSize(8);
-        doc.text(val(p.volume_freezer), X0 + (colW / 2), r[4] + 3.8, { align: 'center' });
-
-        doc.setFontSize(4.5);
-        doc.text("VOL. REFRIG.", c1 + (colW / 2), r[4] + 1.5, { align: 'center' });
-        doc.setFontSize(8);
-        doc.text(val(p.volume_refrigerator), c1 + (colW / 2), r[4] + 3.8, { align: 'center' });
-
-        doc.setFontSize(4.5);
-        doc.text("VOLUME TOTAL", c2 + (colW / 2), r[4] + 1.5, { align: 'center' });
-        doc.setFontSize(8);
-        doc.text(val(p.volume_total), c2 + (colW / 2), r[4] + 3.8, { align: 'center' });
-
-        doc.line(X0, r[5], X1, r[5]);
-
-        // Row 6: PRESSÃO ALTA | PRESSÃO BAIXA | CAPAC. CONG. 
-        doc.line(c1, r[5], c1, r[6]);
-        doc.line(c2, r[5], c2, r[6]);
-
-        doc.setFontSize(4.5);
-        doc.text("PRESSÃO ALTA", X0 + (colW / 2), r[5] + 1.5, { align: 'center' });
-        doc.setFontSize(6.5);
-
-        const pressures = (p.pressure_high_low || "").split('/');
-        doc.text(val(pressures[0]), X0 + (colW / 2), r[5] + 3.8, { align: 'center' });
-
-        doc.setFontSize(4.5);
-        doc.text("PRESSÃO BAIXA", c1 + (colW / 2), r[5] + 1.5, { align: 'center' });
-        doc.setFontSize(6.5);
-        doc.text(val(pressures[1] || ""), c1 + (colW / 2), r[5] + 3.8, { align: 'center' });
-
-        doc.setFontSize(4.5);
-        doc.text("CAPAC. CONG.", c2 + (colW / 2), r[5] + 1.5, { align: 'center' });
+        doc.setFontSize(5);
+        doc.text("PNC/ML", marginX + 2, currentY + 2);
         doc.setFontSize(7.5);
-        doc.text(val(p.freezing_capacity), c2 + (colW / 2), r[5] + 3.8, { align: 'center' });
+        doc.text(val(p.pnc_ml), marginX + 2, currentY + 5.5);
 
-        doc.line(X0, r[6], X1, r[6]);
+        doc.setFontSize(5);
+        doc.text("FREQUÊNCIA", marginX + 30, currentY + 2);
+        doc.setFontSize(7.5);
+        doc.text(val(p.frequency) || "60 Hz", marginX + 30, currentY + 5.5);
 
-        // Row 7: CORRENTE | POT. DEGELO | GRADE 
-        doc.line(c1, r[6], c1, r[7]);
-        doc.line(c2, r[6], c2, r[7]);
+        doc.setFontSize(5);
+        doc.text("GÁS", marginX + 55, currentY + 2);
+        doc.setFontSize(7.5);
+        doc.text(val(p.refrigerant_gas), marginX + 55, currentY + 5.5);
+
+        currentY += 6.5;
+
+        // Linha 4: VOLUMES E TAMANHO (Espalhado até o final)
+        doc.line(marginX + 22, currentY, marginX + 22, currentY + 6.5);
+        doc.line(marginX + 44, currentY, marginX + 44, currentY + 6.5);
+        doc.line(marginX + 60, currentY, marginX + 60, currentY + 6.5);
 
         doc.setFontSize(4.5);
-        doc.text("CORRENTE", X0 + (colW / 2), r[6] + 1.5, { align: 'center' });
-        doc.setFontSize(8);
-        doc.text(val(p.electric_current), X0 + (colW / 2), r[6] + 3.8, { align: 'center' });
+        doc.text("VOL. TOTAL", marginX + 2, currentY + 2);
+        doc.setFontSize(7);
+        doc.text(`${val(p.volume_total)} L`, marginX + 2, currentY + 5.5);
 
-        doc.setFontSize(4.5);
-        doc.text("POT. DEGELO", c1 + (colW / 2), r[6] + 1.5, { align: 'center' });
-        doc.setFontSize(8);
-        doc.text(val(p.defrost_power), c1 + (colW / 2), r[6] + 3.8, { align: 'center' });
+        doc.text("CORRENTE", marginX + 24, currentY + 2);
+        doc.text(val(p.electric_current), marginX + 24, currentY + 5.5);
 
-        doc.setFontSize(4.5);
-        doc.text("TAMANHO", c2 + (colW / 2), r[6] + 1.5, { align: 'center' });
-        doc.setFontSize(9.5);
+        doc.text("POT. DEGELO", marginX + 46, currentY + 2);
+        doc.text(val(p.defrost_power), marginX + 46, currentY + 5.5);
 
-        // Map size to initial 
+        doc.text("TAM.", marginX + 62, currentY + 2);
+        doc.setFontSize(13); // Letra G, M ou P bem grande no final
+
         const fullSize = p.size || await calculateProductSize(p.volume_total);
         const displaySize = fullSize === 'Pequeno' ? 'P' : fullSize === 'Médio' ? 'M' : fullSize === 'Grande' ? 'G' : "";
-
-        doc.text(displaySize, c2 + (colW / 2), r[6] + 4, { align: 'center' });
-
-        // Vertical Border edges 
-        doc.line(X0, r[0], X0, r[7]);
-        doc.line(X1, r[0], X1, r[7]);
-        doc.line(X0, r[7], X1, r[7]); // Bottom border line 
-
+        doc.text(displaySize, marginX + 67, currentY + 5.5, { align: 'center' });
     }
-
     return doc;
+
 };
 
 export const pdfToBase64 = (doc: jsPDF): string =>
