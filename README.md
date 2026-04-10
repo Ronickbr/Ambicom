@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.3**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.26.4**:
+  - **Higienização de Dados**: Implementada detecção inteligente de unidades para evitar duplicidade (ex: "V V").
+  - **Ajuste de Margem Física**: Altura lógica reduzida para 75mm para garantir o encaixe em 100% da etiqueta física sem pular o sensor de GAP.
+  - **Correção de Sobreposição**: Reajuste de coordenadas Y no cabeçalho (SAC e Endereço) para eliminar conflitos visuais com a grade técnica.
 - **v2.26.3**:
   - **Estratégia TSPL (Native Print)**: Migração total da impressão industrial de PDF para a linguagem nativa TSPL (Elgin L42 Pro), eliminando problemas de orientação causados por drivers Windows.
   - **Calibração Retrato (55x80mm)**: Implementação do layout técnico portrait otimizado para bobinas de 55x80mm, com redução de margens de segurança para evitar cortes no cabeçote.
