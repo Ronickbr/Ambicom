@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { exec } from 'child_process';
-import * as ptp from 'pdf-to-printer';
+import ptp from 'pdf-to-printer';
 
 import os from 'os';
 import fs from 'fs';
