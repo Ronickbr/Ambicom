@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.22.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.23.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.23.0**:
+  - **Calibração Master Landscape**: Retorno às dimensões físicas reais (80x55) para resolver definitivamente o salto de GAP e invasão de etiquetas próximas.
+  - **Simulação Vertical via Software**: Rotação individual de 100% dos elementos (TEXT, BAR, BOX, QR) para 90 graus, atingindo fidelidade absoluta ao modelo 1086 em bobinas horizontais.
+  - **Otimização de Largura de Cabeçote**: Redistribuição da grade técnica ao longo dos 640 dots (80mm) para evitar clipping lateral.
 - **v2.22.1**:
   - **Calibração de Espaçamento (Anti-Overlap)**: Rebaixamento da grade técnica para Y=360 para isolar o Serial Gigante e eliminar colisões de buffer.
   - **Reparo de Visibilidade QR**: Deslocamento do QR Code para X=25 (Safe Zone) para garantir impressão dentro da largura física de 55mm.
