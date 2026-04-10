@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.13.5**:
+  - **Refinamento de Layout ZPL**: Ajuste fino das coordenadas e margens para melhorar a legibilidade e o alinhamento das informações técnicas nas etiquetas.
 - **v2.13.4:**
   - **Orientação Nativa para Impressora**: Remoção do comando `^FWR` (rotação forçada) para permitir que a Elgin L42 Pro gerencie a orientação via driver ou hardware.
   - **Recalibração ZPL**: Layout redesenhado para o modo Retrato (55x80mm) com coordenadas nativas.
