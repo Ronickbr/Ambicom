@@ -50,9 +50,15 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.16.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.16.1**:
+  - **Layout Paisagem Real (0°)**: Migração do motor de design para orientação Paisagem nativa. O texto agora flui paralelo ao lado de 80mm, resolvendo o problema de transbordamento de GAP observado na impressão física.
+  - **Redesenho de Coordenadas**: Otimização milimétrica da grade técnica para o novo canvas horizontal de 640x440 dots.
+- **v2.16.0**:
+  - **TSPL Builder**: Implementação de um motor de design dinâmico que permite o mapeamento de coordenadas e rotação global (0° ou 180°) de todo o conteúdo da etiqueta.
+  - **Otimização Física**: Ajuste nos comandos de sensor (`GAP` e `SIZE`) para garantir alinhamento perfeito na Elgin L42 Pro, evitando saltos de etiqueta.
 - **v2.15.5**:
   - **Ajuste de Buffer**: Adição de espaço final no template TSPL para otimizar o processamento do comando de fechamento pela impressora.
 - **v2.15.4**:
@@ -62,7 +68,6 @@ Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.5**,
 - **v2.15.3**:
   - **Cabeçalho em Pilha Vertical**: Reorganização completa do topo da etiqueta em 270°, empilhando Ambicom, Bloco de Garantia e Endereço para melhor aproveitamento de largura.
   - **Otimização de Margem Zero**: Configuração definitiva de `GAP 0mm` e realinhamento da grade industrial para bobinas de 80x55mm.
-  - **Refinamento de QR Code**: Ajuste de rotação (270°) e posição para máxima compatibilidade com leitores industriais.
 - **v2.15.2**:
   - **Padronização TSPL**: Limpeza e normalização de espaçamentos em comandos e coordenadas para maior estabilidade de renderização.
   - **Correção de Caracteres**: Ajuste de strings de cabeçalho e endereço para evitar artefatos visuais na impressão física.

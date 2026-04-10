@@ -165,112 +165,114 @@ export const printLabels = async (products: any[]) => {
 };
 
 /**
- * Gera o código TSPL para uma etiqueta industrial (80x55mm)
+ * TSPLBuilder - Motor de design dinâmico orientado a PAISAGEM (Landscape).
  */
+class TSPLBuilder {
+    private commands: string[] = [];
+    private width: number;
+    private height: number;
+
+    constructor(widthMm: number, heightMm: number) {
+        this.width = widthMm * 8;
+        this.height = heightMm * 8;
+
+        this.commands.push(`SIZE ${widthMm} mm, ${heightMm} mm`);
+        this.commands.push(`GAP 3 mm, 0`);
+        this.commands.push(`DIRECTION 0,0`); // 0 para começar do topo físico
+        this.commands.push(`REFERENCE 0,0`);
+        this.commands.push(`CLS`);
+    }
+
+    addText(x: number, y: number, font: string, rot: number, xmul: number, ymul: number, content: string) {
+        this.commands.push(`TEXT ${x},${y},"${font}",${rot},${xmul},${ymul},"${content}"`);
+    }
+
+    addBar(x: number, y: number, w: number, h: number) {
+        this.commands.push(`BAR ${x},${y},${w},${h}`);
+    }
+
+    addBox(x1: number, y1: number, x2: number, y2: number, t: number) {
+        this.commands.push(`BOX ${x1},${y1},${x2},${y2},${t}`);
+    }
+
+    addQRCode(x: number, y: number, level: string, cellW: number, rot: number, content: string) {
+        this.commands.push(`QRCODE ${x},${y},${level},${cellW},A,${rot},"${content}"`);
+    }
+
+    generate(): string {
+        this.commands.push("PRINT 1\n");
+        return this.commands.join("\n");
+    }
+}
+
 export const generateLabelTSPL = (data: any): string => {
     const val = (v: any) => v || "";
-    const internalSerial = val(data.internal_serial);
-    const model = val(data.model || data.modelo);
-    const voltage = val(data.voltage || data.tensao);
-    const pnc_ml = val(data.pnc_ml);
-    const frequency = val(data.frequency || data.frequencia || '60 Hz');
-    const gas = val(data.refrigerant_gas || data.gas_refrigerante);
-    const gasCharge = val(data.gas_charge || data.carga_gas);
-    const compressor = val(data.compressor);
-    const volFreezer = val(data.volume_freezer);
-    const volRefrig = val(data.volume_refrigerator);
-    const volTotal = formatTotalVolume(data.volume_freezer, data.volume_refrigerator, data.volume_total);
-    const pressure = val(data.pressure_high_low || data.pressao_alta_baixa);
-    const capacCong = val(data.freezing_capacity || data.capacidade_congelamento);
-    const current = val(data.electric_current || data.corrente_eletrica);
-    const power = val(data.defrost_power || data.potencia_degelo);
-    const size = data.size || data.tamanho ? String(data.size || data.tamanho).charAt(0).toUpperCase() : '-';
+    const builder = new TSPLBuilder(80, 55);
 
-    return `SIZE 80 mm, 55 mm
+    // --- CABEÇALHO (Agora deitado no topo de 80mm) ---
+    builder.addText(20, 20, "3", 0, 1, 1, "Ambicom");
+    builder.addText(180, 25, "1", 0, 1, 1, "PRODUTO REMANUFATURADO - GARANTIA AMBICOM");
+    builder.addText(20, 55, "2", 0, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas, SJP - PR | SAC: 041 3382-5410");
 
-GAP 3 mm, 0
+    // --- GRADE TÉCNICA (X horizontal até 640 dots) ---
+    // Moldura: inicia em Y=90
+    builder.addBox(20, 90, 620, 420, 2);
 
-DIRECTION 1, 0
+    // Divisórias Horizontais (Dentro da tabela)
+    builder.addBar(20, 160, 600, 2); // Abaixo de Modelo/Voltagem
+    builder.addBar(20, 260, 600, 2); // Abaixo de Serial
+    builder.addBar(20, 310, 600, 2); // Abaixo de PNC/Freq
+    builder.addBar(20, 360, 600, 2); // Abaixo de Gás/Compressor
 
-REFERENCE 0, 0
+    // Divisórias Verticais
+    builder.addBar(320, 90, 2, 70);   // Entre Modelo e Voltagem
+    builder.addBar(450, 160, 2, 100);  // Espaço para QR Code à direita do Serial
+    builder.addBar(210, 260, 2, 50);   // Divisor PNC / Freq / Tamanho (part 1)
+    builder.addBar(420, 260, 2, 50);   // Divisor PNC / Freq / Tamanho (part 2)
 
-CLS
+    // --- CONTEÚDO TÉCNICO ---
 
-; --- CABEÇALHO ---
-TEXT 625, 15, "2", 90, 1, 1, "Ambicom"
-TEXT 605, 15, "2", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas, Sao Jose dos Pinhais - PR"
-TEXT 590, 15, "2", 90, 1, 1, "SAC: 041 - 3382-5410"
+    // Modelo / Voltagem
+    builder.addText(30, 105, "2", 0, 1, 1, "MODELO");
+    builder.addText(30, 130, "3", 0, 1, 1, val(data.model || data.modelo));
+    builder.addText(335, 105, "2", 0, 1, 1, "VOLTAGEM");
+    builder.addText(335, 130, "3", 0, 1, 1, val(data.voltage || data.tensao));
 
-BAR 20, 10, 500, 2
+    // Serial (Centralizado com QR Code ao lado)
+    builder.addText(30, 175, "2", 0, 1, 1, "NUMERO DE SERIE AMBICOM:");
+    builder.addText(30, 210, "4", 0, 1, 1, val(data.internal_serial));
+    builder.addText(30, 240, "2", 0, 1, 1, val(data.commercial_code || data.codigo_comercial));
 
-; --- BLOCO PRODUTO / GARANTIA ---
-TEXT 565, 15, "1", 90, 1, 1, "PRODUTO REMANUFATURADO"
-TEXT 550, 15, "1", 90, 1, 1, "GARANTIA AMBICOM"
+    // QR Code na lateral direita do serial
+    builder.addQRCode(470, 165, "L", 4, 0, val(data.internal_serial));
 
-BAR 20, 50, 500, 2
+    // PNC / FREQUENCIA / TAMANHO
+    builder.addText(30, 275, "1", 0, 1, 1, "PNC/ML");
+    builder.addText(100, 275, "2", 0, 1, 1, val(data.pnc_ml));
 
-; --- MODELO / VOLTAGEM ---
-TEXT 535, 15, "2", 90, 1, 1, "MODELO"
-TEXT 510, 15, "2", 90, 1, 1, "${val(data.model || data.modelo)}"
-TEXT 535, 225, "2", 90, 1, 1, "VOLTAGEM"
-TEXT 510, 225, "2", 90, 1, 1, "${val(data.voltage || data.tensao)}"
+    builder.addText(230, 275, "1", 0, 1, 1, "FREQ.");
+    builder.addText(300, 275, "2", 0, 1, 1, "60 Hz");
 
-; --- QR CODE E SERIAL ---
-QRCODE 455, 20, L, 4, A, 90, "${val(data.internal_serial)}"
-TEXT 455, 100, "1", 90, 1, 1, "N. SERIE:"
-TEXT 435, 100, "2", 90, 1, 1, "${val(data.internal_serial)}"
-TEXT 395, 100, "1", 90, 1, 1, "${val(data.commercial_code || data.codigo_comercial)}"
+    builder.addText(440, 275, "2", 0, 1, 1, "TAMANHO:");
+    builder.addText(560, 275, "3", 0, 1, 1, val(data.size || '-'));
 
-; --- PNC / FREQUENCIA ---
-TEXT 345, 15, "1", 90, 1, 1, "PNC/ML"
-TEXT 320, 15, "2", 90, 1, 1, "${val(data.pnc_ml)}"
-TEXT 345, 270, "1", 90, 1, 1, "FREQ."
-TEXT 320, 270, "2", 90, 1, 1, "${val(data.frequency || '60 Hz')}"
+    // GÁS / CARGA / COMPRESSOR
+    builder.addText(30, 325, "1", 0, 1, 1, "GAS:");
+    builder.addText(70, 325, "2", 0, 1, 1, val(data.refrigerant_gas));
+    builder.addText(210, 325, "1", 0, 1, 1, "CARGA:");
+    builder.addText(280, 325, "2", 0, 1, 1, val(data.gas_charge));
+    builder.addText(420, 325, "1", 0, 1, 1, "COMP.:");
+    builder.addText(490, 325, "2", 0, 1, 1, val(data.compressor));
 
-; --- GAS / COMPRESSOR ---
-TEXT 275, 15, "1", 90, 1, 1, "GAS/CARGA"
-TEXT 250, 15, "1", 90, 1, 1, "${val(data.refrigerant_gas)} / ${val(data.gas_charge)}"
-TEXT 275, 300, "1", 90, 1, 1, "COMPRESSOR"
-TEXT 250, 300, "1", 90, 1, 1, "${val(data.compressor)}"
+    // RODAPÉ (Volumes e Corrente)
+    builder.addText(30, 375, "1", 0, 1, 1, "VOLUMES:");
+    builder.addText(110, 375, "2", 0, 1, 1, `${val(data.volume_freezer)}F / ${val(data.volume_refrigerator)}R`);
 
-; --- VOLUMES ---
-TEXT 205, 15, "1", 90, 1, 1, "VOL. FREEZER/REFRIG."
-TEXT 180, 15, "1", 90, 1, 1, "${val(data.volume_freezer)} / ${val(data.volume_refrigerator)}"
-TEXT 205, 300, "1", 90, 1, 1, "VOL. TOTAL"
-TEXT 180, 300, "1", 90, 1, 1, "${val(data.volume_total)}"
+    builder.addText(320, 375, "1", 0, 1, 1, "POT/CORR:");
+    builder.addText(420, 375, "1", 0, 1, 1, `${val(data.defrost_power)}W / ${val(data.electric_current)}A`);
 
-; --- PRESSÃO / CAPACIDADE ---
-TEXT 135, 15, "1", 90, 1, 1, "P. ALTA/BAIXA"
-TEXT 115, 15, "1", 90, 1, 1, "${val(data.pressure_high_low)}"
-TEXT 135, 300, "1", 90, 1, 1, "CAP. CONG."
-TEXT 115, 300, "1", 90, 1, 1, "${val(data.freezing_capacity)}"
+    builder.addText(30, 395, "1", 0, 1, 1, "CAP. CONGELAMENTO:");
+    builder.addText(190, 395, "2", 0, 1, 1, val(data.freezing_capacity));
 
-BAR 20, 330, 500, 2
-
-; --- RODAPÉ (CORRENTE / POTÊNCIA / TAMANHO) ---
-TEXT 85, 15, "1", 90, 1, 1, "CORRENTE: ${val(data.electric_current)}"
-TEXT 65, 15, "1", 90, 1, 1, "POT. DEGELO: ${val(data.defrost_power)}"
-TEXT 85, 380, "1", 90, 1, 1, "TAMANHO"
-TEXT 55, 380, "1", 90, 1, 1, "${data.size || '-'}"
-
-; --- GRADE (BORDAS) ---
-BAR 20, 10, 500, 2
-BAR 20, 420, 500, 2
-BAR 20, 10, 2, 410
-BAR 520, 10, 2, 410
-
-; --- LINHAS VERTICAIS DIVISÓRIAS ---
-BAR 460, 50, 2, 370
-BAR 360, 50, 2, 370
-BAR 290, 50, 2, 370
-BAR 220, 50, 2, 370
-BAR 150, 50, 2, 370
-BAR 90, 50, 2, 370
-
-BAR 460, 200, 55, 2
-
-PRINT 1
-
-`;
+    return builder.generate();
 };
-
