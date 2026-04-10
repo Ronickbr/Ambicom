@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.3**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.15.3**:
+  - **Cabeçalho em Pilha Vertical**: Reorganização completa do topo da etiqueta em 270°, empilhando Ambicom, Bloco de Garantia e Endereço para melhor aproveitamento de largura.
+  - **Otimização de Margem Zero**: Configuração definitiva de `GAP 0mm` e realinhamento da grade industrial para bobinas de 80x55mm.
+  - **Refinamento de QR Code**: Ajuste de rotação (270°) e posição para máxima compatibilidade com leitores industriais.
 - **v2.15.2**:
   - **Padronização TSPL**: Limpeza e normalização de espaçamentos em comandos e coordenadas para maior estabilidade de renderização.
   - **Correção de Caracteres**: Ajuste de strings de cabeçalho e endereço para evitar artefatos visuais na impressão física.
