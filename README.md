@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.21.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.22.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.22.0**:
+  - **Arquitetura Vertical Nativa**: Redefinição do canvas para 55x80 (SIZE 55, 80), eliminando bugs de rotação de firmware.
+  - **Replicação de Grade Puzzle**: Implementação fiel do layout 1086 com Modelo/Voltagem paralelos e Serial gigante centralizado.
+  - **Estabilização de Linhas de Precisão**: Grade técnica desenhada com linhas de 4 dots para fidelidade mecânica absoluta.
 - **v2.21.0**:
   - **Estratégia Clean Fidelity**: Implementação de zonas de segurança com margens de 120 dots entre colunas técnicas, eliminando colisões de texto em firmwares Elgin antigos.
   - **Reparo de QR Code Pro**: Reposicionamento para Y=310 com comando simplificado para garantir renderização em alta velocidade.
