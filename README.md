@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.26.2**:
+  - **Correção de Layout (Labels PDF)**: Reconstrução das coordenadas da etiqueta gerada em PDF, convertidas de "rotacionadas 90°" para o landscape nativo. Corrige encavalamento e textos "espremidos" durante a saída para bobinas de 80x55.
 - **v2.26.1**:
   - **Correção de Build**: Removido importação não utilizada do `generateLabelTSPL` que causava falha no processo de compilação da aplicação.
 - **v2.26.0**:
