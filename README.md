@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.3**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.14.3**:
+  - **Otimização de Coordenadas TSPL**: Ajuste fino de alinhamento e espaçamento em todas as células da grade técnica.
+  - **Melhoria de Legibilidade**: Aumento estratégico de fontes em campos críticos e padronização de rótulos técnicos.
+  - **Correção de Grade**: Ajuste milimétrico das linhas divisórias para garantir clareza visual e evitar sobreposições.
 - **v2.14.2**:
   - **Refinamento do Layout TSPL**: Implementação de novo layout com rotação de 90 graus em todos os campos e grade técnica desenhada via comandos `BAR`, otimizando a legibilidade nas bobinas industriais de 80x55mm.
   - **Estabilização de Comandos**: Inclusão de `REFERENCE 0,0` e ajustes de sintaxe nos parâmetros de `GAP` e `DIRECTION`.
