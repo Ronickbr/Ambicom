@@ -35,189 +35,365 @@ export const exportToPDF = (title: string, headers: string[], data: (string | nu
 export const exportToExcel = (data: Record<string, unknown>[], fileName: string) => {
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Dados");
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Dados');
     XLSX.writeFile(workbook, `${fileName}_${new Date().getTime()}.xlsx`);
 };
 
+// ─── Helpers internos ─────────────────────────────────────────────────────────
+
+function sanitize(v: any): string {
+    return String(v || '').replace(/[VLgWAsig()]/g, '').trim() || '-';
+}
+
+// ─── Builder HTML da Etiqueta ─────────────────────────────────────────────────
+
 /**
- * Gera as etiquetas em formato PDF Industrial (80x55mm) rotacionado 90°
+ * Retorna o HTML completo de uma etiqueta Ambicom (80x55mm landscape).
+ *
+ * Pode ser usado:
+ * 1. Via jsPDF.html() → PDF para envio ao bridge (impressão remota)
+ * 2. Via window.open() + window.print() → impressão nativa do browser
+ */
+export async function buildLabelHTML(p: any): Promise<string> {
+    const model = sanitize(p.model || p.modelo);
+    const voltage = sanitize(p.voltage || p.tensao);
+    const serial = sanitize(p.internal_serial);
+    const commCode = sanitize(p.commercial_code);
+    const pncMl = sanitize(p.pnc_ml);
+    const gas = sanitize(p.refrigerant_gas);
+    const gasCharge = sanitize(p.gas_charge);
+    const gasDesc = gas !== '-' ? `${gas} ${gasCharge}g` : '-';
+    const volFreezer = sanitize(p.volume_freezer);
+    const volRefrig = sanitize(p.volume_refrigerator);
+    const volTotal = sanitize(p.volume_total);
+    const sizeFull = p.size || await calculateProductSize(p.volume_total);
+    const dispSize = sizeFull === 'Pequeno' ? 'P'
+        : sizeFull === 'Médio' ? 'M'
+            : sizeFull === 'Grande' ? 'G'
+                : (sizeFull || '-');
+
+    let qrImgTag = '';
+    if (serial && serial !== '-') {
+        try {
+            const qrDataUrl = await QRCode.toDataURL(serial, {
+                margin: 0,
+                width: 120,
+                errorCorrectionLevel: 'M',
+            });
+            qrImgTag = `<img src="${qrDataUrl}" alt="QR" style="width:18mm;height:18mm;display:block;" />`;
+        } catch { /* QR opcional */ }
+    }
+
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  @page {
+    size: 80mm 55mm landscape;
+    margin: 0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 80mm;
+    height: 55mm;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 6pt;
+    color: #000;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  /* ── Layout raiz ── */
+  .label {
+    width: 78mm;
+    height: 53mm;
+    margin: 1mm;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    border: 0.4pt solid #000;
+  }
+
+  /* ── Cabeçalho ── */
+  .header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 1mm 2mm 0.5mm 2mm;
+    border-bottom: 0.4pt solid #000;
+  }
+  .brand-name    { font-size: 16pt; font-weight: 900; line-height: 1; letter-spacing: -0.5pt; }
+  .brand-address { font-size: 5pt;  line-height: 1.3; margin-top: 1pt; }
+  .brand-sac     { font-size: 7pt;  font-weight: bold; margin-top: 2pt; }
+  .brand-right {
+    text-align: center;
+    font-size: 5.5pt;
+    font-weight: bold;
+    line-height: 1.4;
+    border: 0.4pt solid #000;
+    padding: 1mm;
+    white-space: nowrap;
+  }
+
+  /* ── Grade de campos ── */
+  .data-grid { display: grid; width: 100%; height: 100%; }
+
+  .row-1 { display: grid; grid-template-columns: 3fr 1fr; border-bottom: 0.4pt solid #000; }
+  .row-2 { display: grid; grid-template-columns: 20mm 1fr; border-bottom: 0.4pt solid #000; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 0.4pt solid #000; }
+  .row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  /* Célula genérica */
+  .cell {
+    padding: 0.5mm 1.5mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+  .cell + .cell { border-left: 0.4pt solid #000; }
+
+  .lbl {
+    font-size: 4.5pt;
+    font-weight: normal;
+    text-transform: uppercase;
+    color: #333;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .val    { font-size: 10pt; font-weight: 900;  line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .val-lg { font-size: 13pt; font-weight: 900;  line-height: 1; }
+  .val-sm { font-size: 8pt;  font-weight: bold; }
+
+  /* Célula do QR */
+  .qr-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 0.4pt solid #000;
+    padding: 1mm;
+  }
+  .serial-cell {
+    padding: 1mm 2mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1pt;
+  }
+</style>
+</head>
+<body>
+<div class="label">
+
+  <!-- CABEÇALHO -->
+  <div class="header">
+    <div>
+      <div class="brand-name">Ambicom</div>
+      <div class="brand-address">
+        R. Wenceslau Marek, 10 – Águas Belas,<br/>
+        São José dos Pinhais – PR, 83010-520
+      </div>
+      <div class="brand-sac">SAC: 041 - 3382-5410</div>
+    </div>
+    <div class="brand-right">
+      PRODUTO<br/>REMANUFATURADO<br/>GARANTIA<br/>AMBICOM
+    </div>
+  </div>
+
+  <!-- GRADE -->
+  <div class="data-grid">
+
+    <!-- Linha 1: MODELO │ VOLTAGEM -->
+    <div class="row-1">
+      <div class="cell">
+        <span class="lbl">Modelo</span>
+        <span class="val-lg">${model}</span>
+      </div>
+      <div class="cell">
+        <span class="lbl">Voltagem</span>
+        <span class="val-lg">${voltage} V</span>
+      </div>
+    </div>
+
+    <!-- Linha 2: QR CODE │ SERIAL + CÓD. COMERCIAL -->
+    <div class="row-2">
+      <div class="qr-cell">
+        ${qrImgTag}
+      </div>
+      <div class="serial-cell">
+        <span class="lbl">Número de Série Ambicom</span>
+        <span class="val-lg" style="font-size:12pt;">${serial}</span>
+        ${commCode !== '-' ? `<span style="font-size:6pt;color:#555;">${commCode}</span>` : ''}
+      </div>
+    </div>
+
+    <!-- Linha 3: PNC/ML │ GÁS FRIGOR. │ FREQUÊNCIA -->
+    <div class="row-3">
+      <div class="cell">
+        <span class="lbl">PNC / ML</span>
+        <span class="val">${pncMl}</span>
+      </div>
+      <div class="cell">
+        <span class="lbl">Gás Frigor.</span>
+        <span class="val-sm">${gasDesc}</span>
+      </div>
+      <div class="cell">
+        <span class="lbl">Frequência</span>
+        <span class="val">60 Hz</span>
+      </div>
+    </div>
+
+    <!-- Linha 4: VOL. FREEZER │ VOL. REFRIG. │ VOL. TOTAL │ TAMANHO -->
+    <div class="row-4">
+      <div class="cell">
+        <span class="lbl">Vol. Freezer</span>
+        <span class="val-sm">${volFreezer} L</span>
+      </div>
+      <div class="cell">
+        <span class="lbl">Vol. Refrig.</span>
+        <span class="val-sm">${volRefrig} L</span>
+      </div>
+      <div class="cell">
+        <span class="lbl">Vol. Total</span>
+        <span class="val-sm">${volTotal} L</span>
+      </div>
+      <div class="cell" style="align-items:center;justify-content:center;text-align:center;">
+        <span class="lbl">Tamanho</span>
+        <span style="font-size:18pt;font-weight:900;line-height:1;">${dispSize}</span>
+      </div>
+    </div>
+
+  </div><!-- /data-grid -->
+</div><!-- /label -->
+</body>
+</html>`;
+}
+
+// ─── Geração de PDF ───────────────────────────────────────────────────────────
+
+/**
+ * Gera as etiquetas em formato PDF Industrial (80×55mm landscape)
+ * usando HTML+CSS renderizado via iframe oculto → jsPDF.html()
  */
 export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
-    // Dimensões da bobina: 80mm largura x 55mm altura
-    const labelWidth = 80;
-    const labelHeight = 55;
+    const W = 80, H = 55;
 
-    // Criamos o documento em Paisagem (80x55)
-    // Desenhado de forma linear para aproveitamento de 100% da área!
     const doc = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
-        format: [labelWidth, labelHeight],
+        format: [W, H],
         putOnlyUsedFonts: true,
-        compress: true
+        compress: true,
     });
 
-    for (let index = 0; index < products.length; index++) {
-        const p = products[index];
-        if (index > 0) doc.addPage([labelWidth, labelHeight], 'landscape');
+    for (let i = 0; i < products.length; i++) {
+        if (i > 0) doc.addPage([W, H], 'landscape');
 
-        const val = (v: any) => String(v || "").replace(/[VLgWAsig()]/g, "").trim() || "-";
+        const html = await buildLabelHTML(products[i]);
 
-        doc.setTextColor(0, 0, 0);
+        await new Promise<void>((resolve, reject) => {
+            // Iframe oculto para isolamento de CSS
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = [
+                'position:fixed',
+                'left:-9999px',
+                'top:-9999px',
+                // 80mm @ 96 dpi ≈ 302px | 55mm @ 96 dpi ≈ 208px
+                'width:302px',
+                'height:208px',
+                'border:none',
+                'visibility:hidden',
+            ].join(';');
+            document.body.appendChild(iframe);
 
-        // --- CABEÇALHO (Y = 0 a 20) ---
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(20);
-        doc.text("Ambicom", 4, 8);
+            iframe.onload = async () => {
+                try {
+                    const iDoc = iframe.contentDocument!;
+                    iDoc.open();
+                    iDoc.write(html);
+                    iDoc.close();
 
-        doc.setFontSize(6);
-        doc.setFont("helvetica", "normal");
-        doc.text("R. Wenceslau Marek, 10 - Águas Belas,", 4, 11);
-        doc.text("São José dos Pinhais - PR, 83010-520", 4, 14);
+                    // Aguarda imagens (QR Code data URL) carregarem
+                    await new Promise(r => setTimeout(r, 400));
 
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text("SAC : 041 - 3382-5410", 4, 19);
+                    await (doc as any).html(iDoc.body, {
+                        x: 0,
+                        y: 0,
+                        width: W,
+                        windowWidth: 302,
+                        html2canvas: {
+                            scale: 3.78, // 96 dpi → 360 dpi (~300dpi industrial)
+                            useCORS: true,
+                            backgroundColor: '#ffffff',
+                            logging: false,
+                        },
+                        autoPaging: false,
+                    });
 
-        // Bloco Direito Superior (Garantia/Institucional)
-        doc.setFontSize(5);
-        doc.setFont("helvetica", "bold");
-        const rightText = "PRODUTO\nREMANUFATURADO\nGARANTIA\nAMBICOM";
-        doc.text(rightText, 76, 7, { align: 'right' });
+                    resolve();
+                } catch (err) {
+                    reject(err);
+                } finally {
+                    document.body.removeChild(iframe);
+                }
+            };
 
-        // --- GRADE TÉCNICA PRINCIPAL (Y = 22 a 51) ---
-        const tX = 4, tY = 22, tW = 72, tH = 29;
-        doc.setLineWidth(0.3);
-
-        // Moldura Externa e Divisórias Horizontais
-        doc.rect(tX, tY, tW, tH); // Box Principal
-        doc.line(tX, 29, tX + tW, 29); // Linha R1 -> R2
-        doc.line(tX, 38, tX + tW, 38); // Linha R2 -> R3
-        doc.line(tX, 45, tX + tW, 45); // Linha R3 -> R4
-
-        // ---Row 1: MODELO | VOLTAGEM---
-        doc.line(50, 22, 50, 29); // Divisor Vertical
-
-        doc.setFontSize(5);
-        doc.setFont("helvetica", "normal");
-        doc.text("MODELO", 5, 24.5);
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text(val(p.model || p.modelo), 5, 28);
-
-        doc.setFontSize(5);
-        doc.setFont("helvetica", "normal");
-        doc.text("VOLTAGEM", 51, 24.5);
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${val(p.voltage || p.tensao)} V`, 51, 28);
-
-        // ---Row 2: QR CODE | SERIAL---
-        doc.line(20, 29, 20, 38); // Divisor Vertical
-
-        const qrData = val(p.internal_serial);
-        if (qrData && qrData !== "-") {
-            try {
-                const qrImgData = await QRCode.toDataURL(qrData, { margin: 0, width: 80 });
-                doc.addImage(qrImgData, 'PNG', 8, 29.5, 8, 8);
-            } catch (err) { }
-        }
-
-        doc.setFontSize(5.5);
-        doc.setFont("helvetica", "normal");
-        doc.text("NÚMERO DE SÉRIE AMBICOM:", 21, 31.5);
-
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text(val(p.internal_serial), 21, 36);
-
-        // Código Comercial à direita do Serial (se houver espaço)
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "normal");
-        doc.text(val(p.commercial_code), 55, 35.5);
-
-        // ---Row 3: PNC/ML | GÁS | FREQUÊNCIA---
-        doc.line(35, 38, 35, 45); // Divisor PNC/Gas
-        doc.line(55, 38, 55, 45); // Divisor Gas/Freq
-
-        doc.setFontSize(5);
-        doc.setFont("helvetica", "normal");
-        doc.text("PNC/ML", 5, 40.5);
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text(val(p.pnc_ml), 5, 44);
-
-        doc.setFontSize(5);
-        doc.setFont("helvetica", "normal");
-        doc.text("GÁS FRIGOR.", 36, 40.5);
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        const gasDesc = val(p.refrigerant_gas) !== "-" ? `${val(p.refrigerant_gas)} ${val(p.gas_charge)}g` : "-";
-        doc.text(gasDesc, 36, 44);
-
-        doc.setFontSize(5);
-        doc.setFont("helvetica", "normal");
-        doc.text("FREQUÊNCIA", 56, 40.5);
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "bold");
-        doc.text("60 Hz", 56, 44);
-
-        // ---Row 4: VOLUMES E TAMANHO---
-        doc.line(22, 45, 22, 51); // Divisor 1
-        doc.line(40, 45, 40, 51); // Divisor 2
-        doc.line(60, 45, 60, 51); // Divisor 3
-
-        doc.setFontSize(5);
-        doc.setFont("helvetica", "normal");
-        doc.text("VOL. FREEZER", 5, 47.5);
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${val(p.volume_freezer)} L`, 5, 50);
-
-        doc.setFontSize(5);
-        doc.setFont("helvetica", "normal");
-        doc.text("VOL. REFRIG.", 23, 47.5);
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${val(p.volume_refrigerator)} L`, 23, 50);
-
-        doc.setFontSize(5);
-        doc.setFont("helvetica", "normal");
-        doc.text("VOLUME TOTAL", 41, 47.5);
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${val(p.volume_total)} L`, 41, 50);
-
-        doc.setFontSize(5);
-        doc.setFont("helvetica", "normal");
-        doc.text("TAMANHO", 61, 47.5);
-
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        const sizeFull = p.size || await calculateProductSize(p.volume_total);
-        const dispSize = sizeFull === 'Pequeno' ? 'P' : sizeFull === 'Médio' ? 'M' : sizeFull === 'Grande' ? 'G' : sizeFull;
-        doc.text(dispSize || "-", 64, 50);
+            iframe.src = 'about:blank';
+        });
     }
 
     return doc;
 };
 
+// ─── Exports utilitários ──────────────────────────────────────────────────────
+
 /**
- * Converte um Documento jsPDF para String Base64 (sem prefixo)
+ * Converte um Documento jsPDF para String Base64 (sem prefixo data:)
  */
 export const pdfToBase64 = (doc: jsPDF): string => {
-    const rawString = doc.output('datauristring').split(',')[1];
-    return rawString;
+    return doc.output('datauristring').split(',')[1];
 };
 
 /**
- * Helper para imprimir etiquetas localmente no navegador (Download)
+ * Baixa as etiquetas como arquivo PDF.
  */
 export const printLabels = async (products: any[]) => {
     const doc = await generateLabelsPDF(products);
-    const timestamp = new Date().getTime();
-    doc.save(`etiquetas_ambicom_${timestamp}.pdf`);
+    doc.save(`etiquetas_ambicom_${Date.now()}.pdf`);
 };
 
+/**
+ * Abre uma janela de impressão nativa do browser com CSS @page correto.
+ * Útil quando não há bridge remoto disponível – imprime direto pelo SO.
+ */
+export const printLabelsNative = async (products: any[]) => {
+    const pages = await Promise.all(products.map(p => buildLabelHTML(p)));
 
+    // Extrai o <body> de cada etiqueta e separa por page-break
+    const combined = pages.map((html, idx) => {
+        const m = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        const body = m ? m[1] : html;
+        const pb = idx < pages.length - 1 ? 'always' : 'avoid';
+        return `<div style="page-break-after:${pb}">${body}</div>`;
+    }).join('');
 
+    const doc = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  @page { size: 80mm 55mm landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 80mm; font-family: Arial, Helvetica, sans-serif; background: #fff; }
+</style>
+</head>
+<body>${combined}</body>
+</html>`;
+
+    const w = window.open('', '_blank', 'width=420,height=350');
+    if (!w) return;
+    w.document.write(doc);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); w.close(); }, 600);
+};
