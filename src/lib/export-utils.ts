@@ -173,55 +173,53 @@ export const generateLabelZPL = (data: any): string => {
 
     return `^XA
 ^CI28
-^FWR            # Gira todo o conteúdo 90 graus (Paisagem)
 ^PW440          # Largura física da etiqueta (55mm)
 ^LL640          # Comprimento físico da etiqueta (80mm)
 ^LH0,0          # Define a origem no canto
 
-# --- CABEÇALHO ---
-^FO380,15^A0R,45,45^FDAmbicom^FS
-^FO360,15^A0R,15,15^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
-^FO345,15^A0R,15,15^FDSao Jose dos Pinhais - PR, 83010-520^FS
-^FO320,15^A0R,25,25^FDSAC: 041 - 3382-5410^FS
+# --- CABEÇALHO (Centralizado no topo) ---
+^FO20,15^A0N,45,45^FB400,1,0,C^FDAmbicom^FS
+^FO20,65^A0N,15,15^FB400,1,0,C^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
+^FO20,80^A0N,15,15^FB400,1,0,C^FDSao Jose dos Pinhais - PR, 83010-520^FS
+^FO20,105^A0N,20,20^FB400,1,0,C^FDSAC: 041 - 3382-5410^FS
 
-^FO380,450^A0R,15,15^FB160,1,0,C^FDPRODUTO^FS
-^FO365,450^A0R,15,15^FB160,1,0,C^FDREMANUFATURADO^FS
-^FO350,450^A0R,15,15^FB160,1,0,C^FDGARANTIA^FS
-^FO335,450^A0R,15,15^FB160,1,0,C^FDAMBICOM^FS
+# --- GARANTIA (Lateral direita do cabeçalho) ---
+^FO300,40^A0N,12,12^FB120,1,0,R^FDPRODUTO^FS
+^FO300,55^A0N,12,12^FB120,1,0,R^FDREMANUFATURADO^FS
+^FO300,70^A0N,12,12^FB120,1,0,R^FDGARANTIA^FS
+^FO300,85^A0N,12,12^FB120,1,0,R^FDAMBICOM^FS
 
-# --- LINHAS DA GRADE ---
-^FO20,10^GB300,620,2^FS        # Borda externa
-^FO260,10^GB0,620,2^FS         # Linha abaixo do Modelo
-^FO160,10^GB0,620,2^FS         # Linha abaixo do Serial
-^FO90,10^GB0,620,2^FS          # Linha abaixo do PNC
-^FO20,10^GB300,0,2^FS          # Linha lateral esquerda
-^FO20,630^GB300,0,2^FS         # Linha lateral direita
-^FO260,320^GB60,0,2^FS         # Divisória Modelo/Voltagem
+# --- LINHAS DA GRADE (Vertical) ---
+^FO20,130^GB400,490,2^FS       # Borda externa
+^FO20,240^GB400,0,2^FS         # Linha abaixo do Modelo
+^FO20,440^GB400,0,2^FS         # Linha abaixo do QR/Serial
+^FO20,530^GB400,0,2^FS         # Linha abaixo do PNC
+^FO220,130^GB0,110,2^FS        # Divisória Modelo/Voltagem
 
 # --- CONTEÚDO ---
 # MODELO / VOLTAGEM
-^FO295,10^A0R,15,15^FB205,1,0,C^FDMODELO^FS
-^FO270,10^A0R,30,30^FB205,1,0,C^FD${val(data.model || data.modelo)}^FS
-^FO295,320^A0R,15,15^FB215,1,0,C^FDVOLTAGEM^FS
-^FO270,320^A0R,30,30^FB215,1,0,C^FD${val(data.voltage || data.tensao)}^FS
+^FO25,145^A0N,15,15^FB180,1,0,C^FDMODELO^FS
+^FO25,175^A0N,35,35^FB180,1,0,C^FD${val(data.model || data.modelo)}^FS
+^FO235,145^A0N,15,15^FB180,1,0,C^FDVOLTAGEM^FS
+^FO235,175^A0N,35,35^FB180,1,0,C^FD${val(data.voltage || data.tensao)}^FS
 
 # QR CODE E SERIAL
-^FO180,20^BQR,2,4^FDQA,${val(data.internal_serial)}^FS
-^FO240,150^A0R,15,15^FB330,1,0,C^FDNUMERO DE SERIE AMBICOM:^FS
-^FO210,150^A0R,35,35^FB330,1,0,C^FD${val(data.internal_serial)}^FS
-^FO170,150^A0R,25,25^FB330,1,0,C^FD${val(data.commercial_code || data.codigo_comercial)}^FS
+^FO40,260^BQR,2,4^FDQA,${val(data.internal_serial)}^FS
+^FO150,265^A0N,18,18^FDNUMERO DE SERIE AMBICOM:^FS
+^FO150,300^A0N,45,45^FD${val(data.internal_serial)}^FS
+^FO150,370^A0N,25,25^FD${val(data.commercial_code || data.codigo_comercial)}^FS
 
 # PNC / FREQUENCIA
-^FO130,10^A0R,15,15^FB250,1,0,C^FDPNC/ML^FS
-^FO100,10^A0R,40,40^FB250,1,0,C^FD${val(data.pnc_ml)}^FS
-^FO130,350^A0R,15,15^FB170,1,0,C^FDFREQUENCIA^FS
-^FO100,350^A0R,35,35^FB170,1,0,C^FD${val(data.frequency || data.frequencia || '60 Hz')}^FS
+^FO25,455^A0N,15,15^FB220,1,0,C^FDPNC/ML^FS
+^FO25,480^A0N,35,35^FB220,1,0,C^FD${val(data.pnc_ml)}^FS
+^FO255,455^A0N,15,15^FB160,1,0,C^FDFREQUENCIA^FS
+^FO255,480^A0N,30,30^FB160,1,0,C^FD${val(data.frequency || data.frequencia || '60 Hz')}^FS
 
 # DADOS TÉCNICOS (GAS / COMPRESSOR)
-^FO65,10^A0R,15,15^FB140,1,0,C^FDGAS FRIGOR.^FS
-^FO40,10^A0R,25,25^FB140,1,0,C^FD${val(data.refrigerant_gas || data.gas_refrigerante || data.refrigerant)}^FS
-^FO65,450^A0R,15,15^FB140,1,0,C^FDCOMPRESSOR^FS
-^FO40,450^A0R,25,25^FB140,1,0,C^FD${val(data.compressor)}^FS
+^FO25,545^A0N,15,15^FB190,1,0,C^FDGAS FRIGOR.^FS
+^FO25,575^A0N,25,25^FB190,1,0,C^FD${val(data.refrigerant_gas || data.gas_refrigerante || data.refrigerant)}^FS
+^FO225,545^A0N,15,15^FB190,1,0,C^FDCOMPRESSOR^FS
+^FO225,575^A0N,25,25^FB190,1,0,C^FD${val(data.compressor)}^FS
 
 ^XZ`;
 };

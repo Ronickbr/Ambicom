@@ -106,15 +106,18 @@ async function executeJob(job) {
             await new Promise((resolve, reject) => {
                 const jobId = `ZPL-${Date.now()}`;
                 const tempFile = path.join(os.tmpdir(), `${jobId}.zpl`);
-                fs.writeFileSync(tempFile, job.payload_data);
+
+                // Força UTF-8 para evitar problemas com caracteres especiais no ZPL
+                fs.writeFileSync(tempFile, job.payload_data, 'utf8');
 
                 const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${path.join(__dirname, 'print_raw.ps1')}" -PrinterName "${job.printer_target}" -FilePath "${tempFile}"`;
                 exec(cmd, (error, stdout, stderr) => {
                     if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
                     if (error) {
+                        log(`❌ Erro no PowerShell (ZPL): ${stderr || error.message}`);
                         reject(error);
                     } else {
-                        log(`✅ Job ${job.id} (ZPL) enviado com sucesso`);
+                        log(`✅ Job ${job.id} (ZPL) enviado com sucesso para ${job.printer_target}`);
                         resolve(jobId);
                     }
                 });
@@ -136,9 +139,10 @@ async function executeJob(job) {
 
                     if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
                     if (error) {
+                        log(`❌ Erro no PowerShell (PDF): ${stderr || error.message}`);
                         reject(new Error(`Erro no PowerShell: ${stderr || error.message}`));
                     } else {
-                        log(`✅ Job ${job.id} (PDF) enviado para o driver com sucesso`);
+                        log(`✅ Job ${job.id} (PDF) enviado com sucesso para ${job.printer_target}`);
                         resolve(jobId);
                     }
                 });

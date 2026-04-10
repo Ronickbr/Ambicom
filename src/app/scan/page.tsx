@@ -33,6 +33,8 @@ import { useScan } from "@/hooks/useScan";
 import { logger } from "@/lib/logger";
 import { formatTotalVolume } from "@/lib/product-utils";
 import { generateLabelZPL } from "@/lib/export-utils";
+import { RemotePrinterSelector } from "@/components/printing/RemotePrinterSelector";
+import { useRemotePrint } from "@/hooks/useRemotePrint";
 
 // ─── Constantes de Câmera ──────────────────────────────────────────────────
 // FIX: Resolução reduzida para evitar que o Chrome mobile entre em modo
@@ -204,22 +206,12 @@ const ScanPage = () => {
     const [videoConstraints, setVideoConstraints] = useState<MediaTrackConstraints | boolean>(CAMERA_CONSTRAINTS);
     const [showHistory, setShowHistory] = useState(false);
 
-    // Estados de Impressão Remota
-    const [activeBridges, setActiveBridges] = useState<ActiveBridge[]>([]);
-    const [selectedPrinter, setSelectedPrinter] = useState<string>(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('default_printer') || "";
-        }
-        return "";
-    });
-    const [isPrinting, setIsPrinting] = useState(false);
-
-    // Persistir impressora selecionada
-    useEffect(() => {
-        if (selectedPrinter) {
-            localStorage.setItem('default_printer', selectedPrinter);
-        }
-    }, [selectedPrinter]);
+    // Hook de Impressão Remota Centralizado
+    const {
+        selectedPrinter: activePrinter,
+        printLabels: executeRemotePrint,
+        isPrinting: printingInProgress
+    } = useRemotePrint();
 
     const [cameraError, setCameraError] = useState(false);
     const [cameraReady, setCameraReady] = useState(false);
@@ -282,9 +274,6 @@ const ScanPage = () => {
 
     useEffect(() => {
         isMounted.current = true;
-
-        // Carregar pontes de impressão
-        printService.getActiveBridges().then(setActiveBridges);
 
         return () => {
             isMounted.current = false;
@@ -502,30 +491,8 @@ const ScanPage = () => {
     };
 
     // ── Impressão Remota ──────────────────────────────────────────────────
-    const handleRemotePrint = async (data: any, autoPrinterOverride?: string) => {
-        const targetPrinter = autoPrinterOverride || selectedPrinter;
-        if (!targetPrinter) {
-            toast.error("Selecione uma impressora");
-            return;
-        }
-
-        setIsPrinting(true);
-        try {
-            // Gerar o código ZPL da etiqueta usando o novo template centralizado
-            const zplCode = generateLabelZPL(data);
-
-            await printService.submitPrintJob({
-                payload_type: 'zpl',
-                payload_data: zplCode,
-                printer_target: targetPrinter
-            });
-            toast.success("Impressão ZPL enviada para fila!");
-        } catch (e) {
-            toast.error("Erro ao enviar para fila de impressão");
-            logger.error("Print submission failed", e);
-        } finally {
-            setIsPrinting(false);
-        }
+    const handleRemotePrint = async (data: any) => {
+        await executeRemotePrint(data);
     };
 
     // ── Upload de arquivo ─────────────────────────────────────────────────
@@ -595,19 +562,20 @@ const ScanPage = () => {
                         <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground uppercase italic">Captura de <span className="text-primary not-italic font-light">Etiqueta</span></h1>
                         <p className="text-muted-foreground font-medium text-sm mt-1 opacity-70 italic">Análise via IA para entrada de ativos no fluxo industrial.</p>
                     </div>
-                    <div className="glass-card flex items-center gap-4 py-4 px-8 border-border/10 bg-card/50 shadow-inner w-full md:w-auto justify-between md:justify-start">
-                        <div className={cn("h-10 w-10 rounded-full flex items-center justify-center border shadow-sm", isOnline ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>
-                            {isOnline ? <Wifi className="h-5 w-5" /> : <WifiOff className="h-5 w-5" />}
-                        </div>
-                        <div>
-                            <div className="text-[9px] uppercase font-black text-muted-foreground tracking-widest leading-none mb-1">Status da Rede</div>
-                            <div className="text-lg font-black text-foreground italic tracking-widest">
-                                {isOnline ? "ONLINE" : "OFFLINE"}
-                                <span className={cn("text-[10px] not-italic font-medium opacity-50 ml-2", isOnline ? "text-emerald-500" : "text-red-500")}>
-                                    {isOnline ? "Conectado" : "Aviso: Sem Sincronia"}
-                                </span>
+                    <div className="flex flex-col sm:flex-row items-stretch md:items-center gap-4">
+                        <div className="glass-card flex items-center gap-4 py-3 px-6 border-border/10 bg-card/50 shadow-inner justify-between sm:justify-start">
+                            <div className={cn("h-8 w-8 rounded-full flex items-center justify-center border shadow-sm", isOnline ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>
+                                {isOnline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
+                            </div>
+                            <div>
+                                <div className="text-[8px] uppercase font-black text-muted-foreground tracking-widest leading-none mb-0.5">Status Rede</div>
+                                <div className="text-sm font-black text-foreground italic tracking-widest">
+                                    {isOnline ? "ONLINE" : "OFFLINE"}
+                                </div>
                             </div>
                         </div>
+
+                        <RemotePrinterSelector className="min-w-[200px]" showLabel={true} />
                     </div>
                 </div>
 
@@ -960,11 +928,11 @@ const ScanPage = () => {
                                     if (result) {
                                         setShowOcrModal(false);
                                         // Verificação de Auto-Print via Impressora Padrão
-                                        if (selectedPrinter) {
-                                            handleRemotePrint(result, selectedPrinter);
-                                            toast.success(`Impressão gerada para ${selectedPrinter}`, { id: 'autoprint' });
+                                        if (activePrinter) {
+                                            handleRemotePrint(result);
+                                            toast.success(`Impressão gerada para ${activePrinter}`, { id: 'autoprint' });
                                         } else {
-                                            toast.warning("Equipamento cadastrado! Configure sua impressora padrão em 'Meu Perfil' para imprimir etiquetas automaticamente nas próximas vezes.", { duration: 6000 });
+                                            toast.warning("Equipamento cadastrado! Configure sua impressora industrial na barra superior para imprimir automaticamente.", { duration: 6000 });
                                         }
                                     }
                                 }}

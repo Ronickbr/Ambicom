@@ -41,6 +41,8 @@ import { handleError } from "@/lib/errors";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Product, ProductLog } from "@/lib/types";
 import { calculateProductSize, formatTotalVolume } from "@/lib/product-utils";
+import { useRemotePrint } from "@/hooks/useRemotePrint";
+import { RemotePrinterSelector } from "@/components/printing/RemotePrinterSelector";
 
 const statusConfig = {
     'CADASTRO': { label: 'Cadastro', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: Clock },
@@ -67,6 +69,7 @@ interface InventoryProduct extends Product {
 
 export default function InventoryPage() {
     const { profile } = useAuth();
+    const { printLabels: executeRemotePrint, selectedPrinter: activePrinter } = useRemotePrint();
     const [products, setProducts] = useState<InventoryProduct[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -374,39 +377,14 @@ export default function InventoryPage() {
                                 <button
                                     onClick={async () => {
                                         const selectedProducts = products.filter(p => selectedIds.has(p.id));
-                                        const targetPrinter = localStorage.getItem('default_printer');
 
-                                        if (targetPrinter) {
-                                            const promise = new Promise(async (resolve, reject) => {
-                                                try {
-                                                    const { printService } = await import("@/lib/print-service");
-                                                    const { generateLabelZPL } = await import("@/lib/export-utils");
-
-                                                    // Gerar ZPL concatenado para todas as etiquetas selecionadas
-                                                    const zplCode = selectedProducts.map(p => generateLabelZPL(p)).join('\n');
-
-                                                    await printService.submitPrintJob({
-                                                        payload_type: 'zpl',
-                                                        payload_data: zplCode,
-                                                        printer_target: targetPrinter
-                                                    });
-
-                                                    resolve(true);
-                                                } catch (err) {
-                                                    reject(err);
-                                                }
-                                            });
-
-                                            toast.promise(promise, {
-                                                loading: 'Enviando p/ fila de impressão...',
-                                                success: () => {
-                                                    setSelectedIds(new Set());
-                                                    return `Enviadas ${selectedProducts.length} etiquetas para impressão!`;
-                                                },
-                                                error: 'Erro na impressão automática'
-                                            });
+                                        if (activePrinter) {
+                                            const success = await executeRemotePrint(selectedProducts);
+                                            if (success) {
+                                                setSelectedIds(new Set());
+                                            }
                                         } else {
-                                            // Fallback para baixar o PDF comum
+                                            // Fallback para download de PDF se nenhuma impressora selecionada
                                             const { printLabels } = await import("@/lib/export-utils");
                                             await printLabels(selectedProducts);
                                         }
@@ -436,6 +414,7 @@ export default function InventoryPage() {
                                 <Download className="h-6 w-6" />
                             </button>
                         </div>
+                        <RemotePrinterSelector className="min-w-[200px]" showLabel={true} />
                     </div>
                 </div>
 

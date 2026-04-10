@@ -50,13 +50,16 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
-- **v2.13.2:**
-  - **Reversão para ZPL**: Retorno ao motor de impressão nativo ZPL por questões de estabilidade e silêncio no ambiente industrial.
-  - **Template 55x80mm Estabilizado**: Implementação do novo layout industrial otimizado em orientação paisagem (^FWR).
-  - **Mapeamento de Dados Robusto**: Ajuste no utilitário de ZPL para suportar redundância de nomes de campos (model/modelo, etc).
+- **v2.13.4:**
+  - **Orientação Nativa para Impressora**: Remoção do comando `^FWR` (rotação forçada) para permitir que a Elgin L42 Pro gerencie a orientação via driver ou hardware.
+  - **Recalibração ZPL**: Layout redesenhado para o modo Retrato (55x80mm) com coordenadas nativas.
+- **v2.13.3:**
+  - **Arquitetura de Impressão Componentizada**: Criação do hook `useRemotePrint` e do componente `RemotePrinterSelector` para centralizar a lógica de gestão de pontes e envio de jobs ZPL.
+  - **Reversão para ZPL**: Retorno ao motor de impressão nativo ZPL por questões de estabilidade no ambiente industrial.
+  - **Template 55x80mm Estabilizado**: Implementação do novo layout industrial em orientação paisagem (^FWR).
 - **v2.13.1:**
   - **Calibração de Dimensões PDF**: Ajuste do formato para 80x55mm seguindo especificações industriais.
   - **Zero Margin Design**: Redução drástica das margens do PDF para garantir preenchimento total da bobina.
