@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.20.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.21.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.21.0**:
+  - **Estratégia Clean Fidelity**: Implementação de zonas de segurança com margens de 120 dots entre colunas técnicas, eliminando colisões de texto em firmwares Elgin antigos.
+  - **Reparo de QR Code Pro**: Reposicionamento para Y=310 com comando simplificado para garantir renderização em alta velocidade.
+  - **Refinamento de Matriz**: Reorganização dos dados de Gás, Compressor e Volumes em 3 blocos laterais independentes.
 - **v2.20.0**:
   - **Reconstrução Master de Layout**: Migração do motor de design para uma grade modular de linhas e colunas combinadas (multi-box). Reorganização de Modelo e Voltagem para posicionamento horizontal paralelo.
   - **Destaque de Rastreabilidade**: Serial Ambicom e QR Code centralizados com hierarquia tipográfica reforçada.
