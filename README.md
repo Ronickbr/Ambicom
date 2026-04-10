@@ -50,9 +50,17 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.18.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.19.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.19.0**:
+  - **Reconstrução de Fidelidade Absoluta**: Motor TSPL redesenhado do zero para replicar exatamente a grade industrial técnica de 5 colunas lógicas.
+  - **Mapeamento de Linhas HQ**: Implementação de divisórias reforçadas (espessura 4 e 6) para evitar falhas de impressão em bobinas térmicas industriais.
+  - **Posicionamento de Rastreabilidade**: QR Code e Serial verticalizado integrados na coluna lateral direita.
+- **v2.18.2**:
+  - **Otimização de Visibilidade**: Aumento da espessura das linhas (`BAR`) para 6 dots, garantindo renderização em ribbons de baixa densidade.
+  - **Reparo de QR Code**: Reposicionamento para zona central (Y=240) para evitar falhas de leitura em bordas curvas.
+  - **Ajuste Institucional**: Afastamento do cabeçalho da borda física para evitar cortes de endereço.
 - **v2.18.1**:
   - **Calibração Industrial Final**: Ajuste de coordenadas absolutas (Y-anchor) para evitar o transbordamento de buffer observado na v2.18.0.
   - **Estabilização de Fontes**: Redimensionamento das fontes técnicas para evitar sobreposição em rotação de 90 graus.

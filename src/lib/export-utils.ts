@@ -167,73 +167,79 @@ export const printLabels = async (products: any[]) => {
 export const generateLabelTSPL = (data: any): string => {
     const v = (val: any) => {
         if (!val) return "-";
-        // Limpeza de unidades duplicadas
         return String(val).replace(/[VLgWAsig()]/g, "").trim();
     };
 
     // LABELS: 80mm (L) x 55mm (A)
-    // Usamos 90 graus para ler a etiqueta na vertical (80mm de altura)
+    // Rotação 90 para leitura vertical (Portrait Look on Landscape Ribbon)
     return `SIZE 80 mm, 55 mm
 GAP 3 mm, 0
 DIRECTION 1,0
 REFERENCE 0,0
 CLS
 
-; --- LATERAL ESQUERDA: INSTITUCIONAL (LOGO Ambicom) ---
-TEXT 620, 20, "3", 90, 1, 1, "Ambicom"
-TEXT 590, 20, "1", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas"
-TEXT 575, 20, "1", 90, 1, 1, "Sao Jose dos Pinhais - PR | SAC: 041 3382-5410"
+; --- ZONA 1 (ESQUERDA): INSTITUCIONAL ---
+TEXT 620, 10, "3", 90, 1, 1, "Ambicom"
+TEXT 595, 10, "1", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas"
+TEXT 580, 10, "1", 90, 1, 1, "SJP - PR | SAC: 041 3382-5410"
 
-; --- GRADE TÉCNICA (BOX INICIA EM X=550) ---
-BOX 20, 15, 550, 425, 2
+; Bloco Garantia (Vertical no canto oposto)
+TEXT 625, 300, "1", 90, 1, 1, "PRODUTO REMANUFATURADO"
+TEXT 610, 300, "1", 90, 1, 1, "GARANTIA AMBICOM"
 
-; Divisores de Coluna Internos (Horizontais na bobina, Verticais na etiqueta)
-BAR 380, 15, 2, 410   ; Divisor Col 1 / 2
-BAR 210, 15, 2, 410   ; Divisor Col 2 / 3
+; --- GRADE TÉCNICA PRINCIPAL (v2.19.0) ---
+; Moldura Externa
+BOX 15, 10, 565, 430, 4
 
-; Divisores de Linha Internos (Verticais na bobina, Horizontais na etiqueta)
-BAR 20, 90, 530, 2    ; Linha 1
-BAR 20, 180, 530, 2   ; Linha 2
-BAR 20, 250, 530, 2   ; Linha 3
-BAR 20, 330, 530, 2   ; Linha 4
+; DIVISORES DE COLUNA (Verticais na etiqueta vertical)
+BAR 445, 10, 4, 420   ; Col 1 / 2
+BAR 330, 10, 4, 420   ; Col 2 / 3
+BAR 215, 10, 4, 420   ; Col 3 / 4
 
-; --- COLUNA 1: IDENTIFICAÇÃO (X=540 a 390) ---
-TEXT 535, 25, "1", 90, 1, 1, "MODELO"
-TEXT 515, 25, "3", 90, 1, 1, "${v(data.model || data.modelo)}"
-TEXT 535, 220, "1", 90, 1, 1, "VOLTAGEM"
-TEXT 510, 220, "4", 90, 1, 1, "${v(data.voltage || data.tensao)} V"
+; DIVISORES DE LINHA (Horizontais na etiqueta vertical)
+BAR 15, 95, 550, 4    ; Linha 1 (Modelo/Voltagem...)
+BAR 15, 175, 550, 4   ; Linha 2 (PNC/Carga...)
+BAR 15, 260, 550, 4   ; Linha 3 (Gás/Refrig...)
+BAR 15, 345, 550, 4   ; Linha 4 (Pressão...)
 
-; --- COLUNA 2: DADOS FLUIDOS (X=370 a 220) ---
-QRCODE 370, 330, L, 4, 90, "${v(data.internal_serial)}"
-TEXT 370, 25, "1", 90, 1, 1, "N. SERIE AMBICOM:"
-TEXT 345, 25, "3", 90, 1, 1, "${v(data.internal_serial)}"
-TEXT 305, 25, "1", 90, 1, 1, "PNC/ML:"
-TEXT 285, 25, "2", 90, 1, 1, "${v(data.pnc_ml)}"
-TEXT 370, 250, "4", 90, 1, 1, "60 Hz"
+; --- COLUNA 1: DADOS PRIMÁRIOS ---
+TEXT 550, 20, "1", 90, 1, 1, "MODELO"
+TEXT 525, 20, "3", 90, 1, 1, "${v(data.model || data.modelo)}"
+TEXT 435, 20, "1", 90, 1, 1, "VOLTAGEM"
+TEXT 410, 20, "4", 90, 1, 1, "${v(data.voltage || data.tensao)}V"
+TEXT 320, 20, "1", 90, 1, 1, "GAS FRIGOR."
+TEXT 295, 20, "2", 90, 1, 1, "${v(data.refrigerant_gas)}"
+TEXT 205, 20, "1", 90, 1, 1, "VOL. FREEZER"
+TEXT 180, 20, "3", 90, 1, 1, "${v(data.volume_freezer)}L"
+TEXT 90, 20, "1", 90, 1, 1, "CORRENTE"
+TEXT 65, 20, "3", 90, 1, 1, "${v(data.electric_current)}A"
 
-; --- COLUNA 3: DADOS TÉCNICOS (X=200 a 25) ---
-TEXT 200, 25, "1", 90, 1, 1, "GAS"
-TEXT 180, 25, "2", 90, 1, 1, "${v(data.refrigerant_gas)}"
-TEXT 200, 140, "1", 90, 1, 1, "CARGA"
-TEXT 180, 140, "2", 90, 1, 1, "${v(data.gas_charge)} g"
-TEXT 200, 280, "1", 90, 1, 1, "COMPRESSOR"
-TEXT 180, 280, "2", 90, 1, 1, "${v(data.compressor)}"
+; --- COLUNA 2: DADOS SECUNDÁRIOS ---
+TEXT 550, 105, "1", 90, 1, 1, "PNC/ML"
+TEXT 515, 105, "2", 90, 1, 1, "${v(data.pnc_ml)}"
+TEXT 435, 105, "1", 90, 1, 1, "CARGA GAS"
+TEXT 410, 105, "3", 90, 1, 1, "${v(data.gas_charge)}g"
+TEXT 320, 105, "1", 90, 1, 1, "VOL. REFRIG."
+TEXT 295, 105, "3", 90, 1, 1, "${v(data.volume_refrigerator)}L"
+TEXT 205, 105, "1", 90, 1, 1, "P. DE ALTA"
+TEXT 180, 105, "1", 90, 1, 1, "(${v(data.pressure_high_low)})"
+TEXT 90, 105, "1", 90, 1, 1, "POT. DEGELO"
+TEXT 65, 105, "3", 90, 1, 1, "${v(data.defrost_power)}W"
 
-TEXT 150, 25, "1", 90, 1, 1, "VOL. FRZ"
-TEXT 130, 25, "2", 90, 1, 1, "${v(data.volume_freezer)} L"
-TEXT 150, 140, "1", 90, 1, 1, "VOL. REF"
-TEXT 130, 140, "2", 90, 1, 1, "${v(data.volume_refrigerator)} L"
-TEXT 150, 280, "1", 90, 1, 1, "VOL. TOT"
-TEXT 130, 280, "3", 90, 1, 1, "${v(data.volume_total)} L"
+; --- COLUNA 3: RASTREABILIDADE (SERIAL GRANDE) ---
+QRCODE 550, 230, L, 4, 90, "${v(data.internal_serial)}"
+TEXT 550, 310, "0", 90, 1, 1, "SERIAL AMBICOM:"
+TEXT 525, 310, "4", 90, 1, 1, "${v(data.internal_serial)}"
+TEXT 495, 310, "2", 90, 1, 1, "${v(data.commercial_code)}"
 
-TEXT 80, 25, "1", 90, 1, 1, "CAP. CONG."
-TEXT 60, 25, "2", 90, 1, 1, "${v(data.freezing_capacity)}"
-TEXT 80, 280, "1", 90, 1, 1, "TAMANHO"
-TEXT 50, 280, "5", 90, 1, 1, "${v(data.size || 'G')}"
-
-TEXT 30, 25, "1", 90, 1, 1, "PRODUTO REMANUFATURADO - GARANTIA AMBICOM"
+TEXT 435, 230, "1", 90, 1, 1, "VOLUME TOTAL"
+TEXT 405, 230, "4", 90, 1, 1, "${v(data.volume_total)}L"
+TEXT 320, 230, "1", 90, 1, 1, "CAPAC. CONG."
+TEXT 295, 230, "2", 90, 1, 1, "${v(data.freezing_capacity)}"
+TEXT 205, 230, "1", 90, 1, 1, "TAMANHO"
+TEXT 175, 230, "5", 90, 1, 1, "${v(data.size || 'G')}"
+TEXT 90, 230, "5", 90, 1, 1, "60 Hz"
 
 PRINT 1
 `;
 };
-
