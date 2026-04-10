@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.18.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.18.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.18.1**:
+  - **Calibração Industrial Final**: Ajuste de coordenadas absolutas (Y-anchor) para evitar o transbordamento de buffer observado na v2.18.0.
+  - **Estabilização de Fontes**: Redimensionamento das fontes técnicas para evitar sobreposição em rotação de 90 graus.
 - **v2.18.0**:
   - **TSPL Portrait Designer (Software Mapping)**: Implementação de um mapeador de coordenadas virtual que traduz um design Retrato (55x80) para o plano Físico da impressora via software. Isso resolve definitivamente as falhas de rotação de firmware em impressoras Elgin L42 Pro.
   - **Deduplicação de Unidades**: Lógica de limpeza de strings para evitar dados repetidos (ex: "127 V V").

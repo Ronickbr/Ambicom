@@ -164,129 +164,76 @@ export const printLabels = async (products: any[]) => {
     doc.save(`etiquetas_ambicom_${timestamp}.pdf`);
 };
 
-/**
- * TSPL Designer - Mapeador de Coordenadas para Rotação Técnica Industrial.
- * Desenha em 55x80 (Retrato) e converte para 80x55 (Físico) via 90°.
- */
-class TSPLPortraitDesigner {
-    private commands: string[] = [];
-    // Dimensões virtuais (O que o usuário quer ver)
-    private vW = 440; // 55mm
-    private vH = 640; // 80mm
-
-    constructor() {
-        this.commands.push(`SIZE 80 mm, 55 mm`);
-        this.commands.push(`GAP 3 mm, 0`);
-        this.commands.push(`DIRECTION 0,0`);
-        this.commands.push(`REFERENCE 0,0`);
-        this.commands.push(`CLS`);
-    }
-
-    // Tradutor de Coordenadas: (vx, vy) -> (px, py)
-    // vx: 0 a 440 | vy: 0 a 640
-    private map(vx: number, vy: number): { x: number, y: number } {
-        return {
-            x: Math.round(vy),
-            y: Math.round(this.vW - vx)
-        };
-    }
-
-    addText(vx: number, vy: number, font: string, xmul: number, ymul: number, content: string) {
-        const p = this.map(vx, vy);
-        // Usamos rotação fixa de 90 para converter retrato em plano de impressão
-        this.commands.push(`TEXT ${p.x},${p.y},"${font}",90,${xmul},${ymul},"${content}"`);
-    }
-
-    addBar(vx: number, vy: number, vw: number, vh: number) {
-        const p = this.map(vx, vy);
-        // Invertemos largura e altura da barra na rotação
-        this.commands.push(`BAR ${p.x},${p.y},${vh},${vw}`);
-    }
-
-    addBox(vx1: number, vy1: number, vx2: number, vy2: number, t: number) {
-        const p1 = this.map(vx1, vy1);
-        const p2 = this.map(vx2, vy2);
-        this.commands.push(`BOX ${p1.x},${p1.y},${p2.x},${p2.y},${t}`);
-    }
-
-    addQRCode(vx: number, vy: number, content: string) {
-        const p = this.map(vx, vy);
-        this.commands.push(`QRCODE ${p.x},${p.y},L,4,A,90,"${content}"`);
-    }
-
-    generate(): string {
-        this.commands.push("PRINT 1\n");
-        return this.commands.join("\n");
-    }
-}
-
 export const generateLabelTSPL = (data: any): string => {
-    const clean = (v: any) => {
-        if (!v) return "-";
-        // Remove unidades duplicadas se já existirem no dado
-        return String(v).replace(/[VLgWAsig()]/g, "").trim();
+    const v = (val: any) => {
+        if (!val) return "-";
+        // Limpeza de unidades duplicadas
+        return String(val).replace(/[VLgWAsig()]/g, "").trim();
     };
 
-    const d = new TSPLPortraitDesigner();
+    // LABELS: 80mm (L) x 55mm (A)
+    // Usamos 90 graus para ler a etiqueta na vertical (80mm de altura)
+    return `SIZE 80 mm, 55 mm
+GAP 3 mm, 0
+DIRECTION 1,0
+REFERENCE 0,0
+CLS
 
-    // --- 1. CABEÇALHO (TOPO DA ETIQUETA VERTICAL) ---
-    d.addText(15, 20, "3", 1, 1, "Ambicom");
-    d.addText(45, 20, "1", 1, 1, "PRODUTO REMANUFATURADO");
-    d.addText(60, 20, "1", 1, 1, "GARANTIA AMBICOM");
-    d.addText(85, 20, "1", 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas, SJP - PR");
-    d.addText(105, 20, "2", 1, 1, "SAC: 041 3382-5410");
+; --- LATERAL ESQUERDA: INSTITUCIONAL (LOGO Ambicom) ---
+TEXT 620, 20, "3", 90, 1, 1, "Ambicom"
+TEXT 590, 20, "1", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas"
+TEXT 575, 20, "1", 90, 1, 1, "Sao Jose dos Pinhais - PR | SAC: 041 3382-5410"
 
-    // --- 2. GRADE TÉCNICA (Y=140 até 620) ---
-    // Coluna 1: Modelo / PNC / Gás / Vol. Freezer / Pressão / Corrente
-    d.addBar(130, 20, 400, 2); // Topo da grade
+; --- GRADE TÉCNICA (BOX INICIA EM X=550) ---
+BOX 20, 15, 550, 425, 2
 
-    // Linha Modelo / Voltagem
-    d.addText(145, 25, "1", 1, 1, "MODELO");
-    d.addText(170, 25, "3", 1, 1, clean(data.model || data.modelo));
-    d.addText(145, 225, "1", 1, 1, "VOLTAGEM");
-    d.addText(170, 225, "4", 1, 1, clean(data.voltage || data.tensao) + " V");
-    d.addBar(195, 20, 400, 2);
+; Divisores de Coluna Internos (Horizontais na bobina, Verticais na etiqueta)
+BAR 380, 15, 2, 410   ; Divisor Col 1 / 2
+BAR 210, 15, 2, 410   ; Divisor Col 2 / 3
 
-    // Linha Serial / QR Code / PNC
-    d.addQRCode(205, 340, clean(data.internal_serial));
-    d.addText(210, 25, "1", 1, 1, "N. SERIE AMBICOM:");
-    d.addText(230, 25, "4", 1, 1, clean(data.internal_serial));
-    d.addText(265, 25, "1", 1, 1, "PNC/ML:");
-    d.addText(285, 25, "3", 1, 1, clean(data.pnc_ml));
-    d.addBar(310, 20, 400, 2);
+; Divisores de Linha Internos (Verticais na bobina, Horizontais na etiqueta)
+BAR 20, 90, 530, 2    ; Linha 1
+BAR 20, 180, 530, 2   ; Linha 2
+BAR 20, 250, 530, 2   ; Linha 3
+BAR 20, 330, 530, 2   ; Linha 4
 
-    // Linha Gás / Carga / 60Hz
-    d.addText(325, 25, "1", 1, 1, "GAS FRIG.");
-    d.addText(345, 25, "3", 1, 1, clean(data.refrigerant_gas));
-    d.addText(325, 160, "1", 1, 1, "CARGA");
-    d.addText(345, 160, "3", 1, 1, clean(data.gas_charge) + " g");
-    d.addText(325, 320, "4", 1, 1, "60 Hz");
-    d.addBar(370, 20, 400, 2);
+; --- COLUNA 1: IDENTIFICAÇÃO (X=540 a 390) ---
+TEXT 535, 25, "1", 90, 1, 1, "MODELO"
+TEXT 515, 25, "3", 90, 1, 1, "${v(data.model || data.modelo)}"
+TEXT 535, 220, "1", 90, 1, 1, "VOLTAGEM"
+TEXT 510, 220, "4", 90, 1, 1, "${v(data.voltage || data.tensao)} V"
 
-    // Linha Volumes
-    d.addText(385, 25, "1", 1, 1, "VOL. FREEZER");
-    d.addText(405, 25, "3", 1, 1, clean(data.volume_freezer) + " L");
-    d.addText(385, 160, "1", 1, 1, "VOL. REFRIG");
-    d.addText(405, 160, "3", 1, 1, clean(data.volume_refrigerator) + " L");
-    d.addText(385, 310, "1", 1, 1, "VOL. TOTAL");
-    d.addText(405, 310, "4", 1, 1, clean(data.volume_total) + " L");
-    d.addBar(435, 20, 400, 2);
+; --- COLUNA 2: DADOS FLUIDOS (X=370 a 220) ---
+QRCODE 370, 330, L, 4, 90, "${v(data.internal_serial)}"
+TEXT 370, 25, "1", 90, 1, 1, "N. SERIE AMBICOM:"
+TEXT 345, 25, "3", 90, 1, 1, "${v(data.internal_serial)}"
+TEXT 305, 25, "1", 90, 1, 1, "PNC/ML:"
+TEXT 285, 25, "2", 90, 1, 1, "${v(data.pnc_ml)}"
+TEXT 370, 250, "4", 90, 1, 1, "60 Hz"
 
-    // Linha Compressor / Pressão / Potência
-    d.addText(450, 25, "1", 1, 1, "COMPRESSOR");
-    d.addText(470, 25, "3", 1, 1, clean(data.compressor));
-    d.addText(450, 220, "1", 1, 1, "PRESSÃO (H/L)");
-    d.addText(470, 220, "2", 1, 1, clean(data.pressure_high_low));
-    d.addBar(500, 20, 400, 2);
+; --- COLUNA 3: DADOS TÉCNICOS (X=200 a 25) ---
+TEXT 200, 25, "1", 90, 1, 1, "GAS"
+TEXT 180, 25, "2", 90, 1, 1, "${v(data.refrigerant_gas)}"
+TEXT 200, 140, "1", 90, 1, 1, "CARGA"
+TEXT 180, 140, "2", 90, 1, 1, "${v(data.gas_charge)} g"
+TEXT 200, 280, "1", 90, 1, 1, "COMPRESSOR"
+TEXT 180, 280, "2", 90, 1, 1, "${v(data.compressor)}"
 
-    // Rodapé: Corrente / Tamanho / Potência
-    d.addText(515, 25, "1", 1, 1, "CORRENTE");
-    d.addText(535, 25, "4", 1, 1, clean(data.electric_current) + " A");
-    d.addText(515, 160, "1", 1, 1, "POT. DEGELO");
-    d.addText(535, 160, "3", 1, 1, clean(data.defrost_power) + " W");
-    d.addText(515, 310, "1", 1, 1, "TAMANHO");
-    d.addText(535, 310, "5", 1, 1, clean(data.size || "G"));
-    d.addBar(565, 20, 400, 2);
+TEXT 150, 25, "1", 90, 1, 1, "VOL. FRZ"
+TEXT 130, 25, "2", 90, 1, 1, "${v(data.volume_freezer)} L"
+TEXT 150, 140, "1", 90, 1, 1, "VOL. REF"
+TEXT 130, 140, "2", 90, 1, 1, "${v(data.volume_refrigerator)} L"
+TEXT 150, 280, "1", 90, 1, 1, "VOL. TOT"
+TEXT 130, 280, "3", 90, 1, 1, "${v(data.volume_total)} L"
 
-    return d.generate();
+TEXT 80, 25, "1", 90, 1, 1, "CAP. CONG."
+TEXT 60, 25, "2", 90, 1, 1, "${v(data.freezing_capacity)}"
+TEXT 80, 280, "1", 90, 1, 1, "TAMANHO"
+TEXT 50, 280, "5", 90, 1, 1, "${v(data.size || 'G')}"
+
+TEXT 30, 25, "1", 90, 1, 1, "PRODUTO REMANUFATURADO - GARANTIA AMBICOM"
+
+PRINT 1
+`;
 };
+
