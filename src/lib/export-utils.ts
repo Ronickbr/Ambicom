@@ -170,8 +170,8 @@ export const generateLabelTSPL = (data: any): string => {
         return String(val).replace(/[VLgWAsig()]/g, "").trim();
     };
 
-    // LABELS: 55mm (L) x 80mm (A) - Orientação Vertical Nativa
-    // v2.22.0 - Replicação de Grade Técnica
+    // LABELS: 55mm (L) x 80mm (A)
+    // Motor v2.22.1 - Espaçamento de Segurança
     return `SIZE 55 mm, 80 mm
 GAP 3 mm, 0
 DIRECTION 1,0
@@ -183,68 +183,61 @@ TEXT 20, 20, "3", 0, 1, 1, "Ambicom"
 TEXT 20, 50, "1", 0, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas"
 TEXT 20, 65, "1", 0, 1, 1, "SJP - PR | SAC: 041 3382-5410"
 
-; --- GRADE TÉCNICA PUZZLE (Referência 1086) ---
-; Borda Externa
-BOX 15, 100, 425, 620, 4
+; --- GRADE TÉCNICA (v2.22.1) ---
+; Moldura
+BOX 15, 95, 425, 630, 4
 
-; Linhas Horizontais (Divisores de Seção)
+; Linhas Horizontais
 BAR 15, 160, 410, 4   ; Fim Modelo/Volt
-BAR 15, 260, 410, 4   ; Fim Serial
-BAR 15, 310, 410, 4   ; Fim PNC/ML
-BAR 15, 410, 410, 4   ; Fim Gás/Carga/Freq
-BAR 15, 510, 410, 4   ; Fim Volumes
-BAR 15, 560, 150, 4   ; Linha extra Tamanho
+BAR 15, 340, 410, 4   ; Fim Serial e PNC
+BAR 15, 430, 410, 4   ; Fim Gás/Eficiência
+BAR 15, 530, 410, 4   ; Fim Volumes
 
-; Linhas Verticais (Divisores de Coluna)
-BAR 230, 100, 4, 60   ; Entre Modelo e Voltagem
-BAR 150, 310, 4, 310  ; Divisor principal esquerdo
-BAR 290, 310, 4, 310  ; Divisor principal direito
+; Linhas Verticais
+BAR 230, 95, 4, 65    ; Divisor Modelo/Volt
+BAR 150, 340, 4, 300  ; Divisor Base Esquerdo
+BAR 290, 340, 4, 190  ; Divisor Base Direito
 
-; --- CONTEÚDO ---
+; --- BLOCO 1: TOPO ---
+TEXT 25, 105, "1", 0, 1, 1, "MODELO"
+TEXT 25, 125, "3", 0, 1, 1, "${v(data.model || data.modelo)}"
+TEXT 240, 105, "1", 0, 1, 1, "VOLTAGEM"
+TEXT 240, 120, "4", 0, 1, 1, "${v(data.voltage || data.tensao)}V"
 
-; Linha 1: Modelo e Voltagem
-TEXT 25, 110, "1", 0, 1, 1, "MODELO"
-TEXT 25, 130, "3", 0, 1, 1, "${v(data.model || data.modelo)}"
-TEXT 240, 110, "1", 0, 1, 1, "VOLTAGEM"
-TEXT 240, 125, "4", 0, 1, 1, "${v(data.voltage || data.tensao)}V"
+; --- BLOCO 2: RASTREABILIDADE (SERIAL ISOLADO) ---
+QRCODE 25, 175, L, 4, 0, "${v(data.internal_serial)}"
+TEXT 120, 175, "1", 0, 1, 1, "N. SERIE AMBICOM:"
+TEXT 120, 200, "4", 0, 1, 2, "${v(data.internal_serial)}"
+TEXT 120, 280, "2", 0, 1, 1, "PNC/ML: ${v(data.pnc_ml)}"
 
-; Linha 2: Numero de Serie Grande
-TEXT 25, 170, "1", 0, 1, 1, "NUMERO DE SERIE AMBICOM:"
-TEXT 25, 195, "4", 0, 2, 2, "${v(data.internal_serial)}"
-QRCODE 320, 165, L, 4, 0, "${v(data.internal_serial)}"
+; --- BLOCO 3: DADOS TÉCNICOS (MATRIZ REBAIXADA) ---
+; Coluna 1
+TEXT 25, 345, "1", 0, 1, 1, "GAS FRIG."
+TEXT 25, 370, "2", 0, 1, 1, "${v(data.refrigerant_gas)}"
+TEXT 25, 435, "1", 0, 1, 1, "VOL. FRZ"
+TEXT 25, 460, "3", 0, 1, 1, "${v(data.volume_freezer)}L"
+TEXT 25, 535, "1", 0, 1, 1, "CORRENTE"
+TEXT 25, 560, "4", 0, 1, 1, "${v(data.electric_current)}A"
 
-; Linha 3: PNC/ML
-TEXT 25, 275, "2", 0, 1, 1, "PNC/ML: ${v(data.pnc_ml)}"
+; Coluna 2
+TEXT 160, 345, "1", 0, 1, 1, "CARGA"
+TEXT 160, 370, "2", 0, 1, 1, "${v(data.gas_charge)}g"
+TEXT 160, 435, "1", 0, 1, 1, "VOL. REF"
+TEXT 160, 460, "3", 0, 1, 1, "${v(data.volume_refrigerator)}L"
+TEXT 160, 535, "1", 0, 1, 1, "POTENCIA"
+TEXT 160, 560, "3", 0, 1, 1, "${v(data.defrost_power)}W"
 
-; Linha 4: Gás / Carga / 60Hz
-TEXT 25, 320, "1", 0, 1, 1, "GAS FRIG."
-TEXT 25, 350, "3", 0, 1, 1, "${v(data.refrigerant_gas)}"
-TEXT 160, 320, "1", 0, 1, 1, "CARGA GAS"
-TEXT 160, 350, "3", 0, 1, 1, "${v(data.gas_charge)}g"
-TEXT 300, 320, "4", 0, 1, 2, "60 Hz"
+; Coluna 3
+TEXT 300, 345, "4", 0, 1, 1, "60 Hz"
+TEXT 300, 435, "1", 0, 1, 1, "VOL. TOT"
+TEXT 300, 460, "4", 0, 1, 1, "${v(data.volume_total)}L"
+TEXT 300, 535, "1", 0, 1, 1, "TAMANHO"
+TEXT 300, 560, "5", 0, 1, 1, "${v(data.size || 'G')}"
 
-; Linha 5: Volumes
-TEXT 25, 420, "1", 0, 1, 1, "VOL. FRZ"
-TEXT 25, 450, "3", 0, 1, 1, "${v(data.volume_freezer)}L"
-TEXT 160, 420, "1", 0, 1, 1, "VOL. REF"
-TEXT 160, 450, "3", 0, 1, 1, "${v(data.volume_refrigerator)}L"
-TEXT 300, 420, "1", 0, 1, 1, "VOL. TOT"
-TEXT 300, 450, "4", 0, 1, 1, "${v(data.volume_total)}L"
-
-; Linha 6: Compressor e Dados Finais
-TEXT 160, 520, "1", 0, 1, 1, "PRESSÃO ALTA/BAIXA (psig)"
-TEXT 160, 540, "1", 0, 1, 1, "(${v(data.pressure_high_low)})"
-TEXT 300, 520, "1", 0, 1, 1, "TAMANHO"
-TEXT 300, 545, "5", 0, 1, 1, "${v(data.size || 'G')}"
-
-TEXT 25, 570, "1", 0, 1, 1, "CORRENTE"
-TEXT 25, 595, "3", 0, 1, 1, "${v(data.electric_current)}A"
-TEXT 160, 570, "1", 0, 1, 1, "POT. DEGELO"
-TEXT 160, 595, "3", 0, 1, 1, "${v(data.defrost_power)}W"
-
-; Rodapé Lateral (Garantia)
-TEXT 20, 640, "1", 0, 1, 1, "PRODUTO REMANUFATURADO - GARANTIA AMBICOM"
+; --- RODAPÉ ---
+TEXT 20, 645, "1", 0, 1, 1, "PRODUTO REMANUFATURADO - GARANTIA AMBICOM"
 
 PRINT 1
 `;
 };
+
