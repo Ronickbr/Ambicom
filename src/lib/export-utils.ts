@@ -42,19 +42,13 @@ export const exportToExcel = (data: Record<string, unknown>[], fileName: string)
 };
 
 export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
-    // Label dimensions: 80mm wide x 55mm tall (Orientação Paisagem)
-    const labelWidth = 80;
-    const labelHeight = 55;
+    // 80mm x 55mm: sem orientation para evitar /Rotate no PDF
+    // jsPDF recebe o formato diretamente sem transformacoes de orientacao
     const doc = new jsPDF({
-        orientation: 'landscape',
         unit: 'mm',
-        format: [labelWidth, labelHeight]
-    });
-
-    // Configura o PDF para informar ao visualizador/driver da impressora
-    // que ele deve ajustar a escala e rotacionar automaticamente para caber na página
-    doc.viewerPreferences({
-        'PrintScaling': 'AppDefault'
+        format: [80, 55],
+        putOnlyUsedFonts: true,
+        compress: true,
     });
 
     // Margens e limites horizontais
@@ -80,7 +74,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
 
     for (let index = 0; index < products.length; index++) {
         const p = products[index];
-        if (index > 0) doc.addPage([labelWidth, labelHeight], 'landscape');
+        if (index > 0) doc.addPage([80, 55]);
 
         const val = (v: any) => v || "";
 

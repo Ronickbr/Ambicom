@@ -138,7 +138,7 @@ async function executeJob(job) {
                 log(`🖨️ Enviando PDF para pdf-to-printer...`);
                 await ptp.print(tempFile, {
                     printer: job.printer_target,
-                    // PDF gerado com exatamente 80x55mm → imprime em 100% sem redimensionar
+                    // nofitpage: imprime em escala 1:1 sem redimensionar
                     win32: ['-print-settings "nofitpage"']
                 });
 
