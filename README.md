@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.15.2**:
+  - **Padronização TSPL**: Limpeza e normalização de espaçamentos em comandos e coordenadas para maior estabilidade de renderização.
+  - **Correção de Caracteres**: Ajuste de strings de cabeçalho e endereço para evitar artefatos visuais na impressão física.
+  - **Layout Técnico Consolidado**: Estabilização do design em 90 graus com grade industrial harmônica.
 - **v2.15.1**:
   - **Realinhamento Estrutural TSPL**: Ajuste milimétrico de grade e fontes (tipo 0 a 5) baseado no feedback de impressão física e calibração de escala.
   - **Sincronização de Banco**: Execução de recarga de cache no Supabase para garantir a propagação da nova constraint de `payload_type`.
