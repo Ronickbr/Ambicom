@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.14.1**:
+  - **Correção de Restrição de Payload**: Atualização da constraint de banco de dados no Supabase para permitir o tipo `tspl`, corrigindo o erro 400 na submissão de trabalhos de impressão.
 - **v2.14.0**:
   - **Migração Completa para TSPL**: Substituição do motor de impressão ZPL pelo padrão TSPL (Taiwan Semiconductor Printing Language) em todo o sistema, visando 100% de compatibilidade e fidelidade com a impressora Elgin L42 Pro.
   - **Atualização do Print Bridge**: Fila de impressão industrial agora processa jobs TSPL nativamente via PowerShell RAW.
