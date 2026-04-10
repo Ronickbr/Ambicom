@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.8**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.9**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.14.9**:
+  - **Conversão ZPL p/ TSPL**: Mapeamento técnico de comandos legados `^GB` para a sintaxe `BAR`/`BOX`, replicando o layout industrial histórico no novo protocolo.
+  - **Fontes Dinâmicas**: Implementação de fonte tipo "0" com escalonamento personalizado de largura e altura para campos de dados técnicos.
+  - **Realinhamento de Cabeçalho**: Ajuste de coordenadas para o bloco de endereço e garantia, otimizando o espaço superior da bobina.
 - **v2.14.8**:
   - **Layout TSPL Homologado**: Implementação da versão oficial da tabela industrial com moldura `BOX` e divisórias `BAR` calibradas.
   - **Ajuste de Hardware**: Configuração de `GAP 3mm` e realinhamento de coordenadas para garantir estabilidade na Elgin L42 Pro.
