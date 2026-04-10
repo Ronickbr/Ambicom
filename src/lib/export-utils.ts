@@ -380,38 +380,39 @@ export async function buildLabelHTML(p: any): Promise<string> {
 
 // ─── Geração de PDF ───────────────────────────────────────────────────────────
 
+// Largura do label em mm (80mm = largura do rolo)
+const LABEL_W_MM = 80;
+// Largura do iframe em pixels: 80mm @ 96dpi ≈ 302px
+const LABEL_W_PX = 302;
+// Altura máxima de segurança para o iframe (suficiente para qualquer label)
+const IFRAME_MAX_H_PX = 900;
+
 /**
- * Gera as etiquetas em formato PDF Industrial (80×130mm portrait)
- * usando HTML+CSS renderizado via iframe oculto → jsPDF.html()
+ * Gera as etiquetas em formato PDF Industrial.
+ * A altura do PDF é medida dinamicamente a partir do HTML renderizado,
+ * evitando qualquer clipping do conteúdo.
  */
 export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
-    // 80mm wide × 130mm tall portrait (igual ao @page do HTML)
-    const W = 80, H = 130;
-
-    const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [W, H],
-        putOnlyUsedFonts: true,
-        compress: true,
-    });
+    // jsPDF será criado após medir a primeira etiqueta.
+    // Usamos 'any' temporário e recriamos com as dimensões corretas.
+    let doc: jsPDF | null = null;
+    let labelH = 0; // altura em mm, medida na 1ª iteração
 
     for (let i = 0; i < products.length; i++) {
-        if (i > 0) doc.addPage([W, H], 'portrait');
-
         const html = await buildLabelHTML(products[i]);
 
-        await new Promise<void>((resolve, reject) => {
-            // Iframe oculto – 80mm × 130mm em pixels (96 dpi: 302px × 492px)
+        const result = await new Promise<{ pageH: number }>(async (resolve, reject) => {
+            // ── Iframe oculto com altura generosa para não truncar o DOM
             const iframe = document.createElement('iframe');
             iframe.style.cssText = [
                 'position:fixed',
                 'left:-9999px',
                 'top:-9999px',
-                'width:302px',
-                'height:492px',
+                `width:${LABEL_W_PX}px`,
+                `height:${IFRAME_MAX_H_PX}px`,
                 'border:none',
                 'visibility:hidden',
+                'overflow:visible',
             ].join(';');
             document.body.appendChild(iframe);
 
@@ -422,24 +423,50 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
                     iDoc.write(html);
                     iDoc.close();
 
-                    // Aguarda QR Code (data URL) carregar
-                    await new Promise(r => setTimeout(r, 400));
+                    // Aguarda QR Code (data URL) e fontes carregarem
+                    await new Promise(r => setTimeout(r, 500));
+
+                    // ── Mede a altura REAL do conteúdo renderizado ──
+                    const labelEl = iDoc.querySelector('.label') as HTMLElement;
+                    const renderedPx = labelEl
+                        ? labelEl.getBoundingClientRect().height + 8 // +8px da margem de 1mm×2
+                        : iDoc.documentElement.scrollHeight;
+
+                    // Converte px → mm  (96dpi: 1px = 25.4/96 mm)
+                    const pageH = Math.ceil(renderedPx * 25.4 / 96) + 2; // +2mm de folga
+
+                    // ── Inicializa o jsPDF com as dimensões corretas ──
+                    if (!doc) {
+                        labelH = pageH;
+                        doc = new jsPDF({
+                            orientation: 'portrait',
+                            unit: 'mm',
+                            format: [LABEL_W_MM, pageH],
+                            putOnlyUsedFonts: true,
+                            compress: true,
+                        });
+                    } else if (i > 0) {
+                        doc.addPage([LABEL_W_MM, labelH], 'portrait');
+                    }
 
                     await (doc as any).html(iDoc.body, {
                         x: 0,
                         y: 0,
-                        width: W,
-                        windowWidth: 302,     // 80mm @ 96dpi
+                        width: LABEL_W_MM,
+                        windowWidth: LABEL_W_PX,
                         html2canvas: {
-                            scale: 3.78,      // 96 → ~360 dpi (qualidade industrial)
+                            scale: 3.78,           // 96 → 360 dpi (qualidade industrial)
                             useCORS: true,
                             backgroundColor: '#ffffff',
                             logging: false,
+                            // Captura até a altura real medida
+                            height: Math.ceil(renderedPx),
+                            windowHeight: IFRAME_MAX_H_PX,
                         },
                         autoPaging: false,
                     });
 
-                    resolve();
+                    resolve({ pageH });
                 } catch (err) {
                     reject(err);
                 } finally {
@@ -449,8 +476,11 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
 
             iframe.src = 'about:blank';
         });
+
+        void result; // `pageH` foi usado durante a promição, não precisa aqui
     }
 
+    if (!doc) throw new Error('Nenhum produto pôde ser processado.');
     return doc;
 };
 
