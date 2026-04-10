@@ -186,84 +186,88 @@ export const generateLabelTSPL = (data: any): string => {
     const power = val(data.defrost_power || data.potencia_degelo);
     const size = data.size || data.tamanho ? String(data.size || data.tamanho).charAt(0).toUpperCase() : '-';
 
-    return `SIZE 80 mm,55 mm
-GAP 0 mm,0 mm
-DIRECTION 1,0
-REFERENCE 0,0
+    return `SIZE 80 mm, 55 mm
+
+GAP 3 mm, 0
+
+DIRECTION 1, 0
+
+REFERENCE 0, 0
+
 CLS
 
-; --- CABEÇALHO ORGANIZADO (PILHA VERTICAL) ---
-; Todos em Y=425 (margem direita no modo 270) para ter o máximo de largura
-TEXT 15,425,"4",270,1,1,"Ambicom"
+; --- CABEÇALHO ---
+TEXT 625, 15, "2", 90, 1, 1, "Ambicom"
+TEXT 605, 15, "2", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas, Sao Jose dos Pinhais - PR"
+TEXT 590, 15, "2", 90, 1, 1, "SAC: 041 - 3382-5410"
 
-; Bloco de Garantia (Logo abaixo do título)
-TEXT 40,425,"0",270,1,1,"PRODUTO REMANUFATURADO"
-TEXT 55,425,"0",270,1,1,"GARANTIA AMBICOM"
+BAR 20, 10, 500, 2
 
-; Endereço (Abaixo da Garantia e acima da tabela)
-TEXT 75,425,"0",270,1,1,"R. Wenceslau Marek, 10 - Aguas Belas,"
-TEXT 90,425,"0",270,1,1,"Sao Jose dos Pinhais - PR, 83010-520"
-TEXT 105,425,"3",270,1,1,"SAC: 041 - 3382-5410"
+; --- BLOCO PRODUTO / GARANTIA ---
+TEXT 565, 15, "1", 90, 1, 1, "PRODUTO REMANUFATURADO"
+TEXT 550, 15, "1", 90, 1, 1, "GARANTIA AMBICOM"
 
-; --- GRADE (TABELA FIXA - COMEÇA EM X=120) ---
-BOX 120,10,620,430,2
-BAR 180,10,2,420
-BAR 280,10,2,420
-BAR 350,10,2,420
-BAR 420,10,2,420
-BAR 490,10,2,420
-BAR 550,10,2,420
+BAR 20, 50, 500, 2
 
-; Divisórias horizontais da tabela
-BAR 120,215,60,2
-BAR 280,260,70,2
-BAR 350,150,140,2
-BAR 350,290,140,2  
-BAR 490,180,60,2   
-BAR 550,290,70,2   
-BAR 550,150,70,2   
+; --- MODELO / VOLTAGEM ---
+TEXT 535, 15, "2", 90, 1, 1, "MODELO"
+TEXT 510, 15, "2", 90, 1, 1, "${val(data.model || data.modelo)}"
+TEXT 535, 225, "2", 90, 1, 1, "VOLTAGEM"
+TEXT 510, 225, "2", 90, 1, 1, "${val(data.voltage || data.tensao)}"
 
-; --- CONTEÚDO DAS CAIXAS ---
-TEXT 125,430,"0",270,1,1,"MODELO"
-TEXT 145,430,"4",270,1,1,"${val(data.model || data.modelo)}"
-TEXT 125,210,"0",270,1,1,"VOLTAGEM"
-TEXT 145,210,"4",270,1,1,"${val(data.voltage || data.tensao)}"
+; --- QR CODE E SERIAL ---
+QRCODE 455, 20, L, 4, A, 90, "${val(data.internal_serial)}"
+TEXT 455, 100, "1", 90, 1, 1, "N. SERIE:"
+TEXT 435, 100, "2", 90, 1, 1, "${val(data.internal_serial)}"
+TEXT 395, 100, "1", 90, 1, 1, "${val(data.commercial_code || data.codigo_comercial)}"
 
-QRCODE 182,420,H,4,A,270,M2,S7,"${val(data.internal_serial)}"
-TEXT 185,340,"0",270,1,1,"NUMERO DE SERIE AMBICOM:"
-TEXT 205,340,"5",270,1,1,"${val(data.internal_serial)}"
-TEXT 245,340,"3",270,1,1,"${val(data.commercial_code || data.codigo_comercial)}"
+; --- PNC / FREQUENCIA ---
+TEXT 345, 15, "1", 90, 1, 1, "PNC/ML"
+TEXT 320, 15, "2", 90, 1, 1, "${val(data.pnc_ml)}"
+TEXT 345, 270, "1", 90, 1, 1, "FREQ."
+TEXT 320, 270, "2", 90, 1, 1, "${val(data.frequency || '60 Hz')}"
 
-TEXT 285,430,"0",270,1,1,"PNC/ML"
-TEXT 305,430,"5",270,1,1,"${val(data.pnc_ml)}"
-TEXT 285,255,"0",270,1,1,"FREQUENCIA"
-TEXT 305,255,"4",270,1,1,"${val(data.frequency || '60 Hz')}"
+; --- GAS / COMPRESSOR ---
+TEXT 275, 15, "1", 90, 1, 1, "GAS/CARGA"
+TEXT 250, 15, "1", 90, 1, 1, "${val(data.refrigerant_gas)} / ${val(data.gas_charge)}"
+TEXT 275, 300, "1", 90, 1, 1, "COMPRESSOR"
+TEXT 250, 300, "1", 90, 1, 1, "${val(data.compressor)}"
 
-TEXT 355,430,"0",270,1,1,"GAS FRIGOR."
-TEXT 375,430,"3",270,1,1,"${val(data.refrigerant_gas)}"
-TEXT 355,285,"0",270,1,1,"CARGA GAS"
-TEXT 375,285,"3",270,1,1,"${val(data.gas_charge)}"
-TEXT 355,145,"0",270,1,1,"COMPRESSOR"
-TEXT 375,145,"3",270,1,1,"${val(data.compressor)}"
+; --- VOLUMES ---
+TEXT 205, 15, "1", 90, 1, 1, "VOL. FREEZER/REFRIG."
+TEXT 180, 15, "1", 90, 1, 1, "${val(data.volume_freezer)} / ${val(data.volume_refrigerator)}"
+TEXT 205, 300, "1", 90, 1, 1, "VOL. TOTAL"
+TEXT 180, 300, "1", 90, 1, 1, "${val(data.volume_total)}"
 
-TEXT 425,430,"0",270,1,1,"VOL. FREEZER"
-TEXT 445,430,"3",270,1,1,"${val(data.volume_freezer)}"
-TEXT 425,285,"0",270,1,1,"VOL. REFRIG."
-TEXT 445,285,"3",270,1,1,"${val(data.volume_refrigerator)}"
-TEXT 425,145,"0",270,1,1,"VOLUME TOTAL"
-TEXT 445,145,"3",270,1,1,"${formatTotalVolume(data.volume_freezer, data.volume_refrigerator, data.volume_total)}"
+; --- PRESSÃO / CAPACIDADE ---
+TEXT 135, 15, "1", 90, 1, 1, "P. ALTA/BAIXA"
+TEXT 115, 15, "1", 90, 1, 1, "${val(data.pressure_high_low)}"
+TEXT 135, 300, "1", 90, 1, 1, "CAP. CONG."
+TEXT 115, 300, "1", 90, 1, 1, "${val(data.freezing_capacity)}"
 
-TEXT 495,430,"0",270,1,1,"P. DE ALTA / P. DE BAIXA"
-TEXT 515,430,"2",270,1,1,"${val(data.pressure_high_low)}"
-TEXT 495,175,"0",270,1,1,"CAPAC. CONG."
-TEXT 515,175,"3",270,1,1,"${val(data.freezing_capacity)}"
+BAR 20, 330, 500, 2
 
-TEXT 555,430,"0",270,1,1,"CORRENTE"
-TEXT 575,430,"3",270,1,1,"${val(data.electric_current)}"
-TEXT 555,285,"0",270,1,1,"POT. DEGELO"
-TEXT 575,285,"3",270,1,1,"${val(data.defrost_power)}"
-TEXT 555,145,"0",270,1,1,"TAMANHO"
-TEXT 575,145,"4",270,1,1,"${data.size || '-'}"
+; --- RODAPÉ (CORRENTE / POTÊNCIA / TAMANHO) ---
+TEXT 85, 15, "1", 90, 1, 1, "CORRENTE: ${val(data.electric_current)}"
+TEXT 65, 15, "1", 90, 1, 1, "POT. DEGELO: ${val(data.defrost_power)}"
+TEXT 85, 380, "1", 90, 1, 1, "TAMANHO"
+TEXT 55, 380, "1", 90, 1, 1, "${data.size || '-'}"
+
+; --- GRADE (BORDAS) ---
+BAR 20, 10, 500, 2
+BAR 20, 420, 500, 2
+BAR 20, 10, 2, 410
+BAR 520, 10, 2, 410
+
+; --- LINHAS VERTICAIS DIVISÓRIAS ---
+BAR 460, 50, 2, 370
+BAR 360, 50, 2, 370
+BAR 290, 50, 2, 370
+BAR 220, 50, 2, 370
+BAR 150, 50, 2, 370
+BAR 90, 50, 2, 370
+
+BAR 460, 200, 55, 2
 
 PRINT 1
 `;

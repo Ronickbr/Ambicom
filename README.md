@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.3**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.15.4**:
+  - **Refinamento de Grade com BAR**: Substituição da estrutura de tabela por comandos `BAR` granulares para bordas e divisórias, permitindo maior controle milimétrico.
+  - **Cabeçalho Otimizado**: Consolidação de endereço e SAC em formato linear para melhor aproveitamento da largura da bobina.
+  - **Estabilização de Fontes**: Ajuste fino das coordenadas e fontes técnicos para máxima clareza em 90 graus.
 - **v2.15.3**:
   - **Cabeçalho em Pilha Vertical**: Reorganização completa do topo da etiqueta em 270°, empilhando Ambicom, Bloco de Garantia e Endereço para melhor aproveitamento de largura.
   - **Otimização de Margem Zero**: Configuração definitiva de `GAP 0mm` e realinhamento da grade industrial para bobinas de 80x55mm.
