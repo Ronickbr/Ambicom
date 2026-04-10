@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.3**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.26.3**:
+  - **Estratégia TSPL (Native Print)**: Migração total da impressão industrial de PDF para a linguagem nativa TSPL (Elgin L42 Pro), eliminando problemas de orientação causados por drivers Windows.
+  - **Calibração Retrato (55x80mm)**: Implementação do layout técnico portrait otimizado para bobinas de 55x80mm, com redução de margens de segurança para evitar cortes no cabeçote.
+  - **Unificação de Protocolo**: Sincronização entre gerador TSPL e PDF para garantir paridade visual entre o download local e a impressão física via bridge.
 - **v2.26.2**:
   - **Correção de Layout (Labels PDF)**: Reconstrução das coordenadas da etiqueta gerada em PDF, convertidas de "rotacionadas 90°" para o landscape nativo. Corrige encavalamento e textos "espremidos" durante a saída para bobinas de 80x55.
 - **v2.26.1**:
