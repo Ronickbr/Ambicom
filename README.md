@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.6**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.13.7**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.13.7**:
+  - **Consolidação de Layout ZPL**: Estabilização dos campos técnicos expandidos na etiqueta de 100x55mm, garantindo o correto mapeamento de Gases, Pressões e Volumes para impressão industrial via Print Bridge.
+  - **Otimização de Exportação**: Refinamento dos utilitários de geração de PDF e ZPL para maior performance e precisão dimensional.
 - **v2.13.6**:
   - **Redesign Completo do Layout ZPL**: Implementação de novo grid vertical otimizado para etiquetas de 100x55mm, incluindo campos técnicos expandidos (Volume Freezer/Refrig, Pressões, Capacidade de Congelamento, Potência de Degelo e Carga de Gás).
 - **v2.13.5**:

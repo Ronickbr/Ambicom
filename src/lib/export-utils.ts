@@ -47,14 +47,14 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
     const doc = new jsPDF({
         unit: 'mm',
         format: [labelWidth, labelHeight],
-        orientation: 'l', // Paisagem para melhor aproveitamento da bobina
         putOnlyUsedFonts: true,
         compress: true
     });
 
     for (let index = 0; index < products.length; index++) {
         const p = products[index];
-        if (index > 0) doc.addPage([labelWidth, labelHeight], 'l');
+        if (index > 0) doc.addPage([labelHeight, labelWidth]); // ← mesmo ajuste aqui
+
 
         // Atalho para valor ou vazio
         const val = (v: any) => v || "";
@@ -173,8 +173,8 @@ export const generateLabelZPL = (data: any): string => {
 
     return `^XA
 ^FWT
-^PW640
-^LL440
+^PW440
+^LL640
 ^CI28
 ^FO15,15^A0N,45,45^FDAmbicom^FS
 ^FO15,65^A0N,15,15^FDR. Wenceslau Marek, 10 - Aguas Belas,^FS
