@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.17.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.17.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.17.1**:
+  - **Correção de Âncoras 90°**: Reajuste total do motor TSPL para utilizar rotação de 90 graus com âncoras na base da etiqueta (Y=430). Isso resolve a sobreposição de fontes gigantes observada em firmwares específicos da Elgin L42 Pro.
+  - **Estabilização de Grade**: Refinamento das coordenadas `X` e `Y` para garantir que o cabeçalho Ambicom e os dados técnicos não ultrapassem o limite físico de 55mm.
 - **v2.17.0**:
   - **Layout Industrial de Alta Fidelidade**: Implementação completa do template técnico baseado em referência visual, utilizando grade 3x6 em 270 graus.
   - **Otimização de Fontes Nativas**: Uso de fontes tipográficas escala 0-5 para máxima clareza em parâmetros de volume e pressão.

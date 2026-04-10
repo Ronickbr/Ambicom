@@ -164,129 +164,85 @@ export const printLabels = async (products: any[]) => {
     doc.save(`etiquetas_ambicom_${timestamp}.pdf`);
 };
 
-/**
- * TSPLBuilder - Motor de design calibrado para o layout técnico da Ambicom.
- */
-class TSPLBuilder {
-    private commands: string[] = [];
-
-    constructor(widthMm: number, heightMm: number) {
-        this.commands.push(`SIZE ${widthMm} mm, ${heightMm} mm`);
-        this.commands.push(`GAP 3 mm, 0`);
-        this.commands.push(`DIRECTION 1,0`); // Inversão para saída natural da Elgin
-        this.commands.push(`REFERENCE 0,0`);
-        this.commands.push(`CLS`);
-    }
-
-    addText(x: number, y: number, font: string, rot: number, xmul: number, ymul: number, content: string) {
-        this.commands.push(`TEXT ${x},${y},"${font}",${rot},${xmul},${ymul},"${content}"`);
-    }
-
-    addBar(x: number, y: number, w: number, h: number) {
-        this.commands.push(`BAR ${x},${y},${w},${h}`);
-    }
-
-    addBox(x1: number, y1: number, x2: number, y2: number, t: number) {
-        this.commands.push(`BOX ${x1},${y1},${x2},${y2},${t}`);
-    }
-
-    addQRCode(x: number, y: number, level: string, cellW: number, rot: number, content: string) {
-        this.commands.push(`QRCODE ${x},${y},${level},${cellW},A,${rot},"${content}"`);
-    }
-
-    generate(): string {
-        this.commands.push("PRINT 1\n");
-        return this.commands.join("\n");
-    }
-}
-
 export const generateLabelTSPL = (data: any): string => {
-    const val = (v: any) => v || "";
-    const builder = new TSPLBuilder(80, 55);
+    const val = (v: any) => v || "-";
 
-    // --- 1. CABEÇALHO (LATERAL ESQUERDA NA IMAGEM) ---
-    // Y=15 (Topo), X=625 (Extrema direita no modo Direction 1)
-    builder.addText(615, 10, "4", 270, 1, 1, "Ambicom");
-    builder.addText(585, 10, "1", 270, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas,");
-    builder.addText(570, 10, "1", 270, 1, 1, "Sao Jose dos Pinhais - PR, 83010-520");
-    builder.addText(540, 10, "3", 270, 1, 1, "SAC : 041 - 3382-5410");
+    // Configurações Base
+    const W = 80; // mm
+    const H = 55; // mm
+    const dotsH = 440; // 55mm * 8
 
-    // Bloco Garantia (Canto superior direito da imagem)
-    builder.addText(620, 280, "1", 270, 1, 1, "PRODUTO");
-    builder.addText(605, 280, "1", 270, 1, 1, "REMANUFATURADO");
-    builder.addText(590, 280, "1", 270, 1, 1, "GARANTIA");
-    builder.addText(575, 280, "1", 270, 1, 1, "AMBICOM");
+    return `SIZE ${W} mm, ${H} mm
+GAP 3 mm, 0
+DIRECTION 0,0
+REFERENCE 0,0
+CLS
 
-    // --- 2. GRADE DA TABELA (BOX INICIA EM X=520) ---
-    builder.addBox(15, 10, 520, 430, 2);
+; --- ZONA 1: CABEÇALHO LATERAL (X=10 a 100) ---
+TEXT 30, ${dotsH - 10}, "4", 90, 1, 1, "Ambicom"
+TEXT 65, ${dotsH - 10}, "1", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas,"
+TEXT 80, ${dotsH - 10}, "1", 90, 1, 1, "Sao Jose dos Pinhais - PR, 83010-520"
+TEXT 105, ${dotsH - 10}, "3", 90, 1, 1, "SAC : 041 - 3382-5410"
 
-    // Linhas Horizontais (Divisores de seções)
-    builder.addBar(450, 10, 2, 420); // Abaixo de Modelo/Voltagem
-    builder.addBar(350, 10, 2, 420); // Abaixo de Serial/PNC/60Hz
-    builder.addBar(280, 10, 2, 420); // Abaixo de Gas/Compressor
-    builder.addBar(210, 10, 2, 420); // Abaixo de Volumes
-    builder.addBar(140, 10, 2, 420); // Abaixo de Pressão/Capacidade
-    builder.addBar(70, 10, 2, 420);  // Abaixo de Corrente/Potência
+; --- GRADE PRINCIPAL (Inicia em X=130) ---
+BOX 130, 10, 630, ${dotsH - 10}, 2
 
-    // Linhas Verticais (Divisores de colunas internos)
-    builder.addBar(450, 150, 70, 2);   // Divisor Modelo / Voltagem
-    builder.addBar(350, 120, 100, 2);  // Divisor QR Code / Serial
-    builder.addBar(350, 290, 100, 2);  // Divisor Serial / PNC
-    builder.addBar(210, 150, 70, 2);   // Divisor Gas / Carga
-    builder.addBar(210, 290, 70, 2);   // Divisor Carga / 60Hz (ou labels)
-    builder.addBar(140, 150, 70, 2);   // Divisor Vol. Freezer / Vol. Refrig
-    builder.addBar(140, 290, 70, 2);   // Divisor Vol. Refrig / Vol. Total
-    builder.addBar(70, 250, 70, 2);    // Divisor P. Alta / Cap. Cong
-    builder.addBar(15, 220, 55, 2);    // Divisor Corrente / Potência
+; Linhas Verticais (Grelha Industrial)
+BAR 280, 10, 2, ${dotsH - 20}   ; Divisor entre Coluna 1 e 2
+BAR 440, 10, 2, ${dotsH - 20}   ; Divisor entre Coluna 2 e 3
 
-    // --- 3. CONTEÚDO DOS BOXES ---
+; Linhas Horizontais (Divisores de Linha)
+BAR 130, 80, 500, 2   ; Linha 1 (Modelo/Voltagem)
+BAR 130, 200, 500, 2  ; Linha 2 (Serial/PNC)
+BAR 130, 260, 500, 2  ; Linha 3 (Gás/Carga)
+BAR 130, 320, 500, 2  ; Linha 4 (Volumes)
+BAR 130, 380, 500, 2  ; Linha 5 (Pressão/Capacidade)
 
-    // ROW 1: MODELO | VOLTAGEM
-    builder.addText(510, 15, "1", 270, 1, 1, "MODELO");
-    builder.addText(490, 15, "4", 270, 1, 1, val(data.model || data.modelo));
-    builder.addText(510, 160, "1", 270, 1, 1, "VOLTAGEM");
-    builder.addText(485, 160, "5", 270, 1, 1, `${val(data.voltage || data.tensao)} V`);
+; --- COLUNA 1 (X=140) ---
+TEXT 140, 70, "1", 90, 1, 1, "MODELO"
+TEXT 170, 70, "3", 90, 1, 1, "${val(data.model || data.modelo)}"
+TEXT 140, 190, "1", 90, 1, 1, "PNC/ML"
+TEXT 170, 190, "2", 90, 1, 1, "${val(data.pnc_ml)}"
+TEXT 140, 250, "1", 90, 1, 1, "GAS FRIGOR."
+TEXT 170, 250, "2", 90, 1, 1, "${val(data.refrigerant_gas)}"
+TEXT 140, 310, "1", 90, 1, 1, "VOL. FREEZER"
+TEXT 170, 310, "2", 90, 1, 1, "${val(data.volume_freezer)} L"
+TEXT 140, 370, "1", 90, 1, 1, "P. DE ALTA"
+TEXT 160, 370, "1", 90, 1, 1, "(${val(data.pressure_high_low)})"
+TEXT 140, 430, "1", 90, 1, 1, "CORRENTE"
+TEXT 165, 430, "3", 90, 1, 1, "${val(data.electric_current)} A"
 
-    // ROW 2: QR CODE | SERIAL | PNC | 60Hz
-    builder.addQRCode(445, 15, "L", 4, 270, val(data.internal_serial));
-    builder.addText(445, 130, "0", 270, 1, 1, "NUMERO DE SERIE AMBICOM:");
-    builder.addText(425, 130, "4", 270, 1, 1, val(data.internal_serial));
-    builder.addText(385, 130, "3", 270, 1, 1, val(data.commercial_code || data.codigo_comercial));
+; --- COLUNA 2 (X=290) ---
+TEXT 290, 70, "1", 90, 1, 1, "VOLTAGEM"
+TEXT 320, 70, "4", 90, 1, 1, "${val(data.voltage || data.tensao)} V"
+TEXT 290, 250, "1", 90, 1, 1, "CARGA GAS"
+TEXT 320, 250, "3", 90, 1, 1, "${val(data.gas_charge)} g"
+TEXT 290, 310, "1", 90, 1, 1, "VOL. REFRIG."
+TEXT 320, 310, "2", 90, 1, 1, "${val(data.volume_refrigerator)} L"
+TEXT 290, 430, "1", 90, 1, 1, "POT. DEGELO"
+TEXT 320, 430, "3", 90, 1, 1, "${val(data.defrost_power)} W"
 
-    builder.addText(445, 300, "1", 270, 1, 1, "PNC/ML");
-    builder.addText(400, 300, "5", 270, 1, 1, val(data.pnc_ml));
+; --- COLUNA 3 (X=450) ---
+QRCODE 450, 60, L, 4, 90, "${val(data.internal_serial)}"
+TEXT 510, 180, "0", 90, 1, 1, "N. SERIE AMBICOM:"
+TEXT 540, 180, "4", 90, 1, 1, "${val(data.internal_serial)}"
+TEXT 570, 180, "2", 90, 1, 1, "${val(data.commercial_code)}"
 
-    builder.addText(445, 415, "5", 270, 1, 1, "60 Hz");
+TEXT 450, 195, "5", 90, 1, 1, "60 Hz"
+TEXT 450, 250, "1", 90, 1, 1, "COMPRESSOR"
+TEXT 480, 250, "2", 90, 1, 1, "${val(data.compressor)}"
+TEXT 450, 310, "1", 90, 1, 1, "VOLUME TOTAL"
+TEXT 480, 310, "4", 90, 1, 1, "${val(data.volume_total)} L"
+TEXT 450, 370, "1", 90, 1, 1, "CAPAC. CONG."
+TEXT 480, 370, "2", 90, 1, 1, "${val(data.freezing_capacity)}"
+TEXT 450, 430, "1", 90, 1, 1, "TAMANHO"
+TEXT 480, 430, "5", 90, 1, 1, "${val(data.size || 'G')}"
 
-    // ROW 3: GAS | CARGA | COMPRESSOR
-    builder.addText(340, 15, "1", 270, 1, 1, "GAS FRIGOR.");
-    builder.addText(315, 15, "3", 270, 1, 1, val(data.refrigerant_gas));
-    builder.addText(340, 160, "1", 270, 1, 1, "CARGA GAS");
-    builder.addText(315, 160, "4", 270, 1, 1, `${val(data.gas_charge)} g`);
-    builder.addText(340, 300, "1", 270, 1, 1, "COMPRESSOR");
-    builder.addText(315, 300, "3", 270, 1, 1, val(data.compressor));
+; Bloco Remanufaturado (Topo oposto)
+TEXT 610, 430, "1", 90, 1, 1, "PRODUTO REMANUFATURADO"
+TEXT 625, 430, "1", 90, 1, 1, "GARANTIA AMBICOM"
 
-    // ROW 4: VOLUMES
-    builder.addText(270, 15, "1", 270, 1, 1, "VOL. FREEZER");
-    builder.addText(240, 15, "4", 270, 1, 1, `${val(data.volume_freezer)} L`);
-    builder.addText(270, 160, "1", 270, 1, 1, "VOL. REFRIG.");
-    builder.addText(240, 160, "4", 270, 1, 1, `${val(data.volume_refrigerator)} L`);
-    builder.addText(270, 300, "1", 270, 1, 1, "VOLUME TOTAL");
-    builder.addText(240, 300, "5", 270, 1, 1, `${val(data.volume_total)} L`);
-
-    // ROW 5: PRESSÃO | CAPACIDADE
-    builder.addText(200, 15, "1", 270, 1, 1, "P. DE ALTA / P. DE BAIXA");
-    builder.addText(175, 15, "2", 270, 1, 1, `(${val(data.pressure_high_low)}) psig`);
-    builder.addText(200, 260, "1", 270, 1, 1, "CAPAC. CONG.");
-    builder.addText(175, 260, "4", 270, 1, 1, val(data.freezing_capacity));
-
-    // ROW 6: CORRENTE | POTÊNCIA | TAMANHO
-    builder.addText(130, 15, "1", 270, 1, 1, "CORRENTE");
-    builder.addText(100, 15, "4", 270, 1, 1, `${val(data.electric_current)} A`);
-    builder.addText(130, 230, "1", 270, 1, 1, "POT. DEGELO");
-    builder.addText(100, 230, "4", 270, 1, 1, `${val(data.defrost_power)} W`);
-    builder.addText(130, 340, "1", 270, 1, 1, "TAMANHO");
-    builder.addText(90, 340, "5", 270, 1, 1, val(data.size || 'G'));
-
-    return builder.generate();
+PRINT 1
+`;
 };
+
