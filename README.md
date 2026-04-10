@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.16.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.17.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.17.0**:
+  - **Layout Industrial de Alta Fidelidade**: Implementação completa do template técnico baseado em referência visual, utilizando grade 3x6 em 270 graus.
+  - **Otimização de Fontes Nativas**: Uso de fontes tipográficas escala 0-5 para máxima clareza em parâmetros de volume e pressão.
+  - **Cabeçalho Lateralizado**: Reposicionamento institucional para leitura vertical industrial.
 - **v2.16.1**:
   - **Layout Paisagem Real (0°)**: Migração do motor de design para orientação Paisagem nativa. O texto agora flui paralelo ao lado de 80mm, resolvendo o problema de transbordamento de GAP observado na impressão física.
   - **Redesenho de Coordenadas**: Otimização milimétrica da grade técnica para o novo canvas horizontal de 640x440 dots.
