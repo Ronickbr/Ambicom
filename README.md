@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.15.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.15.1**:
+  - **Realinhamento Estrutural TSPL**: Ajuste milimétrico de grade e fontes (tipo 0 a 5) baseado no feedback de impressão física e calibração de escala.
+  - **Sincronização de Banco**: Execução de recarga de cache no Supabase para garantir a propagação da nova constraint de `payload_type`.
 - **v2.15.0**:
   - **Layout Invertido (270°)**: Reorientação completa de todos os elementos da etiqueta para o ângulo de 270 graus.
   - **Otimização de Fontes Nativas**: Substituição de fontes customizadas por fontes nativas do sistema TSPL (0-5) para nitidez industrial máxima.
