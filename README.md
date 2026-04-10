@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.24.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.25.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.25.0**:
+  - **Motor de Impressão Nativo (Bridge)**: Substituição dos scripts PowerShell para PDF pelo componente `pdf-to-printer` na ponte de impressão local, garantindo maior estabilidade no Windows.
+  - **Independência de Hardware**: Melhoria na listagem de impressoras do sistema operacional utilizando APIs Node nativas via `pdf-to-printer`.
+  - **Refatoração da Ponte**: Otimização do loop de monitoramento e tratamento de erros no executor local (`bridge.js`).
 - **v2.24.0**:
   - **Migração ZPL Master**: Substituição definitiva do motor TSPL por um gerador nativo ZPL (Zebra), utilizando o template de alta fidelidade fornecido pelo usuário.
   - **Dinamização de Template**: Implementação de injeção automática de dados técnicos (Modelo, Serial, Gás, Volumes) dentro do código ZPL.

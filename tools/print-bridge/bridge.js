@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { exec } from 'child_process';
+import * as ptp from 'pdf-to-printer';
 
 import os from 'os';
 import fs from 'fs';
@@ -29,16 +30,19 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function getPrinters() {
-    return new Promise((resolve) => {
-        exec('powershell -NoProfile -Command "Get-Printer | Select-Object -ExpandProperty Name"', (error, stdout) => {
-            if (error) {
-                log(`⚠️ Erro lendo impressoras: ${error.message}`);
-                resolve([]);
-            } else {
-                resolve(stdout.split('\n').map(p => p.trim()).filter(p => p.length > 0));
-            }
+    try {
+        const printers = await ptp.getPrinters();
+        return printers.map(p => p.name);
+    } catch (error) {
+        log(`⚠️ Erro lendo impressoras via pdf-to-printer: ${error.message}`);
+        // Fallback para powershell se necessário
+        return new Promise((resolve) => {
+            exec('powershell -NoProfile -Command "Get-Printer | Select-Object -ExpandProperty Name"', (err, stdout) => {
+                if (err) resolve([]);
+                else resolve(stdout.split('\n').map(p => p.trim()).filter(p => p.length > 0));
+            });
         });
-    });
+    }
 }
 
 // ─── Status da Ponte ────────────────────────────────────────────────────────
@@ -59,7 +63,6 @@ async function updateBridgeStatus() {
 
 // ─── Processamento de Jobs ──────────────────────────────────────────────────
 async function processPendingJobs() {
-    // Busca jobs para as impressoras desta ponte
     const printers = await getPrinters();
 
     const { data: jobs, error } = await supabase
@@ -72,6 +75,10 @@ async function processPendingJobs() {
     if (error) {
         log(`❌ Erro ao buscar jobs: ${error.message}`);
         return;
+    }
+
+    if (jobs.length > 0) {
+        log(`found ${jobs.length} jobs pending`);
     }
 
     for (const job of jobs) {
@@ -94,7 +101,7 @@ async function executeJob(job) {
         .select();
 
     if (lockError || !data?.length) {
-        log(`⚠️ Job ${job.id} já sendo processado ou falha no lock. (lockError: ${lockError?.message || 'Nenhum'})`);
+        log(`⚠️ Job ${job.id} já sendo processado ou falha no lock.`);
         return;
     }
 
@@ -102,13 +109,12 @@ async function executeJob(job) {
         const type = (job.payload_type || "").trim().toLowerCase();
 
         if (type === 'zpl' || type === 'tspl') {
-            // Impressão Direta (ZPL ou TSPL)
+            // Impressão Direta (ZPL ou TSPL) via PowerShell (Ainda o método mais estável para RAW no Windows)
             await new Promise((resolve, reject) => {
                 const extension = type === 'zpl' ? 'zpl' : 'tspl';
                 const jobId = `${type.toUpperCase()}-${Date.now()}`;
                 const tempFile = path.join(os.tmpdir(), `${jobId}.${extension}`);
 
-                // Força UTF-8 para evitar problemas com caracteres especiais
                 fs.writeFileSync(tempFile, job.payload_data, 'utf8');
 
                 const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${path.join(__dirname, 'print_raw.ps1')}" -PrinterName "${job.printer_target}" -FilePath "${tempFile}"`;
@@ -124,30 +130,26 @@ async function executeJob(job) {
                 });
             });
         } else if (type === 'pdf') {
-            // Impressão PDF via Driver do Sistema
-            await new Promise((resolve, reject) => {
-                const jobId = `PDF-${Date.now()}`;
-                const tempFile = path.join(os.tmpdir(), `${jobId}.pdf`);
+            // Impressão PDF via pdf-to-printer (Braço Executor Local)
+            const jobId = `PDF-${Date.now()}`;
+            const tempFile = path.join(os.tmpdir(), `${jobId}.pdf`);
 
-                // Converte base64 para buffer binário
-                const pdfBuffer = Buffer.from(job.payload_data, 'base64');
-                fs.writeFileSync(tempFile, pdfBuffer);
+            const pdfBuffer = Buffer.from(job.payload_data, 'base64');
+            fs.writeFileSync(tempFile, pdfBuffer);
 
-                const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${path.join(__dirname, 'print_pdf.ps1')}" -PrinterName "${job.printer_target}" -FilePath "${tempFile}"`;
-                exec(cmd, (error, stdout, stderr) => {
-                    if (stdout) log(`[PS Out]: ${stdout}`);
-                    if (stderr) log(`[PS Err]: ${stderr}`);
-
-                    if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
-                    if (error) {
-                        log(`❌ Erro no PowerShell (PDF): ${stderr || error.message}`);
-                        reject(new Error(`Erro no PowerShell: ${stderr || error.message}`));
-                    } else {
-                        log(`✅ Job ${job.id} (PDF) enviado com sucesso para ${job.printer_target}`);
-                        resolve(jobId);
-                    }
+            try {
+                log(`🖨️ Enviando PDF para pdf-to-printer...`);
+                await ptp.print(tempFile, {
+                    printer: job.printer_target,
+                    win32: ['-print-settings "fit"'] // Opcional: ajustar ao papel
                 });
-            });
+
+                log(`✅ Job ${job.id} (PDF) impresso com sucesso em ${job.printer_target}`);
+                if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+            } catch (printError) {
+                if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+                throw printError;
+            }
         } else {
             throw new Error(`Tipo de payload não suportado: ${type}`);
         }
@@ -179,10 +181,8 @@ async function executeJob(job) {
 updateBridgeStatus();
 setInterval(updateBridgeStatus, 60000); // Heartbeat a cada 1min
 
-// Otimização: Busca imediata em vez de esperar realtime inicial
 processPendingJobs();
 
-// Ouvir novos inserts via Realtime
 supabase
     .channel('print_queue')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'print_jobs' }, () => {
@@ -191,4 +191,5 @@ supabase
     })
     .subscribe();
 
-log("📡 Aguardando impressões remotas...");
+log("📡 Aguardando impressões remotas (Node-native PDF)...");
+
