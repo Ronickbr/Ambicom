@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.6**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.14.6**:
+  - **Realinhamento de Tabela TSPL**: Ajuste fino nas bordas externas e divisórias internas (usando comandos `BAR`) para garantir encaixe perfeito nas margens da bobina.
+  - **Hierarquia de Informação**: Reorganização dos blocos técnicos e do cabeçalho institucional para uma leitura mais fluida e equilibrada.
 - **v2.14.5**:
   - **Estruturação de Tabela Técnica (BOX)**: Implementação de moldura completa via comando `BOX` e realinhamento de todas as células técnicas em formato tabular avançado.
   - **Header e Rodapé Dinâmicos**: Reposicionamento do bloco Ambicom e dados de garantia para as margens, maximizando a área central para dados técnicos.

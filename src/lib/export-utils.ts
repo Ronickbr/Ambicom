@@ -192,85 +192,83 @@ DIRECTION 1,0
 REFERENCE 0,0
 CLS
 
-; --- CABEÇALHO (LOGO E ENDEREÇO - LADO ESQUERDO) ---
-TEXT 15, 15, "3", 90, 1, 1, "Ambicom"
-TEXT 65, 15, "2", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas,"
-TEXT 80, 15, "2", 90, 1, 1, "Sao Jose dos Pinhais - PR, 83010-520"
-TEXT 100, 15, "2", 90, 1, 1, "SAC: 041 - 3382-5410"
+; --- CABEÇALHO ---
+TEXT 625, 15, "3", 90, 1, 1, "Ambicom"
+TEXT 580, 15, "2", 90, 1, 1, "R. Wenceslau Marek, 10 - Aguas Belas,"
+TEXT 565, 15, "2", 90, 1, 1, "Sao Jose dos Pinhais - PR, 83010-520"
+TEXT 545, 15, "2", 90, 1, 1, "SAC: 041 - 3382-5410"
 
 ; --- BLOCO PRODUTO / GARANTIA ---
-TEXT 15, 270, "1", 90, 1, 1, "PRODUTO"
-TEXT 30, 270, "1", 90, 1, 1, "REMANUFATURADO"
-TEXT 45, 270, "1", 90, 1, 1, "GARANTIA"
-TEXT 60, 270, "1", 90, 1, 1, "AMBICOM"
+TEXT 625, 285, "1", 90, 1, 1, "PRODUTO"
+TEXT 610, 285, "1", 90, 1, 1, "REMANUFATURADO"
+TEXT 595, 285, "1", 90, 1, 1, "GARANTIA"
+TEXT 580, 285, "1", 90, 1, 1, "AMBICOM"
 
-; --- GRADE (TABELA COMPLETA) ---
-; Moldura externa da tabela
-BOX 120, 10, 620, 430, 4
+; --- ESTRUTURA DA TABELA (LINHAS E COLUNAS) ---
 
-; Linhas que dividem as "Linhas" do layout original (agora verticais)
-BAR 180, 10, 4, 420
-BAR 280, 10, 4, 420
-BAR 350, 10, 4, 420
-BAR 420, 10, 4, 420
-BAR 490, 10, 4, 420
-BAR 550, 10, 4, 420
+; Bordas Externas
+BAR 20, 10, 500, 3          ; Linha Vertical Esquerda (fecha a grade)
+BAR 20, 430, 500, 3         ; Linha Vertical Direita (fecha a grade)
+BAR 20, 10, 3, 420          ; Linha Horizontal Topo
+BAR 520, 10, 3, 420         ; Linha Horizontal Base
 
-; Divisórias Internas (agora horizontais)
-BAR 120, 215, 60, 4   ; Entre Modelo e Voltagem
-BAR 280, 260, 70, 4   ; Entre PNC e Frequência
-BAR 350, 150, 140, 4  ; Entre Gás e Carga Gás
-BAR 350, 290, 270, 4  ; Coluna direita (Compressor/Vol Total/Cap Cong)
-BAR 550, 150, 70, 4   ; Entre Corrente e Potência
+; Linhas Horizontais Internas (Divisórias de seções)
+BAR 460, 10, 3, 420         ; Abaixo do Modelo
+BAR 360, 10, 3, 420         ; Abaixo do Serial
+BAR 290, 10, 3, 420         ; Abaixo do PNC
+BAR 220, 10, 3, 420         ; Abaixo do Gás
+BAR 150, 10, 3, 420         ; Abaixo dos Volumes
+BAR 90, 10, 3, 420          ; Abaixo da Pressão
 
-; --- CONTEÚDO DENTRO DAS CÉLULAS ---
-; Modelo / Voltagem
-TEXT 125, 15, "2", 90, 1, 1, "MODELO"
-TEXT 145, 15, "3", 90, 1, 1, "${val(data.model || data.modelo)}"
-TEXT 125, 225, "2", 90, 1, 1, "VOLTAGEM"
-TEXT 145, 225, "3", 90, 1, 1, "${val(data.voltage || data.tensao)}"
+; Linhas Verticais Internas (Divisórias de colunas)
+BAR 460, 215, 63, 3         ; Divisória Modelo / Voltagem
+BAR 290, 260, 70, 3         ; Divisória PNC / Frequência
+BAR 220, 290, 70, 3         ; Divisória Gás / Compressor
+BAR 150, 290, 70, 3         ; Divisória Volumes / Vol. Total
+BAR 90, 290, 60, 3          ; Divisória Pressão / Cap. Congelamento
+BAR 20, 320, 70, 3          ; Divisória Corrente / Tamanho
 
-; Serial / QR Code
-QRCODE 185, 20, L, 4, A, 90, "${val(data.internal_serial)}"
-TEXT 185, 120, "1", 90, 1, 1, "NUMERO DE SERIE AMBICOM:"
-TEXT 210, 120, "3", 90, 1, 1, "${val(data.internal_serial)}"
-TEXT 250, 120, "2", 90, 1, 1, "${val(data.commercial_code)}"
+; --- CONTEÚDO: MODELO / VOLTAGEM ---
+TEXT 510, 15, "2", 90, 1, 1, "MODELO"
+TEXT 485, 15, "3", 90, 1, 1, "${val(data.model || data.modelo)}"
+TEXT 510, 225, "2", 90, 1, 1, "VOLTAGEM"
+TEXT 485, 225, "3", 90, 1, 1, "${val(data.voltage || data.tensao)}"
 
-; PNC / Frequência
-TEXT 285, 15, "2", 90, 1, 1, "PNC/ML"
-TEXT 310, 15, "3", 90, 1, 1, "${val(data.pnc_ml)}"
-TEXT 285, 270, "2", 90, 1, 1, "FREQ."
-TEXT 310, 270, "3", 90, 1, 1, "${val(data.frequency || '60 Hz')}"
+; --- CONTEÚDO: QR CODE E SERIAL ---
+QRCODE 455, 20, L, 4, A, 90, "${val(data.internal_serial)}"
+TEXT 455, 110, "1", 90, 1, 1, "N. SERIE AMBICOM:"
+TEXT 430, 110, "3", 90, 1, 1, "${val(data.internal_serial)}"
+TEXT 390, 110, "2", 90, 1, 1, "${val(data.commercial_code || data.codigo_comercial)}"
 
-; Gás / Carga / Compressor
-TEXT 355, 15, "1", 90, 1, 1, "GAS FRIGOR."
-TEXT 375, 15, "2", 90, 1, 1, "${val(data.refrigerant_gas)}"
-TEXT 355, 160, "1", 90, 1, 1, "CARGA GAS"
-TEXT 375, 160, "2", 90, 1, 1, "${val(data.gas_charge)}"
-TEXT 355, 300, "1", 90, 1, 1, "COMPRESSOR"
-TEXT 375, 300, "2", 90, 1, 1, "${val(data.compressor)}"
+; --- CONTEÚDO: PNC / FREQUENCIA ---
+TEXT 345, 15, "2", 90, 1, 1, "PNC/ML"
+TEXT 315, 15, "3", 90, 1, 1, "${val(data.pnc_ml)}"
+TEXT 345, 270, "2", 90, 1, 1, "FREQ."
+TEXT 315, 270, "3", 90, 1, 1, "${val(data.frequency || '60 Hz')}"
 
-; Volumes
-TEXT 425, 15, "1", 90, 1, 1, "VOL. FREEZER"
-TEXT 445, 15, "2", 90, 1, 1, "${val(data.volume_freezer)}"
-TEXT 425, 160, "1", 90, 1, 1, "VOL. REFRIG."
-TEXT 445, 160, "2", 90, 1, 1, "${val(data.volume_refrigerator)}"
-TEXT 425, 300, "1", 90, 1, 1, "VOL. TOTAL"
-TEXT 445, 300, "2", 90, 1, 1, "${val(data.volume_total)}"
+; --- CONTEÚDO: GAS / COMPRESSOR ---
+TEXT 275, 15, "1", 90, 1, 1, "GAS/CARGA"
+TEXT 245, 15, "2", 90, 1, 1, "${val(data.refrigerant_gas)} / ${val(data.gas_charge)}"
+TEXT 275, 300, "1", 90, 1, 1, "COMPRESSOR"
+TEXT 245, 300, "2", 90, 1, 1, "${val(data.compressor)}"
 
-; Pressão / Capacidade Congelamento
-TEXT 495, 15, "1", 90, 1, 1, "P. ALTA / BAIXA"
-TEXT 515, 15, "1", 90, 1, 1, "${val(data.pressure_high_low)}"
-TEXT 495, 300, "1", 90, 1, 1, "CAP. CONG."
-TEXT 515, 300, "2", 90, 1, 1, "${val(data.freezing_capacity)}"
+; --- CONTEÚDO: VOLUMES ---
+TEXT 205, 15, "1", 90, 1, 1, "VOL. FREEZER/REFRIG."
+TEXT 175, 15, "2", 90, 1, 1, "${val(data.volume_freezer)} / ${val(data.volume_refrigerator)}"
+TEXT 205, 300, "1", 90, 1, 1, "VOL. TOTAL"
+TEXT 175, 300, "2", 90, 1, 1, "${val(data.volume_total)}"
 
-; Corrente / Potência / Tamanho
-TEXT 555, 15, "1", 90, 1, 1, "CORRENTE"
-TEXT 575, 15, "2", 90, 1, 1, "${val(data.electric_current)}"
-TEXT 555, 160, "1", 90, 1, 1, "POT. DEGELO"
-TEXT 575, 160, "2", 90, 1, 1, "${val(data.defrost_power)}"
-TEXT 555, 300, "1", 90, 1, 1, "TAMANHO"
-TEXT 575, 300, "4", 90, 1, 1, "${data.size || '-'}"
+; --- CONTEÚDO: PRESSÃO / CAPACIDADE ---
+TEXT 135, 15, "1", 90, 1, 1, "P. ALTA/BAIXA"
+TEXT 110, 15, "1", 90, 1, 1, "${val(data.pressure_high_low)}"
+TEXT 135, 300, "1", 90, 1, 1, "CAP. CONG."
+TEXT 110, 300, "2", 90, 1, 1, "${val(data.freezing_capacity)}"
+
+; --- CONTEÚDO: RODAPÉ ---
+TEXT 75, 15, "1", 90, 1, 1, "CORRENTE: ${val(data.electric_current)}"
+TEXT 55, 15, "1", 90, 1, 1, "POT. DEGELO: ${val(data.defrost_power)}"
+TEXT 75, 330, "2", 90, 1, 1, "TAMANHO"
+TEXT 45, 330, "3", 90, 1, 1, "${data.size || '-'}"
 
 PRINT 1
 `;
