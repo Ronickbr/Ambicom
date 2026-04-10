@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.14.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.14.2**:
+  - **Refinamento do Layout TSPL**: Implementação de novo layout com rotação de 90 graus em todos os campos e grade técnica desenhada via comandos `BAR`, otimizando a legibilidade nas bobinas industriais de 80x55mm.
+  - **Estabilização de Comandos**: Inclusão de `REFERENCE 0,0` e ajustes de sintaxe nos parâmetros de `GAP` e `DIRECTION`.
 - **v2.14.1**:
   - **Correção de Restrição de Payload**: Atualização da constraint de banco de dados no Supabase para permitir o tipo `tspl`, corrigindo o erro 400 na submissão de trabalhos de impressão.
 - **v2.14.0**:
