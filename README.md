@@ -50,12 +50,15 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.6**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.26.6**:
+  - **Unificação Landscape Real (80x55mm)**: Sincronização total entre TSPL e PDF para o formato nativo da bobina.
+  - **Correção de Salto de Bobina**: Ajuste do comando `SIZE 80,55` no TSPL, eliminando a impressão dividida em duas etiquetas.
+  - **Layout Otimizado**: Grade técnica redesenhada para aproveitar a largura total de 80mm, eliminando sobreposições de textos no cabeçalho.
 - **v2.26.5**:
   - **Calibração de Precisão**: Reajuste milimétrico das coordenadas Y (GY=116) para maior respiro no topo da etiqueta.
-  - **Compatibilidade PDF/Térmica**: Alteração do formato PDF para Landscape (80x55mm) para garantir que drivers do Windows reconheçam a orientação da bobina sem necessidade de ajustes manuais.
 - **v2.26.4**:
   - **Higienização de Dados**: Implementada detecção inteligente de unidades para evitar duplicidade (ex: "V V").
   - **Ajuste de Margem Física**: Altura lógica reduzida para 75mm para garantir o encaixe em 100% da etiqueta física sem pular o sensor de GAP.
