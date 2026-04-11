@@ -143,6 +143,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         const p = products[idx];
         if (idx > 0) doc.addPage([55, 80], 'p');
         const val = (v: any) => String(v ?? '').trim() || '-';
+        const dispSize = (p.size === 'Pequeno' ? 'P' : p.size === 'Médio' ? 'M' : p.size === 'Grande' ? 'G' : p.size) || '-';
 
         const X0 = 2, X1 = 53, CW = X1 - X0;
         const GY = 14;
