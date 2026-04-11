@@ -25,27 +25,31 @@ export const exportToExcel = (data: Record<string, unknown>[], fileName: string)
     XLSX.writeFile(workbook, `${fileName}_${new Date().getTime()}.xlsx`);
 };
 
-// ─── TSPL Generator — Elgin L42 Pro (LANDSCAPE 80x55 com conteúdo ROTACIONADO) ─
+// ─── TSPL Generator — Elgin L42 Pro (LANDSCAPE 80x55 com mapeamento manual) ───
 export function generateLabelsTSPL(products: any[]): string {
     const sv = (v: any) => String(v ?? '').trim().replace(/"/g, "'").replace(/\r?\n/g, ' ') || '-';
 
-    // Higienização rigorosa para evitar unidades duplicadas ("V V", "L L")
+    // Higienização para evitar unidades duplicadas
     const clean = (val: string, unit: string) => {
         if (!val || val === '-') return '-';
         const cleanVal = val.replace(new RegExp(`\\s*${unit}$`, 'i'), '').trim();
         return `${cleanVal} ${unit}`;
     };
 
-    // FÍSICO: 80mm de largura (640 dots) e 55mm de altura (440 dots)
-    // DESIGN: 55mm de largura (440 dots) e 80mm de altura (640 dots)
-    // Para imprimir RETRATO em uma bobina PAISAGEM, usamos a rotação nativa do DIRECTION.
+    // Dimensões Físicas: 80mm x 55mm (640 x 440 dots)
+    // Dimensões Design: 55mm x 80mm (440 x 640 dots)
+
+    // Função de Mapeamento (Gira o conteúdo 90° CW manualmente)
+    // Design(px, py) -> Físico(tx, ty)
+    const mapX = (py: number) => 640 - py; // A altura do design vira o cabeçote (X)
+    const mapY = (px: number) => px;       // A largura do design vira o avanço (Y)
 
     const lines: string[] = [
-        'SIZE 80 mm,55 mm', // Bobina física deitada
+        'SIZE 80 mm,55 mm',
         'GAP 3 mm,0 mm',
-        'DIRECTION 0,1',    // Gira a página inteira em 90° 
+        'DIRECTION 1', // Impressão normal
         'OFFSET 0 mm',
-        'SPEED 4',
+        'SPEED 3',
         'DENSITY 10',
         'CODEPAGE UTF-8',
         'SET TEAR OFF',
@@ -53,10 +57,10 @@ export function generateLabelsTSPL(products: any[]): string {
     ];
 
     for (const p of products) {
-        // Coordenadas baseadas em um canvas virtual 55x80 (Portait)
+        // Coordenadas ORIGINAIS (Layout Retrato 55x80)
         const X0 = 16, X1 = 424, GW = X1 - X0;
         const GY = 116;
-        const r = [GY, GY + 52, GY + 166, GY + 222, GY + 278, GY + 334, GY + 390, GY + 456];
+        const r = [GY, GY + 52, GY + 166, GY + 222, GY + 278, GY + 334, GY + 390, GY + 460];
         const colPart = Math.floor(GW / 3), c1 = X0 + colPart, c2 = X0 + colPart * 2;
         const cMod = X0 + Math.floor(GW * 0.5), cSer = X0 + 88;
 
@@ -75,84 +79,76 @@ export function generateLabelsTSPL(products: any[]): string {
         const dispSize = (p.size === 'Pequeno' ? 'P' : p.size === 'Médio' ? 'M' : p.size === 'Grande' ? 'G' : p.size) || '-';
 
         lines.push('CLS');
-        // Usamos as coordenadas PORTRAIT (55x80). O DIRECTION 0,1 fará a mágica de girar para a bobina física 80x55.
 
-        // Cabeçalho
-        lines.push(`TEXT ${X0},8,"3",0,1,1,"AMBICOM"`);
-        lines.push(`TEXT ${X0},38,"1",0,1,1,"R. Wenceslau Marek, 10 - Aguas Belas"`);
-        lines.push(`TEXT ${X0},52,"1",0,1,1,"SJP - PR, 83010-520"`);
-        lines.push(`TEXT ${X0},68,"2",0,1,1,"SAC: 041-3382-5410"`);
+        // --- Cabeçalho Rotacionado 90° ---
+        // TEXT X, Y, font, rotation, mx, my, content
+        lines.push(`TEXT ${mapX(8)},${mapY(X0)},"3",90,1,1,"AMBICOM"`);
+        lines.push(`TEXT ${mapX(38)},${mapY(X0)},"1",90,1,1,"R. Wenceslau Marek, 10 - Aguas Belas"`);
+        lines.push(`TEXT ${mapX(52)},${mapY(X0)},"1",90,1,1,"SJP - PR, 83010-520"`);
+        lines.push(`TEXT ${mapX(68)},${mapY(X0)},"2",90,1,1,"SAC: 041-3382-5410"`);
 
-        // Stamp box
-        lines.push(`BOX 260,4,${X1},108,2`);
-        const stampCX = Math.floor((260 + X1) / 2);
+        // Stamp Box Rotacionada
+        // BOX x,y,x,y,thickness -> Como girou, o box vira uma composição de 4 linhas
+        const bX0 = mapX(108), bX1 = mapX(4), bY0 = mapY(260), bY1 = mapY(X1);
+        lines.push(`BOX ${bX0},${bY0},${bX1},${bY1},2`);
+        const stampCX = (108 + 4) / 2;
         ['PRODUTO', 'REMANUFATURADO', 'GARANTIA', 'AMBICOM'].forEach((t, i) => {
-            const tx = stampCX - Math.floor((t.length * 8) / 2);
-            lines.push(`TEXT ${tx},${14 + i * 20},"1",0,1,1,"${t}"`);
+            const ty = mapY(260) + 12; // centro horizontal no design
+            const tx = mapX(16 + i * 20); // vertical no design
+            lines.push(`TEXT ${tx},${ty},"1",90,1,1,"${t}"`);
         });
 
-        // Grade
-        lines.push(`BOX ${X0},${GY},${X1},${r[7]},2`);
-        lines.push(`LINE ${X0},${r[1]},${X1},${r[1]},2`);
-        lines.push(`LINE ${cMod},${GY},${cMod},${r[1]},2`);
-        lines.push(`TEXT ${X0 + 4},${GY + 6},"1",0,1,1,"MODELO"`);
-        lines.push(`TEXT ${X0 + 4},${GY + 20},"3",0,1,1,"${model}"`);
-        lines.push(`TEXT ${cMod + 4},${GY + 6},"1",0,1,1,"VOLTAGEM"`);
-        lines.push(`TEXT ${cMod + 4},${GY + 20},"3",0,1,1,"${voltage}"`);
+        // --- Grade Técnica Rotacionada ---
+        // Moldura externa
+        lines.push(`BOX ${mapX(r[7])},${mapY(X0)},${mapX(GY)},${mapY(X1)},2`);
 
-        // Serial/QR
-        lines.push(`LINE ${X0},${r[2]},${X1},${r[2]},2`);
-        lines.push(`LINE ${cSer},${r[1]},${cSer},${r[2]},2`);
-        if (serial !== '-') lines.push(`QRCODE ${X0 + 2},${r[1] + 2},L,4,A,0,"${serial}"`);
-        lines.push(`TEXT ${cSer + 4},${r[1] + 4},"1",0,1,1,"N. SERIE AMBICOM:"`);
-        lines.push(`TEXT ${cSer + 4},${r[1] + 20},"2",0,1,1,"${serial}"`);
+        // L1: MODELO | VOLTAGEM
+        lines.push(`LINE ${mapX(r[1])},${mapY(X0)},${mapX(r[1])},${mapY(X1)},2`); // Linha horizontal do design vira vertical
+        lines.push(`LINE ${mapX(GY)},${mapY(cMod)},${mapX(r[1])},${mapY(cMod)},2`); // Divisor
 
-        // PNC
-        lines.push(`LINE ${X0},${r[3]},${X1},${r[3]},2`);
-        lines.push(`TEXT ${X0 + 4},${r[2] + 4},"1",0,1,1,"PNC/ML"`);
-        lines.push(`TEXT ${X0 + 4},${r[2] + 18},"2",0,1,1,"${pncMl}"`);
+        lines.push(`TEXT ${mapX(GY + 6)},${mapY(X0 + 4)},"1",90,1,1,"MODELO"`);
+        lines.push(`TEXT ${mapX(GY + 22)},${mapY(X0 + 4)},"3",90,1,1,"${model}"`);
+        lines.push(`TEXT ${mapX(GY + 6)},${mapY(cMod + 4)},"1",90,1,1,"VOLTAGEM"`);
+        lines.push(`TEXT ${mapX(GY + 22)},${mapY(cMod + 4)},"3",90,1,1,"${voltage}"`);
 
-        // Gas/Carga/Comp
-        lines.push(`LINE ${X0},${r[4]},${X1},${r[4]},2`);
-        lines.push(`LINE ${c1},${r[3]},${c1},${r[4]},2`);
-        lines.push(`LINE ${c2},${r[3]},${c2},${r[4]},2`);
-        lines.push(`TEXT ${X0 + 4},${r[3] + 4},"1",0,1,1,"GAS FRIG."`);
-        lines.push(`TEXT ${X0 + 4},${r[3] + 16},"2",0,1,1,"${gas}"`);
-        lines.push(`TEXT ${c1 + 4},${r[3] + 4},"1",0,1,1,"CARGA"`);
-        lines.push(`TEXT ${c1 + 4},${r[3] + 16},"2",0,1,1,"${gasChg}"`);
-        lines.push(`TEXT ${c2 + 4},${r[3] + 4},"1",0,1,1,"COMPR."`);
-        lines.push(`TEXT ${c2 + 4},${r[3] + 16},"2",0,1,1,"${comp}"`);
+        // L2: QR | SERIAL
+        lines.push(`LINE ${mapX(r[2])},${mapY(X0)},${mapX(r[2])},${mapY(X1)},2`);
+        lines.push(`LINE ${mapX(r[1])},${mapY(cSer)},${mapX(r[2])},${mapY(cSer)},2`);
+        if (serial !== '-') lines.push(`QRCODE ${mapX(r[1] + 130)},${mapY(X0 + 2)},L,4,A,90,"${serial}"`);
+        lines.push(`TEXT ${mapX(r[1] + 6)},${mapY(cSer + 4)},"1",90,1,1,"N. SERIE:"`);
+        lines.push(`TEXT ${mapX(r[1] + 22)},${mapY(cSer + 4)},"2",90,1,1,"${serial}"`);
 
-        // Volumes
-        lines.push(`LINE ${X0},${r[5]},${X1},${r[5]},2`);
-        lines.push(`LINE ${c1},${r[4]},${c1},${r[5]},2`);
-        lines.push(`LINE ${c2},${r[4]},${c2},${r[5]},2`);
-        lines.push(`TEXT ${X0 + 4},${r[4] + 4},"1",0,1,1,"FREEZER"`);
-        lines.push(`TEXT ${X0 + 4},${r[4] + 16},"1",0,1,1,"${volFrz}"`);
-        lines.push(`TEXT ${c1 + 4},${r[4] + 4},"1",0,1,1,"REFRIG."`);
-        lines.push(`TEXT ${c1 + 4},${r[4] + 16},"1",0,1,1,"${volRef}"`);
-        lines.push(`TEXT ${c2 + 4},${r[4] + 4},"1",0,1,1,"TOTAL"`);
-        lines.push(`TEXT ${c2 + 4},${r[4] + 16},"1",0,1,1,"${volTot}"`);
+        // L3: PNC
+        lines.push(`LINE ${mapX(r[3])},${mapY(X0)},${mapX(r[3])},${mapY(X1)},2`);
+        lines.push(`TEXT ${mapX(r[2] + 4)},${mapY(X0 + 4)},"1",90,1,1,"PNC/ML"`);
+        lines.push(`TEXT ${mapX(r[2] + 18)},${mapY(X0 + 4)},"2",90,1,1,"${pncMl}"`);
 
-        // Base
-        lines.push(`LINE ${c1},${r[6]},${c1},${r[7]},2`);
-        lines.push(`LINE ${c2},${r[6]},${c2},${r[7]},2`);
-        lines.push(`TEXT ${X0 + 4},${r[6] + 4},"1",0,1,1,"CORRENTE"`);
-        lines.push(`TEXT ${X0 + 4},${r[6] + 16},"2",0,1,1,"${current}"`);
-        lines.push(`TEXT ${c1 + 4},${r[6] + 4},"1",0,1,1,"POTENCIA"`);
-        lines.push(`TEXT ${c1 + 4},${r[6] + 16},"2",0,1,1,"${defrost}"`);
-        lines.push(`TEXT ${c2 + 4},${r[6] + 4},"1",0,1,1,"TAMANHO"`);
-        const col3CX = c2 + Math.floor(colPart / 2) - 16;
-        lines.push(`TEXT ${col3CX},${r[6] + 40},"5",0,1,1,"${dispSize}"`);
+        // L4, L5, L6
+        [r[3], r[4], r[5], r[6]].forEach(y => lines.push(`LINE ${mapX(y)},${mapY(X0)},${mapX(y)},${mapY(X1)},2`));
+        [c1, c2].forEach(x => lines.push(`LINE ${mapX(r[3])},${mapY(x)},${mapX(r[7])},${mapY(x)},2`));
+
+        // L4
+        lines.push(`TEXT ${mapX(r[3] + 4)},${mapY(X0 + 4)},"1",90,1,1,"GAS"`); lines.push(`TEXT ${mapX(r[3] + 16)},${mapY(X0 + 4)},"2",90,1,1,"${gas}"`);
+        lines.push(`TEXT ${mapX(r[3] + 4)},${mapY(c1 + 4)},"1",90,1,1,"CARGA"`); lines.push(`TEXT ${mapX(r[3] + 16)},${mapY(c1 + 4)},"2",90,1,1,"${gasChg}"`);
+        lines.push(`TEXT ${mapX(r[3] + 4)},${mapY(c2 + 4)},"1",90,1,1,"COMPR."`); lines.push(`TEXT ${mapX(r[3] + 16)},${mapY(c2 + 4)},"2",90,1,1,"${comp}"`);
+
+        // L5
+        lines.push(`TEXT ${mapX(r[4] + 4)},${mapY(X0 + 4)},"1",90,1,1,"FREEZ"`); lines.push(`TEXT ${mapX(r[4] + 18)},${mapY(X0 + 4)},"2",90,1,1,"${volFrz}"`);
+        lines.push(`TEXT ${mapX(r[4] + 4)},${mapY(c1 + 4)},"1",90,1,1,"REFRIG"`); lines.push(`TEXT ${mapX(r[4] + 18)},${mapY(c1 + 4)},"2",90,1,1,"${volRef}"`);
+        lines.push(`TEXT ${mapX(r[4] + 4)},${mapY(c2 + 4)},"1",90,1,1,"TOTAL"`); lines.push(`TEXT ${mapX(r[4] + 18)},${mapY(c2 + 4)},"2",90,1,1,"${volTot}"`);
+
+        // L7
+        lines.push(`TEXT ${mapX(r[6] + 4)},${mapY(X0 + 4)},"1",90,1,1,"CORRENTE"`); lines.push(`TEXT ${mapX(r[6] + 20)},${mapY(X0 + 4)},"3",90,1,1,"${current}"`);
+        lines.push(`TEXT ${mapX(r[6] + 4)},${mapY(c1 + 4)},"1",90,1,1,"POTENCIA"`); lines.push(`TEXT ${mapX(r[6] + 20)},${mapY(c1 + 4)},"3",90,1,1,"${defrost}"`);
+        lines.push(`TEXT ${mapX(r[6] + 4)},${mapY(c2 + 4)},"1",90,1,1,"TAMANHO"`); lines.push(`TEXT ${mapX(r[6] + 50)},${mapY(c2 + 40)},"5",90,1,1,"${dispSize}"`);
 
         lines.push('PRINT 1,1');
     }
     return lines.join('\r\n');
 }
 
-// ─── PDF (RETRATO 55x80 para Visualização na Tela) ───────────────────────────
+// ─── PDF (RETRATO 55x80 - Visualização na Tela) ──────────────────────────────
 export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
-    // Voltamos para Retrato para você visualizar corretamente no monitor
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [55, 80], compress: true });
 
     const cleanStr = (val: string, unit: string) => {
@@ -164,32 +160,28 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
 
     const X0 = 2, X1 = 53, CW = X1 - X0;
     const GY = 14.5;
-    const r = [GY, GY + 6.5, GY + 20.5, GY + 27.5, GY + 34.5, GY + 41.5, GY + 48.5, GY + 57];
+    const r = [GY, GY + 6.5, GY + 20.5, GY + 27.5, GY + 34.5, GY + 41.5, GY + 48.5, GY + 57.5];
 
     for (let idx = 0; idx < products.length; idx++) {
         const p = products[idx];
         if (idx > 0) doc.addPage([55, 80], 'p');
         const val = (v: any) => String(v ?? '').trim() || '-';
 
-        // Cabeçalho Retrato
-        doc.setFont("helvetica", "bold"); doc.setFontSize(11);
-        doc.text("Ambicom", X0, 5);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("Ambicom", X0, 5);
         doc.setFont("helvetica", "normal"); doc.setFontSize(4);
         doc.text("R. Wenceslau Marek, 10 - Aguas Belas", X0, 8);
         doc.text("SJP - PR, 83010-520", X0, 10.5);
-        doc.setFont("helvetica", "bold"); doc.setFontSize(6.5);
-        doc.text("SAC: 041-3382-5410", X0, 13.5);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(6.5); doc.text("SAC: 041-3382-5410", X0, 13.5);
 
-        // Bloco Stamp Garantia
-        doc.setFontSize(4); doc.setFont("helvetica", "normal");
-        ["PRODUTO", "REMANUFATURADO", "GARANTIA", "AMBICOM"].forEach((t, i) =>
-            doc.text(t, 42, 5 + i * 2.5, { align: 'center' })
-        );
+        ["PRODUTO", "REMANUFATURADO", "GARANTIA", "AMBICOM"].forEach((t, i) => {
+            doc.setFontSize(3.5);
+            doc.text(t, 42, 5 + i * 2.5, { align: 'center' });
+        });
 
         doc.setLineWidth(0.25);
         const colW = CW / 3;
         const c1 = X0 + colW, c2 = X0 + colW * 2;
-        const cMod = X0 + Math.floor(CW * 0.50);
+        const cMod = X0 + (CW * 0.50);
         const cSer = X0 + 10;
 
         const hL = (y: number) => doc.line(X0, y, X1, y);
@@ -199,12 +191,10 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
 
         doc.rect(X0, r[0], CW, r[7] - r[0]);
 
-        // L1
         hL(r[1]); vL(cMod, r[0], r[1]);
         lbl('MODELO', X0 + 1, r[0] + 2); val2(val(p.model || p.modelo), X0 + 1, r[0] + 5.5, 8);
         lbl('VOLTAGEM', cMod + 1, r[0] + 2); val2(cleanStr(val(p.voltage || p.tensao), 'V'), cMod + 1, r[0] + 5.5, 8);
 
-        // L2
         hL(r[2]); vL(cSer, r[1], r[2]);
         if (val(p.internal_serial) !== '-') {
             try {
@@ -212,30 +202,29 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
                 doc.addImage(qr, 'PNG', X0 + 0.5, r[1] + 0.5, 9, 9);
             } catch { }
         }
-        lbl('NR. SERIE AMBICOM:', cSer + 1, r[1] + 2.5); val2(val(p.internal_serial), cSer + 1, r[1] + 7, 7.5);
+        lbl('NR. SERIE:', cSer + 1, r[1] + 2.5); val2(val(p.internal_serial), cSer + 1, r[1] + 7, 7.5);
 
-        // L3
-        hL(r[3]);
+        hL(r[3]); hL(r[4]); hL(r[5]); hL(r[6]);
+        vL(c1, r[3], r[7]); vL(c2, r[3], r[7]);
+
         lbl('PNC/ML', X0 + 1, r[2] + 2); val2(val(p.pnc_ml), X0 + 1, r[2] + 5.8, 7);
 
-        // L4, L5
-        [[r[3], r[4], 'GAS FRIG.', val(p.refrigerant_gas), 'CARGA', cleanStr(val(p.gas_charge), 'g'), 'COMPR.', val(p.compressor)],
-        [r[4], r[5], 'FREEZER', cleanStr(val(p.volume_freezer), 'L'), 'REFRIG.', cleanStr(val(p.volume_refrigerator), 'L'), 'TOTAL', cleanStr(val(p.volume_total), 'L')]
-        ].forEach(([ry0, ry1, l1, v1, l2, v2, l3, v3]) => {
-            hL(ry1 as number); vL(c1, ry0 as number, ry1 as number); vL(c2, ry0 as number, ry1 as number);
-            [[X0, l1, v1], [c1, l2, v2], [c2, l3, v3]].forEach(([cx, lb, vl]) => {
-                lbl(lb as string, (cx as number) + 1, (ry0 as number) + 2);
-                val2(vl as string, (cx as number) + 1, (ry0 as number) + 5.8, 6.5);
-            });
-        });
+        // L4 GAS
+        lbl('GAS', X0 + 1, r[3] + 2); val2(val(p.refrigerant_gas), X0 + 1, r[3] + 5.8, 6.5);
+        lbl('CARGA', c1 + 1, r[3] + 2); val2(cleanStr(val(p.gas_charge), 'g'), c1 + 1, r[3] + 5.8, 6.5);
+        lbl('COMPR.', c2 + 1, r[3] + 2); val2(val(p.compressor), c2 + 1, r[3] + 5.8, 6.5);
 
-        // L7
-        vL(c1, r[6], r[7]); vL(c2, r[6], r[7]);
+        // L5 VOLS
+        lbl('FREEZ', X0 + 1, r[4] + 2); val2(cleanStr(val(p.volume_freezer), 'L'), X0 + 1, r[4] + 5.5, 6);
+        lbl('REFRIG', c1 + 1, r[4] + 2); val2(cleanStr(val(p.volume_refrigerator), 'L'), c1 + 1, r[4] + 5.5, 6);
+        lbl('TOTAL', c2 + 1, r[4] + 2); val2(cleanStr(val(p.volume_total), 'L'), c2 + 1, r[4] + 5.5, 6);
+
+        // L7 BASE
         lbl('CORRENTE', X0 + 1, r[6] + 2); val2(cleanStr(val(p.electric_current), 'A'), X0 + 1, r[6] + 6.5, 7);
         lbl('POTENCIA', c1 + 1, r[6] + 2); val2(cleanStr(val(p.defrost_power), 'W'), c1 + 1, r[6] + 6.5, 7);
         lbl('TAMANHO', c2 + 1, r[6] + 2);
         const ds = p.size === 'Pequeno' ? 'P' : p.size === 'Médio' ? 'M' : p.size === 'Grande' ? 'G' : (p.size || '-');
-        doc.setFontSize(18); doc.text(ds, c2 + colW / 2, r[6] + 12, { align: 'center' });
+        doc.setFontSize(22); doc.text(ds, c2 + colW / 2, r[6] + 12, { align: 'center' });
     }
     return doc;
 };
