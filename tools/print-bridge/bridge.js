@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { exec } from 'child_process';
 import ptp from 'pdf-to-printer';
-import { PDFDocument, degrees } from 'pdf-lib';
 
 import os from 'os';
 import fs from 'fs';
@@ -132,30 +131,15 @@ async function executeJob(job) {
             const jobId = `PDF-${Date.now()}`;
             const tempFile = path.join(os.tmpdir(), `${jobId}.pdf`);
 
-            // Intercepta e rotaciona o PDF em 90 graus ANTES de salvar para a impressora
-            // Para que um PDF 55x80 (Retrato) preencha uma etiqueta 80x55 (Paisagem),
-            // ele OBRIGATORIAMENTE precisa ser deitado (90 graus). 180 graus apenas o deixa de ponta-cabeça.
-            log(`🔄 Rotacionando conteúdo do PDF em 90 graus para a impressora...`);
-            const pdfDoc = await PDFDocument.load(Buffer.from(job.payload_data, 'base64'));
-            const pages = pdfDoc.getPages();
-            
-            pages.forEach(page => {
-                // Rotaciona a página em si (deitando o PDF)
-                const currentRotation = page.getRotation().angle;
-                page.setRotation(degrees(currentRotation + 90));
-            });
-
-            const rotatedPdfBytes = await pdfDoc.save();
-            fs.writeFileSync(tempFile, rotatedPdfBytes);
+            const pdfBuffer = Buffer.from(job.payload_data, 'base64');
+            fs.writeFileSync(tempFile, pdfBuffer);
 
             try {
-                log(`🖨️ Enviando PDF rotacionado para pdf-to-printer...`);
+                log(`🖨️ Enviando PDF para pdf-to-printer...`);
                 await ptp.print(tempFile, {
                     printer: job.printer_target,
                     paperSize: "80x55mm",
-                    // Como viramos 90 graus, a proporção agora é paisagem (80x55).
-                    // O comando 'fit' fará com que preencha toda a etiqueta sem cortar.
-                    win32: ['-print-settings "fit,landscape"'] 
+                    win32: ['-print-settings "fit"']
                 });
 
                 log(`✅ Job ${job.id} (PDF) impresso com sucesso em ${job.printer_target}`);
