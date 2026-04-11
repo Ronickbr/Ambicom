@@ -139,7 +139,10 @@ async function executeJob(job) {
                 await ptp.print(tempFile, {
                     printer: job.printer_target,
                     paperSize: "80x55mm",
-                    win32: ['-print-settings "fit"'] // Ajusta o PDF ao tamanho da etiqueta
+                    // landscape: true faz com que o PDF seja rotacionado -90º automaticamente
+                    // apenas no momento do envio para a impressora (SumatraPDF handle isso)
+                    orientation: "landscape",
+                    win32: ['-print-settings "fit,landscape"'] // Força ajuste e rotação na impressão
                 });
 
                 log(`✅ Job ${job.id} (PDF) impresso com sucesso em ${job.printer_target}`);
