@@ -132,17 +132,16 @@ async function executeJob(job) {
             const jobId = `PDF-${Date.now()}`;
             const tempFile = path.join(os.tmpdir(), `${jobId}.pdf`);
 
-            // Intercepta e rotaciona o PDF em -90 graus ANTES de salvar para a impressora
-            // Isso garante que a visualização original em tela não seja afetada (retrato 55x80),
-            // mas o driver receba em modo paisagem para a etiqueta física 80x55.
-            log(`� Rotacionando conteúdo do PDF em -90 graus para a impressora...`);
+            // Intercepta e rotaciona o PDF em 180 graus ANTES de salvar para a impressora
+            // Isso garante que a visualização original em tela não seja afetada.
+            log(`🔄 Rotacionando conteúdo do PDF em 180 graus para a impressora...`);
             const pdfDoc = await PDFDocument.load(Buffer.from(job.payload_data, 'base64'));
             const pages = pdfDoc.getPages();
             
             pages.forEach(page => {
                 // Rotaciona a página em si
                 const currentRotation = page.getRotation().angle;
-                page.setRotation(degrees(currentRotation - 90));
+                page.setRotation(degrees(currentRotation + 180));
             });
 
             const rotatedPdfBytes = await pdfDoc.save();
@@ -153,9 +152,10 @@ async function executeJob(job) {
                 await ptp.print(tempFile, {
                     printer: job.printer_target,
                     paperSize: "80x55mm",
+                    // Como viramos 180 graus, a proporção retrato se mantém.
                     // Ajustamos para forçar a impressão de forma que o arquivo PDF
                     // caiba completamente na página sem ser cortado e com as opções do driver
-                    win32: ['-print-settings "fit,landscape"'] 
+                    win32: ['-print-settings "fit"'] 
                 });
 
                 log(`✅ Job ${job.id} (PDF) impresso com sucesso em ${job.printer_target}`);
