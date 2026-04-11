@@ -153,7 +153,9 @@ async function executeJob(job) {
                 await ptp.print(tempFile, {
                     printer: job.printer_target,
                     paperSize: "80x55mm",
-                    win32: ['-print-settings "fit"'] // Ajusta o PDF ao tamanho da etiqueta
+                    // Ajustamos para forçar a impressão de forma que o arquivo PDF
+                    // caiba completamente na página sem ser cortado e com as opções do driver
+                    win32: ['-print-settings "fit,landscape"'] 
                 });
 
                 log(`✅ Job ${job.id} (PDF) impresso com sucesso em ${job.printer_target}`);
