@@ -128,53 +128,28 @@ export function generateLabelsTSPL(products: any[]): string {
     return lines.join('\r\n');
 }
 
-// ─── PDF (Rotacionado 90º Paisagem 80x55 baseado no Layout Antigo) ─────────────────────────────────
+// ─── PDF (Layout Retrato 55x80 baseado no Layout Antigo) ─────────────────────────────────
 export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
-    // Gerar em paisagem (Landscape) para coincidir com a impressora física de etiquetas (80x55)
-    const doc = new jsPDF({ orientation: 'l', unit: 'mm', format: [80, 55], compress: true });
-
-    // Helpers para rotação 90º Clockwise
-    // Mapeia coordenadas do layout retrato original (55x80) para paisagem (80x55)
-    // O layout original tinha proporções para 100x135, faremos um downscale de aprox 0.55x
-    const rotX = (x: number, y: number) => 80 - y;
-    const rotY = (x: number, y: number) => x;
+    // Gerar em retrato (Portrait) 55x80 sem rotação forçada
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [55, 80], compress: true });
 
     const drawText = (text: string, x: number, y: number, options?: any) => {
-        const str = String(text);
-        let finalX = x;
-        const finalY = y;
-        
-        // jsPDF's native align breaks when combined with our manual 90-degree coordinate rotation.
-        // We calculate the alignment offset manually in the original portrait coordinate space.
-        if (options?.align === 'center') {
-            const w = doc.getTextWidth(str);
-            finalX = x - w / 2;
-        } else if (options?.align === 'right') {
-            const w = doc.getTextWidth(str);
-            finalX = x - w;
-        }
-        
-        const jsPdfOptions = { ...options };
-        delete jsPdfOptions.align;
-        jsPdfOptions.angle = -90;
-        
-        doc.text(str, rotX(finalX, finalY), rotY(finalX, finalY), jsPdfOptions);
+        doc.text(text, x, y, options);
     };
     
     const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
-        doc.line(rotX(x1, y1), rotY(x1, y1), rotX(x2, y2), rotY(x2, y2));
+        doc.line(x1, y1, x2, y2);
     };
 
     for (let idx = 0; idx < products.length; idx++) {
         const p = products[idx];
-        if (idx > 0) doc.addPage([80, 55], 'l');
+        if (idx > 0) doc.addPage([55, 80], 'p');
         const val = (v: any) => String(v ?? '').trim() || '';
 
         // Fator de escala de 100x135 para 55x80 (aprox 0.55 na largura e 0.59 na altura)
-        // Usaremos 0.55 para X e 0.55 para Y para manter a proporção consistente
         const scale = 0.55;
         const sX = (x: number) => x * scale;
-        const sY = (y: number) => y * 0.59; // Ajuste fino para caber em 80mm de altura
+        const sY = (y: number) => y * 0.59;
         
         // --- Header Section ---
         doc.setFont("helvetica", "bold");
@@ -231,10 +206,9 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
                     color: { dark: "#000000", light: "#ffffff" }
                 });
                 const imgSize = sX(15);
-                // A posição no PDF rotacionado: x=rotX, y=rotY. Lembre-se que width e height invertem.
                 const imgX = sX(10);
                 const imgY = sY(currentY + 1);
-                doc.addImage(qrImgData, 'PNG', rotX(imgX, imgY + imgSize), rotY(imgX, imgY + imgSize), imgSize, imgSize);
+                doc.addImage(qrImgData, 'PNG', imgX, imgY, imgSize, imgSize);
             } catch (err) { }
         }
 
