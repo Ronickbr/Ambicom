@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { exec } from 'child_process';
 import ptp from 'pdf-to-printer';
+import { PDFDocument, degrees } from 'pdf-lib';
 
 import os from 'os';
 import fs from 'fs';
@@ -131,18 +132,28 @@ async function executeJob(job) {
             const jobId = `PDF-${Date.now()}`;
             const tempFile = path.join(os.tmpdir(), `${jobId}.pdf`);
 
-            const pdfBuffer = Buffer.from(job.payload_data, 'base64');
-            fs.writeFileSync(tempFile, pdfBuffer);
+            // Intercepta e rotaciona o PDF em -90 graus ANTES de salvar para a impressora
+            // Isso garante que a visualização original em tela não seja afetada (retrato 55x80),
+            // mas o driver receba em modo paisagem para a etiqueta física 80x55.
+            log(`� Rotacionando conteúdo do PDF em -90 graus para a impressora...`);
+            const pdfDoc = await PDFDocument.load(Buffer.from(job.payload_data, 'base64'));
+            const pages = pdfDoc.getPages();
+            
+            pages.forEach(page => {
+                // Rotaciona a página em si
+                const currentRotation = page.getRotation().angle;
+                page.setRotation(degrees(currentRotation - 90));
+            });
+
+            const rotatedPdfBytes = await pdfDoc.save();
+            fs.writeFileSync(tempFile, rotatedPdfBytes);
 
             try {
-                log(`🖨️ Enviando PDF para pdf-to-printer...`);
+                log(`🖨️ Enviando PDF rotacionado para pdf-to-printer...`);
                 await ptp.print(tempFile, {
                     printer: job.printer_target,
                     paperSize: "80x55mm",
-                    // landscape: true faz com que o PDF seja rotacionado -90º automaticamente
-                    // apenas no momento do envio para a impressora (SumatraPDF handle isso)
-                    orientation: "landscape",
-                    win32: ['-print-settings "fit,landscape"'] // Força ajuste e rotação na impressão
+                    win32: ['-print-settings "fit"'] // Ajusta o PDF ao tamanho da etiqueta
                 });
 
                 log(`✅ Job ${job.id} (PDF) impresso com sucesso em ${job.printer_target}`);
