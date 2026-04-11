@@ -132,16 +132,17 @@ async function executeJob(job) {
             const jobId = `PDF-${Date.now()}`;
             const tempFile = path.join(os.tmpdir(), `${jobId}.pdf`);
 
-            // Intercepta e rotaciona o PDF em 180 graus ANTES de salvar para a impressora
-            // Isso garante que a visualização original em tela não seja afetada.
-            log(`🔄 Rotacionando conteúdo do PDF em 180 graus para a impressora...`);
+            // Intercepta e rotaciona o PDF em 90 graus ANTES de salvar para a impressora
+            // Para que um PDF 55x80 (Retrato) preencha uma etiqueta 80x55 (Paisagem),
+            // ele OBRIGATORIAMENTE precisa ser deitado (90 graus). 180 graus apenas o deixa de ponta-cabeça.
+            log(`🔄 Rotacionando conteúdo do PDF em 90 graus para a impressora...`);
             const pdfDoc = await PDFDocument.load(Buffer.from(job.payload_data, 'base64'));
             const pages = pdfDoc.getPages();
             
             pages.forEach(page => {
-                // Rotaciona a página em si
+                // Rotaciona a página em si (deitando o PDF)
                 const currentRotation = page.getRotation().angle;
-                page.setRotation(degrees(currentRotation + 180));
+                page.setRotation(degrees(currentRotation + 90));
             });
 
             const rotatedPdfBytes = await pdfDoc.save();
@@ -152,10 +153,9 @@ async function executeJob(job) {
                 await ptp.print(tempFile, {
                     printer: job.printer_target,
                     paperSize: "80x55mm",
-                    // Como viramos 180 graus, a proporção retrato se mantém.
-                    // Ajustamos para forçar a impressão de forma que o arquivo PDF
-                    // caiba completamente na página sem ser cortado e com as opções do driver
-                    win32: ['-print-settings "fit"'] 
+                    // Como viramos 90 graus, a proporção agora é paisagem (80x55).
+                    // O comando 'fit' fará com que preencha toda a etiqueta sem cortar.
+                    win32: ['-print-settings "fit,landscape"'] 
                 });
 
                 log(`✅ Job ${job.id} (PDF) impresso com sucesso em ${job.printer_target}`);
