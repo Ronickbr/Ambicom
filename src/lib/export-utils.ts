@@ -128,9 +128,10 @@ export function generateLabelsTSPL(products: any[]): string {
     return lines.join('\r\n');
 }
 
-// ─── PDF (Fiel à Visualização Retrato 55x80) ─────────────────────────────────
+// ─── PDF (Rotacionado 90º Paisagem 80x55) ─────────────────────────────────
 export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
-    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [55, 80], compress: true });
+    // Gerar em paisagem (Landscape) para coincidir com a impressora física de etiquetas (80x55)
+    const doc = new jsPDF({ orientation: 'l', unit: 'mm', format: [80, 55], compress: true });
 
     const cleanStr = (val: string, unit: string) => {
         const s = String(val ?? '').trim();
@@ -139,9 +140,24 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         return `${cleanVal} ${unit}`;
     };
 
+    // Helpers para rotação 90º Clockwise
+    // Mapeia coordenadas do layout retrato (55x80) para paisagem (80x55)
+    const rotX = (x: number, y: number) => 80 - y;
+    const rotY = (x: number, y: number) => x;
+
+    const drawText = (text: string, x: number, y: number, options?: any) => {
+        doc.text(text, rotX(x, y), rotY(x, y), { angle: -90, ...options });
+    };
+    const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
+        doc.line(rotX(x1, y1), rotY(x1, y1), rotX(x2, y2), rotY(x2, y2));
+    };
+    const drawRect = (x: number, y: number, w: number, h: number) => {
+        doc.rect(rotX(x, y + h), rotY(x, y + h), h, w);
+    };
+
     for (let idx = 0; idx < products.length; idx++) {
         const p = products[idx];
-        if (idx > 0) doc.addPage([55, 80], 'p');
+        if (idx > 0) doc.addPage([80, 55], 'l');
         const val = (v: any) => String(v ?? '').trim() || '-';
         const dispSize = (p.size === 'Pequeno' ? 'P' : p.size === 'Médio' ? 'M' : p.size === 'Grande' ? 'G' : p.size) || '-';
 
@@ -150,54 +166,86 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         const r = [GY, GY + 7, GY + 20, GY + 27, GY + 34, GY + 41, GY + 48, GY + 62];
         const c1 = X0 + (CW / 3), c2 = X0 + (CW * 2 / 3), cMod = X0 + (CW * 0.5), cSer = X0 + 10;
 
-        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("AMBICOM", X0, 6);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); drawText("AMBICOM", X0, 6);
         doc.setFontSize(4); doc.setFont("helvetica", "normal");
-        doc.text("R. Wenceslau Marek, 10 - SJP/PR", X0, 9);
+        drawText("R. Wenceslau Marek, 10 - SJP/PR", X0, 9);
         doc.setFontSize(6.5); doc.setFont("helvetica", "bold");
-        doc.text("SAC: 041-3382-5410", X0, 12.5);
+        drawText("SAC: 041-3382-5410", X0, 12.5);
 
-        doc.rect(X0, r[0], CW, r[7] - r[0]);
+        drawRect(X0, r[0], CW, r[7] - r[0]);
         // L1
-        doc.line(X0, r[1], X1, r[1]); doc.line(cMod, r[0], cMod, r[1]);
-        doc.setFontSize(3.5); doc.setFont("helvetica", "normal"); doc.text("MODELO", X0 + 1, r[0] + 2.5);
-        doc.setFontSize(3.5); doc.text("VOLTAGEM", cMod + 1, r[0] + 2.5);
-        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.text(val(p.model || p.modelo), X0 + 1, r[0] + 6.5);
-        doc.text(cleanStr(val(p.voltage || p.tensao), 'V'), cMod + 1, r[0] + 6.5);
+        drawLine(X0, r[1], X1, r[1]); drawLine(cMod, r[0], cMod, r[1]);
+        doc.setFontSize(3.5); doc.setFont("helvetica", "normal"); drawText("MODELO", X0 + 1, r[0] + 2.5);
+        doc.setFontSize(3.5); drawText("VOLTAGEM", cMod + 1, r[0] + 2.5);
+        doc.setFontSize(8); doc.setFont("helvetica", "bold"); drawText(val(p.model || p.modelo), X0 + 1, r[0] + 6.5);
+        drawText(cleanStr(val(p.voltage || p.tensao), 'V'), cMod + 1, r[0] + 6.5);
 
         // L2
-        doc.line(X0, r[2], X1, r[2]); doc.line(cSer, r[1], cSer, r[2]);
+        drawLine(X0, r[2], X1, r[2]); drawLine(cSer, r[1], cSer, r[2]);
         if (val(p.internal_serial) !== '-') {
-            try { const qr = await QRCode.toDataURL(val(p.internal_serial), { margin: 0 }); doc.addImage(qr, 'PNG', X0 + 0.5, r[1] + 0.5, 9, 9); } catch { }
+            try { 
+                const qr = await QRCode.toDataURL(val(p.internal_serial), { margin: 0 }); 
+                const imgW = 9; const imgH = 9;
+                const imgX = X0 + 0.5; const imgY = r[1] + 0.5;
+                doc.addImage(qr, 'PNG', rotX(imgX, imgY + imgH), rotY(imgX, imgY + imgH), imgH, imgW); 
+            } catch { }
         }
-        doc.setFontSize(3.5); doc.setFont("helvetica", "normal"); doc.text("SERIE:", cSer + 1, r[1] + 3);
-        doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); doc.text(val(p.internal_serial), cSer + 1, r[1] + 7);
+        doc.setFontSize(3.5); doc.setFont("helvetica", "normal"); drawText("SERIE:", cSer + 1, r[1] + 3);
+        doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); drawText(val(p.internal_serial), cSer + 1, r[1] + 7);
 
         // L3-L6
-        [r[3], r[4], r[5], r[6]].forEach(y => doc.line(X0, y, X1, y));
-        [c1, c2].forEach(x => doc.line(x, r[2], x, r[7]));
+        [r[3], r[4], r[5], r[6]].forEach(y => drawLine(X0, y, X1, y));
+        [c1, c2].forEach(x => drawLine(x, r[2], x, r[7]));
 
         doc.setFontSize(3.5); doc.setFont("helvetica", "normal");
-        doc.text("PNC/ML", X0 + 1, r[2] + 2.5); doc.text("GAS", X0 + 1, r[3] + 2.5); doc.text("CARGA", c1 + 1, r[3] + 2.5); doc.text("COMP.", c2 + 1, r[3] + 2.5);
-        doc.text("FREEZ", X0 + 1, r[4] + 2.5); doc.text("REFRIG", c1 + 1, r[4] + 2.5); doc.text("TOTAL", c2 + 1, r[4] + 2.5);
-        doc.text("CORRENTE", X0 + 1, r[6] + 2.5); doc.text("POTENCIA", c1 + 1, r[6] + 2.5); doc.text("TAM.", c2 + 1, r[6] + 2.5);
+        drawText("PNC/ML", X0 + 1, r[2] + 2.5); drawText("GAS", X0 + 1, r[3] + 2.5); drawText("CARGA", c1 + 1, r[3] + 2.5); drawText("COMP.", c2 + 1, r[3] + 2.5);
+        drawText("FREEZ", X0 + 1, r[4] + 2.5); drawText("REFRIG", c1 + 1, r[4] + 2.5); drawText("TOTAL", c2 + 1, r[4] + 2.5);
+        drawText("CORRENTE", X0 + 1, r[6] + 2.5); drawText("POTENCIA", c1 + 1, r[6] + 2.5); drawText("TAM.", c2 + 1, r[6] + 2.5);
 
         doc.setFontSize(6.5); doc.setFont("helvetica", "bold");
-        doc.text(val(p.pnc_ml), X0 + 1, r[2] + 6);
-        doc.text(val(p.refrigerant_gas), X0 + 1, r[3] + 6); doc.text(cleanStr(val(p.gas_charge), 'g'), c1 + 1, r[3] + 6); doc.text(val(p.compressor), c2 + 1, r[3] + 6);
-        doc.text(cleanStr(val(p.volume_freezer), 'L'), X0 + 1, r[4] + 6); doc.text(cleanStr(val(p.volume_refrigerator), 'L'), c1 + 1, r[4] + 6); doc.text(cleanStr(val(p.volume_total), 'L'), c2 + 1, r[4] + 6);
-        doc.text(cleanStr(val(p.electric_current), 'A'), X0 + 1, r[6] + 6); doc.text(cleanStr(val(p.defrost_power), 'W'), c1 + 1, r[6] + 6);
+        drawText(val(p.pnc_ml), X0 + 1, r[2] + 6);
+        drawText(val(p.refrigerant_gas), X0 + 1, r[3] + 6); drawText(cleanStr(val(p.gas_charge), 'g'), c1 + 1, r[3] + 6); drawText(val(p.compressor), c2 + 1, r[3] + 6);
+        drawText(cleanStr(val(p.volume_freezer), 'L'), X0 + 1, r[4] + 6); drawText(cleanStr(val(p.volume_refrigerator), 'L'), c1 + 1, r[4] + 6); drawText(cleanStr(val(p.volume_total), 'L'), c2 + 1, r[4] + 6);
+        drawText(cleanStr(val(p.electric_current), 'A'), X0 + 1, r[6] + 6); drawText(cleanStr(val(p.defrost_power), 'W'), c1 + 1, r[6] + 6);
 
-        doc.setFontSize(22); doc.text(dispSize, c2 + (X1 - c2) / 2, r[7] - 2, { align: 'center' });
+        doc.setFontSize(22); drawText(dispSize, c2 + (X1 - c2) / 2, r[7] - 2, { align: 'center' });
     }
     return doc;
 };
 
 export const pdfToBase64 = (doc: jsPDF): string => doc.output('datauristring').split(',')[1];
 export const printLabels = async (products: any[]) => { const doc = await generateLabelsPDF(products); doc.save(`etiquetas_ambicom_${Date.now()}.pdf`); };
+
 export const printLabelsNative = async (products: any[]) => {
     const doc = await generateLabelsPDF(products);
+    
+    // Configura o PDF para abrir a janela de impressão automaticamente ao ser visualizado
+    doc.autoPrint();
+    
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
-    const w = window.open(url, '_blank');
-    if (w) { w.addEventListener('load', () => w.print(), { once: true }); setTimeout(() => URL.revokeObjectURL(url), 60_000); }
+    
+    // Cria um iframe oculto para impressão direta do documento PDF
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = url;
+    
+    iframe.onload = () => {
+        try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+        } catch (e) {
+            console.error('Erro na impressão nativa do PDF:', e);
+        }
+    };
+    
+    document.body.appendChild(iframe);
+    
+    // Limpeza após tempo seguro
+    setTimeout(() => {
+        if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+        }
+        URL.revokeObjectURL(url);
+    }, 60_000);
 };
