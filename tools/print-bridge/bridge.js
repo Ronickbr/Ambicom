@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { exec } from 'child_process';
-import ptp from 'pdf-to-printer';
 
 import os from 'os';
 import fs from 'fs';
@@ -127,27 +126,28 @@ async function executeJob(job) {
                 });
             });
         } else if (type === 'pdf') {
-            // Impressão PDF via pdf-to-printer (Braço Executor Local)
+            // Impressão PDF via Chrome (Modo Silencioso Kiosk)
             const jobId = `PDF-${Date.now()}`;
             const tempFile = path.join(os.tmpdir(), `${jobId}.pdf`);
 
             const pdfBuffer = Buffer.from(job.payload_data, 'base64');
             fs.writeFileSync(tempFile, pdfBuffer);
 
-            try {
-                log(`🖨️ Enviando PDF para pdf-to-printer...`);
-                await ptp.print(tempFile, {
-                    printer: job.printer_target,
-                    paperSize: "80x55mm",
-                    win32: ['-print-settings "fit"']
+            await new Promise((resolve, reject) => {
+                log(`🖨️ Enviando PDF para Chrome (Kiosk)...`);
+                const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${path.join(__dirname, 'print_chrome.ps1')}" -PrinterName "${job.printer_target}" -FilePath "${tempFile}"`;
+                
+                exec(cmd, (error, stdout, stderr) => {
+                    if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+                    if (error) {
+                        log(`❌ Erro no Chrome (PDF): ${stderr || error.message}`);
+                        reject(error);
+                    } else {
+                        log(`✅ Job ${job.id} (PDF) impresso com sucesso via Chrome em ${job.printer_target}`);
+                        resolve(jobId);
+                    }
                 });
-
-                log(`✅ Job ${job.id} (PDF) impresso com sucesso em ${job.printer_target}`);
-                if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
-            } catch (printError) {
-                if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
-                throw printError;
-            }
+            });
         } else {
             throw new Error(`Tipo de payload não suportado: ${type}`);
         }
