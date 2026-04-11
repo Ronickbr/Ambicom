@@ -138,8 +138,8 @@ async function executeJob(job) {
                 log(`🖨️ Enviando PDF para pdf-to-printer...`);
                 await ptp.print(tempFile, {
                     printer: job.printer_target,
-                    // nofitpage: imprime em escala 1:1 sem redimensionar
-                    win32: ['-print-settings "nofitpage"']
+                    paperSize: "80x55mm",
+                    win32: ['-print-settings "fit"'] // Ajusta o PDF ao tamanho da etiqueta
                 });
 
                 log(`✅ Job ${job.id} (PDF) impresso com sucesso em ${job.printer_target}`);
