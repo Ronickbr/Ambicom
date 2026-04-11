@@ -140,9 +140,25 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
     const rotY = (x: number, y: number) => x;
 
     const drawText = (text: string, x: number, y: number, options?: any) => {
-        // align centralizado precisa ajustar o x,y pós-rotação. O jsPDF cuida disso se passarmos as coordenadas originais rotacionadas,
-        // mas o 'align: center' baseia-se na coordenada rotacionada. 
-        doc.text(text, rotX(x, y), rotY(x, y), { angle: -90, ...options });
+        const str = String(text);
+        let finalX = x;
+        const finalY = y;
+        
+        // jsPDF's native align breaks when combined with our manual 90-degree coordinate rotation.
+        // We calculate the alignment offset manually in the original portrait coordinate space.
+        if (options?.align === 'center') {
+            const w = doc.getTextWidth(str);
+            finalX = x - w / 2;
+        } else if (options?.align === 'right') {
+            const w = doc.getTextWidth(str);
+            finalX = x - w;
+        }
+        
+        const jsPdfOptions = { ...options };
+        delete jsPdfOptions.align;
+        jsPdfOptions.angle = -90;
+        
+        doc.text(str, rotX(finalX, finalY), rotY(finalX, finalY), jsPdfOptions);
     };
     
     const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
