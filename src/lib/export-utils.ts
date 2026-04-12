@@ -29,342 +29,323 @@ export const exportToExcel = (data: Record<string, unknown>[], fileName: string)
 export function generateLabelsTSPL(products: any[]): string {
     const sv = (v: any) => String(v ?? '').trim().replace(/"/g, "'").replace(/\r?\n/g, ' ') || '-';
 
-    const clean = (val: string, unit: string) => {
-        if (!val || val === '-') return '-';
-        const cleanVal = val.replace(new RegExp(`\\s*${unit}$`, 'i'), '').trim();
-        return `${cleanVal} ${unit}`;
-    };
+    // Configurações da etiqueta: 55mm x 80mm
+    const MM = 8; // dots/mm
+    const LABEL_W = 55 * MM;      // 440 dots
+    const LABEL_H = 80 * MM;      // 640 dots
+    const MARGIN = 2 * MM;        // 16 dots (2mm)
+    
+    // Área útil: 408 x 608 dots
+    const X0 = MARGIN;            // 16
+    const X1 = LABEL_W - MARGIN;  // 424
+    const Y0 = MARGIN;            // 16
+    const Y_MAX = LABEL_H - MARGIN; // 624
+    
+    // Alturas ajustadas (-1 dot cada)
+    const HEADER_H = 79;          // era 80
+    const ROW1_H = 67;            // era 68
+    const ROW2_H = 127;           // era 128
+    const ROW_STD = 67;           // era 68 (para rows 3-7)
+    
+    // Posições Y calculadas (total = 608 dots exatos)
+    const Y_HEADER_END = Y0 + HEADER_H;           // 16 + 79 = 95
+    const Y_ROW1_END = Y_HEADER_END + ROW1_H;     // 95 + 67 = 162
+    const Y_ROW2_END = Y_ROW1_END + ROW2_H;       // 162 + 127 = 289
+    const Y_ROW3_END = Y_ROW2_END + ROW1_H;       // 289 + 67 = 356
+    const Y_ROW4_END = Y_ROW3_END + ROW_STD;      // 356 + 67 = 423
+    const Y_ROW5_END = Y_ROW4_END + ROW_STD;      // 423 + 67 = 490
+    const Y_ROW6_END = Y_ROW5_END + ROW_STD;      // 490 + 67 = 557
+    const Y_ROW7_END = Y_ROW6_END + ROW_STD;      // 557 + 67 = 624 = Y_MAX ✓
+    
+    // Divisórias verticais
+    const CENTER_DIV = X0 + Math.round((X1 - X0) * 0.50);  // 220
+    const COL1_DIV = X0 + Math.round((X1 - X0) * 0.33);    // 150
+    const COL2_DIV = X0 + Math.round((X1 - X0) * 0.66);    // 294
+    
+    // Centros para alinhamento
+    const CENTER_LEFT = Math.round((X0 + CENTER_DIV) / 2);     // 118
+    const CENTER_RIGHT = Math.round((CENTER_DIV + X1) / 2);    // 322
+    const CENTER_COL1 = Math.round((X0 + COL1_DIV) / 2);       // 83
+    const CENTER_COL2 = Math.round((COL1_DIV + COL2_DIV) / 2); // 222
+    const CENTER_COL3 = Math.round((COL2_DIV + X1) / 2);       // 359
 
-    // Mapeamento manual 90° CW para bobina deitada (80x55)
-    // Design Portrait 55x80 -> Físico Landscape 80x55
-    const mapX = (py: number) => 620 - py; // Subtração para inverter eixo Y design p/ X físico
-    const mapY = (px: number) => px + 10;   // Margem de segurança no avanço
+    const lines: string[] = [];
 
-    const lines: string[] = [
-        'SIZE 80 mm,55 mm',
-        'GAP 3 mm,0 mm',
-        'DIRECTION 1',
-        'OFFSET 0 mm',
-        'CLS',
-        'CODEPAGE UTF-8',
-    ];
+    for (let idx = 0; idx < products.length; idx++) {
+        const p = products[idx];
+        if (idx > 0) lines.push('');
 
-    for (const p of products) {
-        // Coordenadas Design (Retrato)
-        const X0 = 10, X1 = 420;
-        const GY = 110;
-        const r = [GY, GY + 55, GY + 160, GY + 215, GY + 270, GY + 325, GY + 380, GY + 490];
-        const cMod = 220, cSer = 100, c1 = 145, c2 = 285;
+        lines.push('SIZE 55 mm,80 mm');
+        lines.push('GAP 0 mm,0 mm');
+        lines.push('DIRECTION 1');
+        lines.push('REFERENCE 0,0');
+        lines.push('CLS');
+        lines.push('CODEPAGE UTF-8');
 
-        const model = sv(p.model ?? p.modelo);
-        const voltage = clean(sv(p.voltage ?? p.tensao), 'V');
+        const val = (v: any) => String(v ?? '').trim() || '';
+        
+        // === HEADER (79 dots) ===
+        lines.push(`TEXT ${X0 + 10},${Y0 + 35},"4",0,1,1,"Ambicom"`);
+        
+        const rightX = X0 + 200;
+        lines.push(`TEXT ${rightX + 20},${Y0 + 15},"2",0,1,1,"PRODUTO"`);
+        lines.push(`TEXT ${rightX},${Y0 + 35},"2",0,1,1,"REMANUFATURADO"`);
+        lines.push(`TEXT ${rightX + 15},${Y0 + 55},"2",0,1,1,"GARANTIA"`);
+        lines.push(`TEXT ${rightX + 20},${Y0 + 75},"2",0,1,1,"AMBICOM"`);
+        
+        lines.push(`TEXT ${X0 + 10},${Y0 + 55},"1",0,1,1,"R. Wenceslau Marek, 10 - Águas Belas,"`);
+        lines.push(`TEXT ${X0 + 10},${Y0 + 72},"1",0,1,1,"São José dos Pinhais - PR, 83010-520"`);
+        lines.push(`TEXT ${X0 + 10},${Y0 + 72},"3",0,1,1,"SAC: 041-3382-5410"`);
+
+        lines.push(`LINE ${X0},${Y_HEADER_END},${X1},${Y_HEADER_END},3`);
+
+        // === ROW 1: MODELO | VOLTAGEM (67 dots) ===
+        let currentY = Y_HEADER_END;
+        const row1End = Y_ROW1_END;
+        
+        lines.push(`LINE ${CENTER_DIV},${currentY},${CENTER_DIV},${row1End},2`);
+        
+        const model = sv(p.model || p.modelo);
+        lines.push(`TEXT ${CENTER_LEFT},${currentY + 24},"2",0,1,1,"MODELO"`);
+        lines.push(`TEXT ${CENTER_LEFT},${currentY + 54},"4",0,1,1,"${model}"`);
+        
+        const voltage = sv(p.voltage || p.tensao);
+        lines.push(`TEXT ${CENTER_RIGHT},${currentY + 24},"2",0,1,1,"VOLTAGEM"`);
+        lines.push(`TEXT ${CENTER_RIGHT},${currentY + 54},"4",0,1,1,"${voltage}"`);
+        
+        lines.push(`LINE ${X0},${row1End},${X1},${row1End},2`);
+        currentY = row1End;
+
+        // === ROW 2: NÚMERO DE SÉRIE (127 dots) ===
+        const row2End = Y_ROW2_END;
         const serial = sv(p.internal_serial);
+        
+        // QR Code: cellwidth 8, margem ajustada para 127 dots
+        if (serial && serial !== '-') {
+            lines.push(`QRCODE ${X0 + 8},${currentY + 5},L,8,A,0,"${serial}"`);
+        }
+        
+        const textX = X0 + 140;
+        lines.push(`TEXT ${textX},${currentY + 34},"2",0,1,1,"NÚMERO DE SÉRIE AMBICOM:"`);
+        lines.push(`TEXT ${textX},${currentY + 74},"5",0,1,1,"${serial}"`);
+        const commercialCode = sv(p.commercial_code);
+        lines.push(`TEXT ${textX},${currentY + 109},"3",0,1,1,"${commercialCode}"`);
+        
+        lines.push(`LINE ${X0},${row2End},${X1},${row2End},2`);
+        currentY = row2End;
+
+        // === ROW 3: PNC/ML | Frequência (67 dots) ===
+        const row3End = Y_ROW3_END;
+        
+        lines.push(`LINE ${CENTER_DIV},${currentY},${CENTER_DIV},${row3End},2`);
+        
         const pncMl = sv(p.pnc_ml);
-        const gas = sv(p.refrigerant_gas);
-        const gasChg = clean(sv(p.gas_charge), 'g');
-        const comp = sv(p.compressor);
-        const volFrz = clean(sv(p.volume_freezer), 'L');
-        const volRef = clean(sv(p.volume_refrigerator), 'L');
-        const volTot = clean(sv(p.volume_total), 'L');
-        const current = clean(sv(p.electric_current), 'A');
-        const defrost = clean(sv(p.defrost_power), 'W');
-        const dispSize = (p.size === 'Pequeno' ? 'P' : p.size === 'Médio' ? 'M' : p.size === 'Grande' ? 'G' : p.size) || '-';
+        lines.push(`TEXT ${CENTER_LEFT},${currentY + 24},"2",0,1,1,"PNC/ML"`);
+        lines.push(`TEXT ${CENTER_LEFT},${currentY + 54},"4",0,1,1,"${pncMl}"`);
+        
+        const frequency = sv(p.frequency) || "60 Hz";
+        lines.push(`TEXT ${CENTER_RIGHT},${currentY + 44},"3",0,1,1,"${frequency}"`);
+        
+        lines.push(`LINE ${X0},${row3End},${X1},${row3End},2}`);
+        currentY = row3End;
 
-        // Cabeçalho
-        lines.push(`TEXT ${mapX(10)},${mapY(X0)},"3",90,1,1,"AMBICOM"`);
-        lines.push(`TEXT ${mapX(40)},${mapY(X0)},"1",90,1,1,"R. Wenceslau Marek, 10 - SJP/PR"`);
-        lines.push(`TEXT ${mapX(70)},${mapY(X0)},"2",90,1,1,"SAC: 041-3382-5410"`);
+        // === ROWS 4-7: 3 colunas (67 dots cada) ===
+        const rows3Col = [
+            { labels: ["GÁS FRIGOR.", "CARGA GÁS", "COMPRESSOR"], 
+              values: [sv(p.refrigerant_gas), sv(p.gas_charge), sv(p.compressor)],
+              fonts: ["3", "3", "2"] },
+            { labels: ["VOL. FREEZER", "VOL. REFRIG.", "VOLUME TOTAL"], 
+              values: [sv(p.volume_freezer), sv(p.volume_refrigerator), sv(p.volume_total)],
+              fonts: ["3", "3", "3"] },
+            { labels: ["PRESSÃO ALTA", "PRESSÃO BAIXA", "CAPAC. CONG."], 
+              values: [String(p.pressure_high_low || "").split('/')[0] || '-', 
+                      String(p.pressure_high_low || "").split('/')[1] || '-', 
+                      sv(p.freezing_capacity)],
+              fonts: ["2", "2", "2"] },
+            { labels: ["CORRENTE", "POT. DEGELO", "TAMANHO"], 
+              values: [sv(p.electric_current), sv(p.defrost_power), 
+                      (p.size === 'Pequeno' ? 'P' : p.size === 'Médio' ? 'M' : p.size === 'Grande' ? 'G' : p.size) || '-'],
+              fonts: ["3", "3", "5"] }
+        ];
 
-        // Grade (BOX x,y,x,y,t) - Garantindo x1 < x2
-        const xA = mapX(r[7]), xB = mapX(GY);
-        lines.push(`BOX ${xA},${mapY(X0)},${xB},${mapY(X1)},2`);
-
-        // Linhas de Divisão (Design horizontal -> Físico Vertical)
-        [r[1], r[2], r[3], r[4], r[5], r[6]].forEach(y => {
-            const tx = mapX(y);
-            lines.push(`LINE ${tx},${mapY(X0)},${tx},${mapY(X1)},2`);
-        });
-
-        // Divisores de Coluna (Design vertical -> Físico Horizontal)
-        lines.push(`LINE ${mapX(GY)},${mapY(cMod)},${mapX(r[1])},${mapY(cMod)},2`);
-        lines.push(`LINE ${mapX(r[1])},${mapY(cSer)},${mapX(r[2])},${mapY(cSer)},2`);
-        lines.push(`LINE ${mapX(r[3])},${mapY(c1)},${mapX(r[7])},${mapY(c1)},2`);
-        lines.push(`LINE ${mapX(r[3])},${mapY(c2)},${mapX(r[7])},${mapY(c2)},2`);
-
-        // Textos da Grade
-        lines.push(`TEXT ${mapX(GY + 5)},${mapY(X0 + 5)},"1",90,1,1,"MODELO"`);
-        lines.push(`TEXT ${mapX(GY + 25)},${mapY(X0 + 5)},"3",90,1,1,"${model}"`);
-        lines.push(`TEXT ${mapX(GY + 5)},${mapY(cMod + 5)},"1",90,1,1,"VOLTAGEM"`);
-        lines.push(`TEXT ${mapX(GY + 25)},${mapY(cMod + 5)},"3",90,1,1,"${voltage}"`);
-
-        lines.push(`TEXT ${mapX(r[1] + 5)},${mapY(cSer + 5)},"1",90,1,1,"SERIE:"`);
-        lines.push(`TEXT ${mapX(r[1] + 25)},${mapY(cSer + 5)},"2",90,1,1,"${serial}"`);
-        if (serial !== '-') {
-            // QRCODE X,Y,ECC,CellWidth,Mode,Rotation,"data"
-            lines.push(`QRCODE ${mapX(r[1] + 140)},${mapY(X0 + 5)},L,4,A,90,"${serial}"`);
+        for (let i = 0; i < rows3Col.length; i++) {
+            const row = rows3Col[i];
+            const rowEnd = currentY + ROW_STD;
+            
+            lines.push(`LINE ${COL1_DIV},${currentY},${COL1_DIV},${rowEnd},2`);
+            lines.push(`LINE ${COL2_DIV},${currentY},${COL2_DIV},${rowEnd},2`);
+            lines.push(`LINE ${X0},${rowEnd},${X1},${rowEnd},2`);
+            
+            // Coluna 1
+            lines.push(`TEXT ${CENTER_COL1},${currentY + 21},"2",0,1,1,"${row.labels[0]}"}`);
+            lines.push(`TEXT ${CENTER_COL1},${currentY + 51},"${row.fonts[0]}",0,1,1,"${row.values[0]}"}`);
+            
+            // Coluna 2
+            lines.push(`TEXT ${CENTER_COL2},${currentY + 21},"2",0,1,1,"${row.labels[1]}"}`);
+            lines.push(`TEXT ${CENTER_COL2},${currentY + 51},"${row.fonts[1]}",0,1,1,"${row.values[1]}"}`);
+            
+            // Coluna 3
+            lines.push(`TEXT ${CENTER_COL3},${currentY + 21},"2",0,1,1,"${row.labels[2]}"}`);
+            lines.push(`TEXT ${CENTER_COL3},${currentY + 51},"${row.fonts[2]}",0,1,1,"${row.values[2]}"}`);
+            
+            currentY = rowEnd;
         }
 
-        lines.push(`TEXT ${mapX(r[2] + 5)},${mapY(X0 + 5)},"1",90,1,1,"PNC/ML"`);
-        lines.push(`TEXT ${mapX(r[2] + 25)},${mapY(X0 + 5)},"2",90,1,1,"${pncMl}"`);
-
-        // L4 Gas
-        lines.push(`TEXT ${mapX(r[3] + 4)},${mapY(X0 + 4)},"1",90,1,1,"GAS"`); lines.push(`TEXT ${mapX(r[3] + 20)},${mapY(X0 + 4)},"2",90,1,1,"${gas}"`);
-        lines.push(`TEXT ${mapX(r[3] + 4)},${mapY(c1 + 4)},"1",90,1,1,"CARGA"`); lines.push(`TEXT ${mapX(r[3] + 20)},${mapY(c1 + 4)},"2",90,1,1,"${gasChg}"`);
-        lines.push(`TEXT ${mapX(r[3] + 4)},${mapY(c2 + 4)},"1",90,1,1,"COMP."`); lines.push(`TEXT ${mapX(r[3] + 20)},${mapY(c2 + 4)},"2",90,1,1,"${comp}"`);
-
-        // L5 Vols
-        lines.push(`TEXT ${mapX(r[4] + 4)},${mapY(X0 + 4)},"1",90,1,1,"FREEZ"`); lines.push(`TEXT ${mapX(r[4] + 20)},${mapY(X0 + 4)},"2",90,1,1,"${volFrz}"`);
-        lines.push(`TEXT ${mapX(r[4] + 4)},${mapY(c1 + 4)},"1",90,1,1,"REFRIG"`); lines.push(`TEXT ${mapX(r[4] + 20)},${mapY(c1 + 4)},"2",90,1,1,"${volRef}"`);
-        lines.push(`TEXT ${mapX(r[4] + 4)},${mapY(c2 + 4)},"1",90,1,1,"TOTAL"`); lines.push(`TEXT ${mapX(r[4] + 20)},${mapY(c2 + 4)},"2",90,1,1,"${volTot}"`);
-
-        // L7 Base
-        lines.push(`TEXT ${mapX(r[6] + 4)},${mapY(X0 + 4)},"1",90,1,1,"CORRENTE"`); lines.push(`TEXT ${mapX(r[6] + 20)},${mapY(X0 + 4)},"3",90,1,1,"${current}"`);
-        lines.push(`TEXT ${mapX(r[6] + 4)},${mapY(c1 + 4)},"1",90,1,1,"POTENCIA"`); lines.push(`TEXT ${mapX(r[6] + 20)},${mapY(c1 + 4)},"3",90,1,1,"${defrost}"`);
-        lines.push(`TEXT ${mapX(r[6] + 4)},${mapY(c2 + 4)},"1",90,1,1,"TAM."`);
-        lines.push(`TEXT ${mapX(r[6] + 50)},${mapY(c2 + 45)},"5",90,1,1,"${dispSize}"`);
+        // Bordas verticais externas
+        lines.push(`LINE ${X0},${Y_HEADER_END},${X0},${Y_MAX},3`);
+        lines.push(`LINE ${X1},${Y_HEADER_END},${X1},${Y_MAX},3`);
 
         lines.push('PRINT 1,1');
     }
+    
     return lines.join('\r\n');
 }
 
 // ─── PDF (Layout Retrato 55x80 baseado no Layout Antigo) ─────────────────────────────────
-export const generateLabelsPDF = async (products: any[], rotatedForRemote: boolean = false): Promise<jsPDF> => {
-    // Gerar em retrato (Portrait) 55x80 sem rotação forçada, ou paisagem 80x55 (rotacionado 90 graus) para remote printing
-    const orientation = rotatedForRemote ? 'l' : 'p';
-    const format = rotatedForRemote ? [80, 55] : [55, 80];
-    
-    const doc = new jsPDF({ orientation: orientation, unit: 'mm', format: format, compress: true });
+export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
+    // Definindo a unidade como mm para facilitar a relação com a etiqueta física
+    const doc = new jsPDF({ 
+        orientation: 'p', 
+        unit: 'mm', 
+        format: [55, 80], 
+        compress: true 
+    });
 
-    const drawText = (text: string, x: number, y: number, options?: any) => {
-        if (rotatedForRemote) {
-            // Rotacionar 90 graus no sentido anti-horário (Landscape)
-            // x novo = y antigo
-            // y novo = 55 - x antigo (pois a largura antiga era 55)
-            // O ângulo no jsPDF é no sentido anti-horário, então -90
-            const newX = y;
-            const newY = 55 - x;
-            doc.text(text, newX, newY, { ...options, angle: 90 });
-        } else {
-            doc.text(text, x, y, options);
-        }
-    };
-    
-    const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
-        if (rotatedForRemote) {
-            const nx1 = y1;
-            const ny1 = 55 - x1;
-            const nx2 = y2;
-            const ny2 = 55 - x2;
-            doc.line(nx1, ny1, nx2, ny2);
-        } else {
-            doc.line(x1, y1, x2, y2);
-        }
-    };
+    // Função auxiliar para converter dots (do TSPL) para MM (do PDF)
+    // Se TSPL usa 8 dots/mm, dividimos por 8.
+    const dToM = (dots: number) => dots / 8;
 
     for (let idx = 0; idx < products.length; idx++) {
         const p = products[idx];
-        if (idx > 0) doc.addPage(format, orientation);
-        const val = (v: any) => String(v ?? '').trim() || '';
+        if (idx > 0) doc.addPage([55, 80], 'p');
 
-        // Fator de escala de 100x135 para 55x80 (aprox 0.55 na largura e 0.59 na altura)
-        const scale = 0.55;
-        const sX = (x: number) => x * scale;
-        const sY = (y: number) => y * 0.59;
-        
-        // --- Header Section ---
+        const val = (v: any) => String(v ?? '').trim() || '-';
+
+        // Constantes de Layout baseadas no seu TSPL (convertidas para mm)
+        const MARGIN = 2; // 16 dots
+        const X0 = MARGIN;
+        const X1 = 55 - MARGIN;
+        const Y0 = MARGIN;
+        const CENTER_X = 55 / 2;
+        const COL1_X = X0 + (X1 - X0) * 0.33;
+        const COL2_X = X0 + (X1 - X0) * 0.66;
+
+        // Alturas das seções (espelhando os dots do TSPL)
+        const Y_HEADER_END = Y0 + dToM(79);   // 11.87mm
+        const Y_ROW1_END = Y_HEADER_END + dToM(67);
+        const Y_ROW2_END = Y_ROW1_END + dToM(127);
+        const ROW_H = dToM(67); // Altura padrão das linhas 3 a 7
+
+        doc.setLineWidth(0.2);
+
+        // === HEADER ===
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(12); // scaled from 22
-        drawText("Ambicom", sX(8), sY(12));
+        doc.setFontSize(14);
+        doc.text("Ambicom", X0 + 1, Y0 + 5);
 
-        // Subtitle (Right aligned block)
-        doc.setFontSize(4); // scaled from 7
-        doc.setFont("helvetica", "bold");
-        const subtitleX = sX(68);
-        drawText("PRODUTO", subtitleX + sX(5), sY(10));
-        drawText("REMANUFATURADO", subtitleX, sY(13));
-        drawText("GARANTIA", subtitleX + sX(4), sY(16));
-        drawText("AMBICOM", subtitleX + sX(4.5), sY(19));
+        doc.setFontSize(5);
+        const headerTextX = X0 + 25;
+        doc.text("PRODUTO REMANUFATURADO", headerTextX, Y0 + 4);
+        doc.text("GARANTIA AMBICOM", headerTextX, Y0 + 7);
 
-        // Address & SAC
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(3.5); // scaled from 6.5
-        drawText("R. Wenceslau Marek, 10 - Águas Belas,", sX(8), sY(17));
-        drawText("São José dos Pinhais - PR, 83010-520", sX(8), sY(20));
-
-        doc.setFontSize(8); // scaled from 14
+        doc.setFontSize(4);
+        doc.text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, Y0 + 10);
+        
         doc.setFont("helvetica", "bold");
-        drawText(`SAC : 041 - 3382-5410`, sX(8), sY(26));
+        doc.setFontSize(7);
+        doc.text("SAC: 041-3382-5410", X0 + 1, Y_HEADER_END - 1);
 
-        // --- Grid Section ---
-        let currentY = 28;
-        doc.setLineWidth(0.2); // scaled from 0.4
+        doc.line(X0, Y_HEADER_END, X1, Y_HEADER_END);
 
-        // Row 1: MODELO | VOLTAGEM
-        drawLine(sX(8), sY(currentY), sX(92), sY(currentY)); // Horizontal Top
-        drawLine(sX(45), sY(currentY), sX(45), sY(currentY + 12)); // Vertical Divider
+        // === ROW 1: MODELO | VOLTAGEM ===
+        doc.line(CENTER_X, Y_HEADER_END, CENTER_X, Y_ROW1_END);
+        
+        doc.setFontSize(4);
+        doc.text("MODELO", (X0 + CENTER_X) / 2, Y_HEADER_END + 3, { align: 'center' });
+        doc.setFontSize(9);
+        doc.text(val(p.model || p.modelo), (X0 + CENTER_X) / 2, Y_HEADER_END + 7, { align: 'center' });
 
-        doc.setFontSize(3.5); // scaled from 6.5
-        drawText("MODELO", sX(26), sY(currentY + 4), { align: 'center' });
-        doc.setFontSize(10); // scaled from 18
-        drawText(val(p.model || p.modelo), sX(26), sY(currentY + 10), { align: 'center' });
+        doc.setFontSize(4);
+        doc.text("VOLTAGEM", (CENTER_X + X1) / 2, Y_HEADER_END + 3, { align: 'center' });
+        doc.setFontSize(9);
+        doc.text(val(p.voltage || p.tensao), (CENTER_X + X1) / 2, Y_HEADER_END + 7, { align: 'center' });
 
-        doc.setFontSize(3.5);
-        drawText("VOLTAGEM", sX(68.5), sY(currentY + 4), { align: 'center' });
-        doc.setFontSize(10);
-        drawText(val(p.voltage || p.tensao), sX(68.5), sY(currentY + 10), { align: 'center' });
+        doc.line(X0, Y_ROW1_END, X1, Y_ROW1_END);
 
-        currentY += 12;
-        drawLine(sX(8), sY(currentY), sX(92), sY(currentY)); // Divider
-
-        // Row 2: NÚMERO DE SÉRIE AMBICOM (With QR code on the left)
-        const qrData = val(p.internal_serial).trim();
-        if (qrData && qrData !== '-') {
+        // === ROW 2: QR & SERIAL ===
+        const serial = val(p.internal_serial);
+        if (serial !== '-') {
             try {
-                const qrImgData = await QRCode.toDataURL(qrData, {
-                    margin: 0,
-                    width: 100,
-                    color: { dark: "#000000", light: "#ffffff" }
-                });
-                const imgSize = sX(15);
-                const imgX = sX(10);
-                const imgY = sY(currentY + 1);
-                
-                if (rotatedForRemote) {
-                    const newX = imgY;
-                    const newY = 55 - imgX - imgSize; // Adjust for the size of the image since x,y is top-left
-                    // Note: jsPDF addImage doesn't support rotation angle directly in all versions,
-                    // but for a QR code (which is a square matrix), rotation might not matter as much
-                    // for readability by a scanner, as long as it's positioned correctly.
-                    doc.addImage(qrImgData, 'PNG', newX, newY, imgSize, imgSize);
-                } else {
-                    doc.addImage(qrImgData, 'PNG', imgX, imgY, imgSize, imgSize);
-                }
-            } catch (err) { }
+                const qrImg = await QRCode.toDataURL(serial, { margin: 0 });
+                doc.addImage(qrImg, 'PNG', X0 + 1, Y_ROW1_END + 1, 14, 14);
+            } catch (e) {}
         }
 
-        doc.setFontSize(3.5);
-        drawText("NÚMERO DE SÉRIE AMBICOM:", sX(59), sY(currentY + 3), { align: 'center' });
+        const textStartX = X0 + 17;
+        doc.setFontSize(4);
+        doc.text("NÚMERO DE SÉRIE AMBICOM:", textStartX, Y_ROW1_END + 4);
         doc.setFontSize(10);
-        drawText(val(p.internal_serial), sX(59), sY(currentY + 9), { align: 'center' });
-        doc.setFontSize(9); // scaled from 16
-        drawText(val(p.commercial_code), sX(59), sY(currentY + 15), { align: 'center' });
+        doc.text(serial, textStartX, Y_ROW1_END + 9);
+        doc.setFontSize(7);
+        doc.text(val(p.commercial_code), textStartX, Y_ROW1_END + 14);
 
-        currentY += 17;
-        drawLine(sX(8), sY(currentY), sX(92), sY(currentY)); // Divider
+        doc.line(X0, Y_ROW2_END, X1, Y_ROW2_END);
 
-        // Row 3: PNC/ML | Frequência
-        drawLine(sX(60), sY(currentY), sX(60), sY(currentY + 10)); // Vertical
-        doc.setFontSize(3.5);
-        drawText("PNC/ML", sX(34), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(10);
-        drawText(val(p.pnc_ml), sX(34), sY(currentY + 8.5), { align: 'center' });
-
-        doc.setFontSize(9);
-        drawText(val(p.frequency) || "60 Hz", sX(76), sY(currentY + 7.5), { align: 'center' });
-
-        currentY += 10;
-        drawLine(sX(8), sY(currentY), sX(92), sY(currentY)); // Divider
-
-        // Row 4: GÁS FRIGOR. | CARGA GÁS | COMPRESSOR
-        drawLine(sX(34), sY(currentY), sX(34), sY(currentY + 12));
-        drawLine(sX(60), sY(currentY), sX(60), sY(currentY + 12));
-
-        doc.setFontSize(3.5);
-        drawText("GÁS FRIGOR.", sX(21), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(6.5); // scaled from 12
-        drawText(val(p.refrigerant_gas), sX(21), sY(currentY + 8), { align: 'center' });
-
-        doc.setFontSize(3.5);
-        drawText("CARGA GÁS", sX(47), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(9);
-        drawText(val(p.gas_charge), sX(47), sY(currentY + 8), { align: 'center' });
-
-        doc.setFontSize(3.5);
-        drawText("COMPRESSOR", sX(76), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(5.5); // scaled from 10
-        drawText(val(p.compressor), sX(76), sY(currentY + 8), { align: 'center' });
-
-        currentY += 12;
-        drawLine(sX(8), sY(currentY), sX(92), sY(currentY));
-
-        // Row 5: VOL. FREEZER | VOL. REFRIG. | VOLUME TOTAL
-        drawLine(sX(34), sY(currentY), sX(34), sY(currentY + 12));
-        drawLine(sX(60), sY(currentY), sX(60), sY(currentY + 12));
-
-        doc.setFontSize(3.5);
-        drawText("VOL. FREEZER", sX(21), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(6.5);
-        drawText(val(p.volume_freezer), sX(21), sY(currentY + 8), { align: 'center' });
-
-        doc.setFontSize(3.5);
-        drawText("VOL. REFRIG.", sX(47), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(6.5);
-        drawText(val(p.volume_refrigerator), sX(47), sY(currentY + 8), { align: 'center' });
-
-        doc.setFontSize(3.5);
-        drawText("VOLUME TOTAL", sX(76), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(6.5);
-        drawText(val(p.volume_total), sX(76), sY(currentY + 8), { align: 'center' });
-
-        currentY += 12;
-        drawLine(sX(8), sY(currentY), sX(92), sY(currentY));
-
-        // Row 6: PRESSÃO ALTA | PRESSÃO BAIXA | CAPAC. CONG.
-        drawLine(sX(34), sY(currentY), sX(34), sY(currentY + 12));
-        drawLine(sX(60), sY(currentY), sX(60), sY(currentY + 12));
-
-        doc.setFontSize(3.5);
-        drawText("PRESSÃO ALTA", sX(21), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(5); // scaled from 9
+        // === ROW 3: PNC/ML | FREQUÊNCIA ===
+        const Y_ROW3_END = Y_ROW2_END + ROW_H;
+        doc.line(CENTER_X, Y_ROW2_END, CENTER_X, Y_ROW3_END);
         
-        const pressures = String(p.pressure_high_low || "").split('/');
-        drawText(val(pressures[0]), sX(21), sY(currentY + 8), { align: 'center' });
+        doc.setFontSize(4);
+        doc.text("PNC/ML", (X0 + CENTER_X) / 2, Y_ROW2_END + 3, { align: 'center' });
+        doc.setFontSize(9);
+        doc.text(val(p.pnc_ml), (X0 + CENTER_X) / 2, Y_ROW2_END + 7, { align: 'center' });
+        
+        doc.setFontSize(8);
+        doc.text(val(p.frequency) || "60 Hz", (CENTER_X + X1) / 2, Y_ROW2_END + 5.5, { align: 'center' });
 
-        doc.setFontSize(3.5);
-        drawText("PRESSÃO BAIXA", sX(47), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(5);
-        drawText(val(pressures[1]), sX(47), sY(currentY + 8), { align: 'center' });
+        doc.line(X0, Y_ROW3_END, X1, Y_ROW3_END);
 
-        doc.setFontSize(3.5);
-        drawText("CAPAC. CONG.", sX(76), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(5.5);
-        drawText(val(p.freezing_capacity), sX(76), sY(currentY + 8), { align: 'center' });
+        // === ROWS 4-7: 3 COLUNAS ===
+        const rowData = [
+            { l: ["GÁS FRIGOR.", "CARGA GÁS", "COMPRESSOR"], v: [p.refrigerant_gas, p.gas_charge, p.compressor] },
+            { l: ["VOL. FREEZER", "VOL. REFRIG.", "VOLUME TOTAL"], v: [p.volume_freezer, p.volume_refrigerator, p.volume_total] },
+            { l: ["PRESSÃO ALTA", "PRESSÃO BAIXA", "CAPAC. CONG."], v: [String(p.pressure_high_low || "").split('/')[0], String(p.pressure_high_low || "").split('/')[1], p.freezing_capacity] },
+            { l: ["CORRENTE", "POT. DEGELO", "TAMANHO"], v: [p.electric_current, p.defrost_power, p.size] }
+        ];
 
-        currentY += 12;
-        drawLine(sX(8), sY(currentY), sX(92), sY(currentY));
+        let currentY = Y_ROW3_END;
+        rowData.forEach((row) => {
+            const nextY = currentY + ROW_H;
+            
+            // Linhas Verticais
+            doc.line(COL1_X, currentY, COL1_X, nextY);
+            doc.line(COL2_X, currentY, COL2_X, nextY);
+            
+            // Labels e Valores
+            const centers = [(X0 + COL1_X) / 2, (COL1_X + COL2_X) / 2, (COL2_X + X1) / 2];
+            
+            row.l.forEach((label, i) => {
+                doc.setFontSize(3.5);
+                doc.text(label, centers[i], currentY + 3, { align: 'center' });
+                doc.setFontSize(i === 2 && row.l[2] === "TAMANHO" ? 10 : 6);
+                
+                let displayVal = val(row.v[i]);
+                if(label === "TAMANHO") {
+                    displayVal = displayVal === 'Pequeno' ? 'P' : displayVal === 'Médio' ? 'M' : displayVal === 'Grande' ? 'G' : displayVal;
+                }
+                doc.text(displayVal, centers[i], currentY + 7, { align: 'center' });
+            });
 
-        // Row 7: CORRENTE | POT. DEGELO | GRADE
-        drawLine(sX(34), sY(currentY), sX(34), sY(currentY + 12));
-        drawLine(sX(60), sY(currentY), sX(60), sY(currentY + 12));
+            doc.line(X0, nextY, X1, nextY);
+            currentY = nextY;
+        });
 
-        doc.setFontSize(3.5);
-        drawText("CORRENTE", sX(21), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(6.5);
-        drawText(val(p.electric_current), sX(21), sY(currentY + 8), { align: 'center' });
-
-        doc.setFontSize(3.5);
-        drawText("POT. DEGELO", sX(47), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(6.5);
-        drawText(val(p.defrost_power), sX(47), sY(currentY + 8), { align: 'center' });
-
-        doc.setFontSize(3.5);
-        drawText("TAMANHO", sX(76), sY(currentY + 2.5), { align: 'center' });
-        doc.setFontSize(8); // scaled from 14
-
-        // Map size to initial
-        const fullSize = p.size || '';
-        const displaySize = fullSize === 'Pequeno' ? 'P' : fullSize === 'Médio' ? 'M' : fullSize === 'Grande' ? 'G' : fullSize;
-
-        drawText(displaySize, sX(76), sY(currentY + 9), { align: 'center' });
-
-        currentY += 12;
-
-        // Vertical Border edges
-        drawLine(sX(8), sY(28), sX(8), sY(currentY));
-        drawLine(sX(92), sY(28), sX(92), sY(currentY));
-        drawLine(sX(8), sY(currentY), sX(92), sY(currentY)); // Bottom border line
+        // Bordas Laterais
+        doc.line(X0, Y_HEADER_END, X0, currentY);
+        doc.line(X1, Y_HEADER_END, X1, currentY);
     }
+
     return doc;
 };
 

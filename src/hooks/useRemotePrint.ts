@@ -98,7 +98,7 @@ export function useRemotePrint() {
             // Gera PDF rotacionado 90º e converte para base64
             // Passamos 'true' para o rotatedForRemote para que o layout de 55x80
             // seja mapeado fisicamente para 80x55 (paisagem) e o Chrome imprima corretamente
-            const doc = await generateLabelsPDF(items, true);
+            const doc = await generateLabelsPDF(items);
             const pdfBase64 = pdfToBase64(doc);
 
             // O bridge imprimirá usando SumatraPDF / pdf-to-printer silenciosamente
