@@ -10,7 +10,7 @@ export function useRemotePrint() {
     const [activeBridges, setActiveBridges] = useState<ActiveBridge[]>([]);
     const [selectedPrinter, setSelectedPrinter] = useState<string>(() => {
         if (typeof window !== "undefined") {
-            return sessionStorage.getItem(STORAGE_KEY) || "";
+            return localStorage.getItem(STORAGE_KEY) || "";
         }
         return "";
     });
@@ -38,10 +38,14 @@ export function useRemotePrint() {
     // Persistir seleção e sincronizar entre componentes na sessão
     useEffect(() => {
         if (typeof window !== "undefined") {
-            const currentSaved = sessionStorage.getItem(STORAGE_KEY) || "";
+            const currentSaved = localStorage.getItem(STORAGE_KEY) || "";
             if (currentSaved !== selectedPrinter) {
-                logger.info(`Salvando nova impressora no sessionStorage: "${selectedPrinter}"`);
-                sessionStorage.setItem(STORAGE_KEY, selectedPrinter);
+                logger.info(`Salvando nova impressora no localStorage: "${selectedPrinter}"`);
+                if (selectedPrinter) {
+                    localStorage.setItem(STORAGE_KEY, selectedPrinter);
+                } else {
+                    localStorage.removeItem(STORAGE_KEY);
+                }
                 window.dispatchEvent(new CustomEvent('printer-changed', { detail: selectedPrinter }));
             }
         }

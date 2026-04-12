@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { KeyRound, Printer, Save, Loader2, Globe, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { printService, ActiveBridge } from "@/lib/print-service";
+import { printService } from "@/lib/print-service";
+import { useRemotePrint } from "@/hooks/useRemotePrint";
 
 export default function ProfilePage() {
     const { profile } = useAuth();
@@ -13,31 +14,19 @@ export default function ProfilePage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-    const [activeBridges, setActiveBridges] = useState<ActiveBridge[]>([]);
-    const [selectedPrinter, setSelectedPrinter] = useState<string>("");
-    const [isLoadingPrinters, setIsLoadingPrinters] = useState(true);
-
-    // Carregar impressora
-    useEffect(() => {
-        // Carrega impressora padrão
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('default_printer');
-            if (saved) setSelectedPrinter(saved);
-        }
-
-        printService.getActiveBridges()
-            .then(setActiveBridges)
-            .finally(() => setIsLoadingPrinters(false));
-    }, []);
+    const {
+        activeBridges,
+        selectedPrinter,
+        setSelectedPrinter,
+        isLoading: isLoadingPrinters
+    } = useRemotePrint();
 
     const handlePrinterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const val = e.target.value;
         setSelectedPrinter(val);
         if (val) {
-            localStorage.setItem('default_printer', val);
             toast.success(`Impressora padrão definida como ${val}`);
         } else {
-            localStorage.removeItem('default_printer');
             toast.success("Impressora padrão limpa");
         }
     };
