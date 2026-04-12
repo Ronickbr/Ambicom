@@ -380,25 +380,6 @@ export const printLabels = async (products: any[]) => {
         const blob = doc.output('blob');
         const url = window.URL.createObjectURL(blob);
 
-        // Tentar via Web Share API se estiver num celular/PWA
-        if (navigator.share && navigator.canShare) {
-            const file = new File([blob], fileName, { type: 'application/pdf' });
-            if (navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        title: 'Etiquetas Ambicom',
-                        text: 'Etiquetas em PDF',
-                        files: [file]
-                    });
-                    console.log("PDF compartilhado com sucesso via Web Share API");
-                    return;
-                } catch (e) {
-                    console.log("Falha ou cancelamento no navigator.share:", e);
-                    // Cai para os próximos métodos
-                }
-            }
-        }
-
         try {
             doc.save(fileName);
             console.log("doc.save() executado.");
@@ -423,13 +404,6 @@ export const printLabels = async (products: any[]) => {
             console.error("Erro no método alternativo via Blob:", err);
         }
 
-        // Tentar abrir em nova aba como último recurso (útil em iOS/Safari)
-        try {
-            window.open(url, '_blank');
-        } catch (e) {
-            console.log("Falha ao abrir em nova aba:", e);
-        }
-        
         // Revoga URL depois de 1 minuto para dar tempo em dispositivos mais lentos
         setTimeout(() => {
             window.URL.revokeObjectURL(url);
