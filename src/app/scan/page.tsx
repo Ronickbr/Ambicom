@@ -927,12 +927,12 @@ const ScanPage = () => {
                                     const result = await registerProduct(ocrForm, capturedPhotos);
                                     if (result) {
                                         setShowOcrModal(false);
-                                        // Verificação de Auto-Print via Impressora Padrão
+                                        // O printLabels cuida se tem impressora ou não (fallback para PDF)
+                                        await handleRemotePrint(result);
                                         if (activePrinter) {
-                                            handleRemotePrint(result);
                                             toast.success(`Impressão gerada para ${activePrinter}`, { id: 'autoprint' });
                                         } else {
-                                            toast.warning("Equipamento cadastrado! Configure sua impressora industrial na barra superior para imprimir automaticamente.", { duration: 6000 });
+                                            toast.success("Equipamento cadastrado com sucesso! Iniciando download da etiqueta em PDF.", { duration: 6000 });
                                         }
                                     }
                                 }}

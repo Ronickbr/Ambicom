@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { printService, ActiveBridge } from "@/lib/print-service";
-import { generateLabelsPDF, pdfToBase64 } from "@/lib/export-utils";
+import { generateLabelsPDF, pdfToBase64, printLabels as downloadPDF } from "@/lib/export-utils";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
@@ -35,26 +35,64 @@ export function useRemotePrint() {
         return () => clearInterval(interval);
     }, [refreshBridges]);
 
-    // Persistir seleção
+    // Persistir seleção e sincronizar entre componentes
     useEffect(() => {
-        if (selectedPrinter) {
-            localStorage.setItem(STORAGE_KEY, selectedPrinter);
+        if (typeof window !== "undefined") {
+            const currentSaved = localStorage.getItem(STORAGE_KEY) || "";
+            if (currentSaved !== selectedPrinter) {
+                logger.info(`Salvando nova impressora no localStorage: "${selectedPrinter}"`);
+                localStorage.setItem(STORAGE_KEY, selectedPrinter);
+                window.dispatchEvent(new CustomEvent('printer-changed', { detail: selectedPrinter }));
+            }
         }
     }, [selectedPrinter]);
 
+    // Escutar mudanças de outros componentes/instâncias
+    useEffect(() => {
+        const handlePrinterChanged = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            setSelectedPrinter(prev => {
+                if (prev !== customEvent.detail) {
+                    logger.info(`Sincronizando estado da impressora: "${customEvent.detail}"`);
+                    return customEvent.detail;
+                }
+                return prev;
+            });
+        };
+        window.addEventListener('printer-changed', handlePrinterChanged);
+        return () => window.removeEventListener('printer-changed', handlePrinterChanged);
+    }, []);
+
     /**
-     * Envia uma ou mais etiquetas para a impressora selecionada (via PDF)
+     * Envia uma ou mais etiquetas para a impressora selecionada,
+     * ou faz o download em PDF como fallback se nenhuma ponte estiver ativa.
      */
     const printLabels = async (data: any | any[]) => {
+        const items = Array.isArray(data) ? data : [data];
+        
+        logger.info("Iniciando processo de exportação/impressão de etiquetas.", { count: items.length, selectedPrinter });
+
         if (!selectedPrinter) {
-            toast.error("Por favor, selecione uma impressora primeiro.");
-            return false;
+            logger.warn("Nenhuma impressora ativa selecionada. Acionando fallback para download de PDF.");
+            toast.info("Nenhuma impressora selecionada. Gerando PDF para download...", { duration: 4000 });
+            setIsPrinting(true);
+            try {
+                await downloadPDF(items);
+                logger.info("PDF baixado com sucesso no fallback.");
+                toast.success("Download do PDF concluído com sucesso!");
+                return true;
+            } catch (error) {
+                logger.error("Falha ao gerar o PDF de fallback.", error);
+                toast.error("Erro inesperado ao gerar o arquivo PDF.");
+                return false;
+            } finally {
+                setIsPrinting(false);
+            }
         }
 
         setIsPrinting(true);
         try {
-            const items = Array.isArray(data) ? data : [data];
-
+            logger.info(`Gerando PDF (rotacionado) para enviar à ponte: ${selectedPrinter}`);
             // Gera PDF rotacionado 90º e converte para base64
             // Passamos 'true' para o rotatedForRemote para que o layout de 55x80
             // seja mapeado fisicamente para 80x55 (paisagem) e o Chrome imprima corretamente

@@ -378,15 +378,10 @@ export default function InventoryPage() {
                                     onClick={async () => {
                                         const selectedProducts = products.filter(p => selectedIds.has(p.id));
 
-                                        if (activePrinter) {
-                                            const success = await executeRemotePrint(selectedProducts);
-                                            if (success) {
-                                                setSelectedIds(new Set());
-                                            }
-                                        } else {
-                                            // Fallback para download de PDF se nenhuma impressora selecionada
-                                            const { printLabels } = await import("@/lib/export-utils");
-                                            await printLabels(selectedProducts);
+                                        // O executeRemotePrint já lida com o fallback para PDF
+                                        const success = await executeRemotePrint(selectedProducts);
+                                        if (success) {
+                                            setSelectedIds(new Set());
                                         }
                                     }}
                                     className="col-span-1 h-12 px-4 bg-primary text-primary-foreground rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 animate-in zoom-in"
