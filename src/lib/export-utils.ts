@@ -31,16 +31,15 @@ export function generateLabelsTSPL(products: any[]): string {
     const MM = 8;
     const X0 = 16, X1 = 424, Y0 = 16;
     
-    // Alturas recalculadas para terminar em 616 dots (77mm)
-    // Deixando 1mm de borda branca no fim da etiqueta (80mm = 640 dots)
+    // --- DISTRIBUIÇÃO PARA LIMITE DE 608 DOTS ---
     const HEADER_H = 125; 
     const ROW_QR_H = 140;
-    const ROW_STD = 58; // Reduzido levemente para subir o final da etiqueta
+    const ROW_STD = 56; // Ajustado para fechar a conta em ~608-610 dots totais
 
-    const Y_HEADER_END = Y0 + HEADER_H; // 141
-    const Y_ROW1_END = Y_HEADER_END + ROW_STD; // 199
-    const Y_ROW2_END = Y_ROW1_END + ROW_QR_H; // 339
-    const Y_ROW3_END = Y_ROW2_END + ROW_STD; // 397
+    const Y_HEADER_END = Y0 + HEADER_H;
+    const Y_ROW1_END = Y_HEADER_END + ROW_STD;
+    const Y_ROW2_END = Y_ROW1_END + ROW_QR_H;
+    const Y_ROW3_END = Y_ROW2_END + ROW_STD;
 
     const lines: string[] = [];
     for (let idx = 0; idx < products.length; idx++) {
@@ -57,13 +56,13 @@ export function generateLabelsTSPL(products: any[]): string {
         lines.push(`TEXT ${X0 + 5},${Y0 + 95},"3",0,1,1,"SAC: 041-3382-5410"`);
         lines.push(`LINE ${X0},${Y_HEADER_END},${X1},${Y_HEADER_END},3`);
 
-        // ROW 1: MODELO
+        // ROW 1: MODELO | VOLTAGEM
         lines.push(`LINE 220,${Y_HEADER_END},220,${Y_ROW1_END},2`);
-        lines.push(`TEXT 118,${Y_HEADER_END+12},"1",0,1,1,2,"MODELO"`, `TEXT 118,${Y_HEADER_END+38},"3",0,1,1,2,"${sv(p.model || p.modelo)}"`);
-        lines.push(`TEXT 322,${Y_HEADER_END+12},"1",0,1,1,2,"VOLTAGEM"`, `TEXT 322,${Y_HEADER_END+38},"3",0,1,1,2,"${sv(p.voltage || p.tensao)}"`);
+        lines.push(`TEXT 118,${Y_HEADER_END+10},"1",0,1,1,2,"MODELO"`, `TEXT 118,${Y_HEADER_END+35},"3",0,1,1,2,"${sv(p.model || p.modelo)}"`);
+        lines.push(`TEXT 322,${Y_HEADER_END+10},"1",0,1,1,2,"VOLTAGEM"`, `TEXT 322,${Y_HEADER_END+35},"3",0,1,1,2,"${sv(p.voltage || p.tensao)}"`);
         lines.push(`LINE ${X0},${Y_ROW1_END},${X1},${Y_ROW1_END},2`);
 
-        // ROW 2: QR
+        // ROW 2: QR & SERIAL
         const serial = sv(p.internal_serial);
         if (serial !== '-') lines.push(`QRCODE ${X0 + 20},${Y_ROW1_END + 15},L,7,A,0,"${serial}"`);
         lines.push(`TEXT 280,${Y_ROW1_END+35},"2",0,1,1,2,"SERIAL AMBICOM:"`, `TEXT 280,${Y_ROW1_END+75},"5",0,1,1,2,"${serial}"`);
@@ -75,7 +74,7 @@ export function generateLabelsTSPL(products: any[]): string {
         lines.push(`TEXT 322,${Y_ROW2_END+25},"3",0,1,1,2,"${sv(p.frequency) || '60 Hz'}"`);
         lines.push(`LINE ${X0},${Y_ROW3_END},${X1},${Y_ROW3_END},2`);
 
-        // ROWS 4-7
+        // ROWS 4-7: DADOS TÉCNICOS
         let curY = Y_ROW3_END;
         const rows = [
             { l: ["GÁS FRIG.", "CARGA GÁS", "COMPR."], v: [p.refrigerant_gas, p.gas_charge, p.compressor] },
@@ -88,13 +87,13 @@ export function generateLabelsTSPL(products: any[]): string {
             lines.push(`LINE 150,${curY},150,${curY+ROW_STD},2`, `LINE 294,${curY},294,${curY+ROW_STD},2`);
             const c = [83, 222, 359];
             r.l.forEach((lbl, i) => {
-                lines.push(`TEXT ${c[i]},${curY+10},"1",0,1,1,2,"${lbl}"`, `TEXT ${c[i]},${curY+33},"2",0,1,1,2,"${sv(r.v[i])}"`);
+                lines.push(`TEXT ${c[i]},${curY+8},"1",0,1,1,2,"${lbl}"`, `TEXT ${c[i]},${curY+30},"2",0,1,1,2,"${sv(r.v[i])}"`);
             });
             curY += ROW_STD;
             lines.push(`LINE ${X0},${curY},${X1},${curY},2`);
         });
 
-        // Bordas verticais finalizando em curY (629 dots aprox, ajustado para segurança)
+        // Bordas verticais fechando no 608-610 dots aprox.
         lines.push(`LINE ${X0},${Y_HEADER_END},${X0},${curY},3`, `LINE ${X1},${Y_HEADER_END},${X1},${curY},3`);
         lines.push('PRINT 1,1');
     }
@@ -111,9 +110,9 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         const val = (v: any) => String(v ?? '').trim() || '-';
         const X0 = 2, X1 = 53, Y0 = 2, CENTER_X = 27.5;
 
-        // Alturas MM ajustadas para sobrar 1mm no fim (Total usado ~77-78mm)
+        // --- AJUSTE PARA TERMINAR EM 76mm (608 dots) ---
         const H_HEADER = 17; 
-        const H_STD = 7.2; 
+        const H_STD = 7.0; // Reduzido de 7.2 para 7.0
         const H_QR = 18;
 
         let curY = Y0;
@@ -178,7 +177,6 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
             doc.line(X0, curY, X1, curY);
         });
 
-        // Borda lateral externa
         doc.line(X0, Y0 + H_HEADER, X0, curY); 
         doc.line(X1, Y0 + H_HEADER, X1, curY);
     }
