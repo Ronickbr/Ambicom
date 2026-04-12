@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { printService, ActiveBridge } from "@/lib/print-service";
-import { generateLabelsPDF, pdfToBase64, printLabels as downloadPDF } from "@/lib/export-utils";
+import { generateLabelsTSPL, printLabels as downloadPDF } from "@/lib/export-utils";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
@@ -94,17 +94,14 @@ export function useRemotePrint() {
 
         setIsPrinting(true);
         try {
-            logger.info(`Gerando PDF (rotacionado) para enviar à ponte: ${selectedPrinter}`);
-            // Gera PDF rotacionado 90º e converte para base64
-            // Passamos 'true' para o rotatedForRemote para que o layout de 55x80
-            // seja mapeado fisicamente para 80x55 (paisagem) e o Chrome imprima corretamente
-            const doc = await generateLabelsPDF(items);
-            const pdfBase64 = pdfToBase64(doc);
+            logger.info(`Gerando TSPL para enviar à ponte: ${selectedPrinter}`);
+            
+            const tsplData = generateLabelsTSPL(items);
 
-            // O bridge imprimirá usando SumatraPDF / pdf-to-printer silenciosamente
+            // O bridge imprimirá o arquivo TSPL
             await printService.submitPrintJob({
-                payload_type: "pdf",
-                payload_data: pdfBase64,
+                payload_type: "tspl",
+                payload_data: tsplData,
                 printer_target: selectedPrinter
             });
 
