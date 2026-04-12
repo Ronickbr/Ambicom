@@ -1,9 +1,9 @@
-import jsPDF from 'jspdf';
+﻿import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import * as QRCode from 'qrcode';
 
-// ─── Relatórios Comuns ────────────────────────────────────────────────────────
+// ÔöÇÔöÇÔöÇ Relat├│rios Comuns ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 export const exportToPDF = (title: string, headers: string[], data: (string | number | boolean | null)[][], fileName: string) => {
     const doc = new jsPDF();
     doc.setFontSize(18); doc.text(title, 14, 22);
@@ -25,7 +25,7 @@ export const exportToExcel = (data: Record<string, unknown>[], fileName: string)
     XLSX.writeFile(workbook, `${fileName}_${new Date().getTime()}.xlsx`);
 };
 
-// ─── TSPL Generator — Elgin L42 Pro (SINTAXE RIGOROSA 80x55) ──────────────────
+// ÔöÇÔöÇÔöÇ TSPL Generator ÔÇö Elgin L42 Pro (SINTAXE RIGOROSA 80x55) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 export function generateLabelsTSPL(products: any[]): string {
     const sv = (v: any) => String(v ?? '').trim().replace(/"/g, "'").replace(/\r?\n/g, ' ') || '-';
 
@@ -35,10 +35,10 @@ export function generateLabelsTSPL(products: any[]): string {
         return `${cleanVal} ${unit}`;
     };
 
-    // Mapeamento manual 90° CW para bobina deitada (80x55)
-    // Design Portrait 55x80 -> Físico Landscape 80x55
-    const mapX = (py: number) => 620 - py; // Subtração para inverter eixo Y design p/ X físico
-    const mapY = (px: number) => px + 10;   // Margem de segurança no avanço
+    // Mapeamento manual 90┬░ CW para bobina deitada (80x55)
+    // Design Portrait 55x80 -> F├¡sico Landscape 80x55
+    const mapX = (py: number) => 620 - py; // Subtra├º├úo para inverter eixo Y design p/ X f├¡sico
+    const mapY = (px: number) => px + 10;   // Margem de seguran├ºa no avan├ºo
 
     const lines: string[] = [
         'SIZE 80 mm,55 mm',
@@ -68,9 +68,9 @@ export function generateLabelsTSPL(products: any[]): string {
         const volTot = clean(sv(p.volume_total), 'L');
         const current = clean(sv(p.electric_current), 'A');
         const defrost = clean(sv(p.defrost_power), 'W');
-        const dispSize = (p.size === 'Pequeno' ? 'P' : p.size === 'Médio' ? 'M' : p.size === 'Grande' ? 'G' : p.size) || '-';
+        const dispSize = (p.size === 'Pequeno' ? 'P' : p.size === 'M├®dio' ? 'M' : p.size === 'Grande' ? 'G' : p.size) || '-';
 
-        // Cabeçalho
+        // Cabe├ºalho
         lines.push(`TEXT ${mapX(10)},${mapY(X0)},"3",90,1,1,"AMBICOM"`);
         lines.push(`TEXT ${mapX(40)},${mapY(X0)},"1",90,1,1,"R. Wenceslau Marek, 10 - SJP/PR"`);
         lines.push(`TEXT ${mapX(70)},${mapY(X0)},"2",90,1,1,"SAC: 041-3382-5410"`);
@@ -79,13 +79,13 @@ export function generateLabelsTSPL(products: any[]): string {
         const xA = mapX(r[7]), xB = mapX(GY);
         lines.push(`BOX ${xA},${mapY(X0)},${xB},${mapY(X1)},2`);
 
-        // Linhas de Divisão (Design horizontal -> Físico Vertical)
+        // Linhas de Divis├úo (Design horizontal -> F├¡sico Vertical)
         [r[1], r[2], r[3], r[4], r[5], r[6]].forEach(y => {
             const tx = mapX(y);
             lines.push(`LINE ${tx},${mapY(X0)},${tx},${mapY(X1)},2`);
         });
 
-        // Divisores de Coluna (Design vertical -> Físico Horizontal)
+        // Divisores de Coluna (Design vertical -> F├¡sico Horizontal)
         lines.push(`LINE ${mapX(GY)},${mapY(cMod)},${mapX(r[1])},${mapY(cMod)},2`);
         lines.push(`LINE ${mapX(r[1])},${mapY(cSer)},${mapX(r[2])},${mapY(cSer)},2`);
         lines.push(`LINE ${mapX(r[3])},${mapY(c1)},${mapX(r[7])},${mapY(c1)},2`);
@@ -128,49 +128,37 @@ export function generateLabelsTSPL(products: any[]): string {
     return lines.join('\r\n');
 }
 
-// ─── PDF (Layout Retrato 55x80 baseado no Layout Antigo) ─────────────────────────────────
-export const generateLabelsPDF = async (products: any[], rotatedForRemote: boolean = false): Promise<jsPDF> => {
-    // Gerar em retrato (Portrait) 55x80 sem rotação forçada, ou paisagem 80x55 (rotacionado 90 graus) para remote printing
-    const orientation = rotatedForRemote ? 'l' : 'p';
-    const format = rotatedForRemote ? [80, 55] : [55, 80];
-    
-    const doc = new jsPDF({ orientation: orientation, unit: 'mm', format: format, compress: true });
+// ÔöÇÔöÇÔöÇ PDF (Rotacionado 90┬║ Paisagem 80x55 baseado no Layout Antigo) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
+    // Gerar em paisagem (Landscape) para coincidir com a impressora f├¡sica de etiquetas (80x55)
+    const doc = new jsPDF({ orientation: 'l', unit: 'mm', format: [80, 55], compress: true });
+
+    // Helpers para rota├º├úo 90┬║ Clockwise
+    // Mapeia coordenadas do layout retrato original (55x80) para paisagem (80x55)
+    // O layout original tinha propor├º├Áes para 100x135, faremos um downscale de aprox 0.55x
+    const rotX = (x: number, y: number) => 80 - y;
+    const rotY = (x: number, y: number) => x;
 
     const drawText = (text: string, x: number, y: number, options?: any) => {
-        if (rotatedForRemote) {
-            // Rotacionar 90 graus no sentido anti-horário (Landscape)
-            // x novo = y antigo
-            // y novo = 55 - x antigo (pois a largura antiga era 55)
-            // O ângulo no jsPDF é no sentido anti-horário, então -90
-            const newX = y;
-            const newY = 55 - x;
-            doc.text(text, newX, newY, { ...options, angle: 90 });
-        } else {
-            doc.text(text, x, y, options);
-        }
+        // align centralizado precisa ajustar o x,y p├│s-rota├º├úo. O jsPDF cuida disso se passarmos as coordenadas originais rotacionadas,
+        // mas o 'align: center' baseia-se na coordenada rotacionada. 
+        doc.text(text, rotX(x, y), rotY(x, y), { angle: -90, ...options });
     };
     
     const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
-        if (rotatedForRemote) {
-            const nx1 = y1;
-            const ny1 = 55 - x1;
-            const nx2 = y2;
-            const ny2 = 55 - x2;
-            doc.line(nx1, ny1, nx2, ny2);
-        } else {
-            doc.line(x1, y1, x2, y2);
-        }
+        doc.line(rotX(x1, y1), rotY(x1, y1), rotX(x2, y2), rotY(x2, y2));
     };
 
     for (let idx = 0; idx < products.length; idx++) {
         const p = products[idx];
-        if (idx > 0) doc.addPage(format, orientation);
+        if (idx > 0) doc.addPage([80, 55], 'l');
         const val = (v: any) => String(v ?? '').trim() || '';
 
         // Fator de escala de 100x135 para 55x80 (aprox 0.55 na largura e 0.59 na altura)
+        // Usaremos 0.55 para X e 0.55 para Y para manter a propor├º├úo consistente
         const scale = 0.55;
         const sX = (x: number) => x * scale;
-        const sY = (y: number) => y * 0.59;
+        const sY = (y: number) => y * 0.59; // Ajuste fino para caber em 80mm de altura
         
         // --- Header Section ---
         doc.setFont("helvetica", "bold");
@@ -189,8 +177,8 @@ export const generateLabelsPDF = async (products: any[], rotatedForRemote: boole
         // Address & SAC
         doc.setFont("helvetica", "normal");
         doc.setFontSize(3.5); // scaled from 6.5
-        drawText("R. Wenceslau Marek, 10 - Águas Belas,", sX(8), sY(17));
-        drawText("São José dos Pinhais - PR, 83010-520", sX(8), sY(20));
+        drawText("R. Wenceslau Marek, 10 - ├üguas Belas,", sX(8), sY(17));
+        drawText("S├úo Jos├® dos Pinhais - PR, 83010-520", sX(8), sY(20));
 
         doc.setFontSize(8); // scaled from 14
         doc.setFont("helvetica", "bold");
@@ -217,7 +205,7 @@ export const generateLabelsPDF = async (products: any[], rotatedForRemote: boole
         currentY += 12;
         drawLine(sX(8), sY(currentY), sX(92), sY(currentY)); // Divider
 
-        // Row 2: NÚMERO DE SÉRIE AMBICOM (With QR code on the left)
+        // Row 2: N├ÜMERO DE S├ëRIE AMBICOM (With QR code on the left)
         const qrData = val(p.internal_serial).trim();
         if (qrData && qrData !== '-') {
             try {
@@ -227,24 +215,15 @@ export const generateLabelsPDF = async (products: any[], rotatedForRemote: boole
                     color: { dark: "#000000", light: "#ffffff" }
                 });
                 const imgSize = sX(15);
+                // A posi├º├úo no PDF rotacionado: x=rotX, y=rotY. Lembre-se que width e height invertem.
                 const imgX = sX(10);
                 const imgY = sY(currentY + 1);
-                
-                if (rotatedForRemote) {
-                    const newX = imgY;
-                    const newY = 55 - imgX - imgSize; // Adjust for the size of the image since x,y is top-left
-                    // Note: jsPDF addImage doesn't support rotation angle directly in all versions,
-                    // but for a QR code (which is a square matrix), rotation might not matter as much
-                    // for readability by a scanner, as long as it's positioned correctly.
-                    doc.addImage(qrImgData, 'PNG', newX, newY, imgSize, imgSize);
-                } else {
-                    doc.addImage(qrImgData, 'PNG', imgX, imgY, imgSize, imgSize);
-                }
+                doc.addImage(qrImgData, 'PNG', rotX(imgX, imgY + imgSize), rotY(imgX, imgY + imgSize), imgSize, imgSize);
             } catch (err) { }
         }
 
         doc.setFontSize(3.5);
-        drawText("NÚMERO DE SÉRIE AMBICOM:", sX(59), sY(currentY + 3), { align: 'center' });
+        drawText("N├ÜMERO DE S├ëRIE AMBICOM:", sX(59), sY(currentY + 3), { align: 'center' });
         doc.setFontSize(10);
         drawText(val(p.internal_serial), sX(59), sY(currentY + 9), { align: 'center' });
         doc.setFontSize(9); // scaled from 16
@@ -253,7 +232,7 @@ export const generateLabelsPDF = async (products: any[], rotatedForRemote: boole
         currentY += 17;
         drawLine(sX(8), sY(currentY), sX(92), sY(currentY)); // Divider
 
-        // Row 3: PNC/ML | Frequência
+        // Row 3: PNC/ML | Frequ├¬ncia
         drawLine(sX(60), sY(currentY), sX(60), sY(currentY + 10)); // Vertical
         doc.setFontSize(3.5);
         drawText("PNC/ML", sX(34), sY(currentY + 2.5), { align: 'center' });
@@ -266,17 +245,17 @@ export const generateLabelsPDF = async (products: any[], rotatedForRemote: boole
         currentY += 10;
         drawLine(sX(8), sY(currentY), sX(92), sY(currentY)); // Divider
 
-        // Row 4: GÁS FRIGOR. | CARGA GÁS | COMPRESSOR
+        // Row 4: G├üS FRIGOR. | CARGA G├üS | COMPRESSOR
         drawLine(sX(34), sY(currentY), sX(34), sY(currentY + 12));
         drawLine(sX(60), sY(currentY), sX(60), sY(currentY + 12));
 
         doc.setFontSize(3.5);
-        drawText("GÁS FRIGOR.", sX(21), sY(currentY + 2.5), { align: 'center' });
+        drawText("G├üS FRIGOR.", sX(21), sY(currentY + 2.5), { align: 'center' });
         doc.setFontSize(6.5); // scaled from 12
         drawText(val(p.refrigerant_gas), sX(21), sY(currentY + 8), { align: 'center' });
 
         doc.setFontSize(3.5);
-        drawText("CARGA GÁS", sX(47), sY(currentY + 2.5), { align: 'center' });
+        drawText("CARGA G├üS", sX(47), sY(currentY + 2.5), { align: 'center' });
         doc.setFontSize(9);
         drawText(val(p.gas_charge), sX(47), sY(currentY + 8), { align: 'center' });
 
@@ -310,19 +289,19 @@ export const generateLabelsPDF = async (products: any[], rotatedForRemote: boole
         currentY += 12;
         drawLine(sX(8), sY(currentY), sX(92), sY(currentY));
 
-        // Row 6: PRESSÃO ALTA | PRESSÃO BAIXA | CAPAC. CONG.
+        // Row 6: PRESS├âO ALTA | PRESS├âO BAIXA | CAPAC. CONG.
         drawLine(sX(34), sY(currentY), sX(34), sY(currentY + 12));
         drawLine(sX(60), sY(currentY), sX(60), sY(currentY + 12));
 
         doc.setFontSize(3.5);
-        drawText("PRESSÃO ALTA", sX(21), sY(currentY + 2.5), { align: 'center' });
+        drawText("PRESS├âO ALTA", sX(21), sY(currentY + 2.5), { align: 'center' });
         doc.setFontSize(5); // scaled from 9
         
         const pressures = String(p.pressure_high_low || "").split('/');
         drawText(val(pressures[0]), sX(21), sY(currentY + 8), { align: 'center' });
 
         doc.setFontSize(3.5);
-        drawText("PRESSÃO BAIXA", sX(47), sY(currentY + 2.5), { align: 'center' });
+        drawText("PRESS├âO BAIXA", sX(47), sY(currentY + 2.5), { align: 'center' });
         doc.setFontSize(5);
         drawText(val(pressures[1]), sX(47), sY(currentY + 8), { align: 'center' });
 
@@ -354,7 +333,7 @@ export const generateLabelsPDF = async (products: any[], rotatedForRemote: boole
 
         // Map size to initial
         const fullSize = p.size || '';
-        const displaySize = fullSize === 'Pequeno' ? 'P' : fullSize === 'Médio' ? 'M' : fullSize === 'Grande' ? 'G' : fullSize;
+        const displaySize = fullSize === 'Pequeno' ? 'P' : fullSize === 'M├®dio' ? 'M' : fullSize === 'Grande' ? 'G' : fullSize;
 
         drawText(displaySize, sX(76), sY(currentY + 9), { align: 'center' });
 
@@ -374,13 +353,13 @@ export const printLabels = async (products: any[]) => { const doc = await genera
 export const printLabelsNative = async (products: any[]) => {
     const doc = await generateLabelsPDF(products);
     
-    // Configura o PDF para abrir a janela de impressão automaticamente ao ser visualizado
+    // Configura o PDF para abrir a janela de impress├úo automaticamente ao ser visualizado
     doc.autoPrint();
     
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     
-    // Cria um iframe oculto para impressão direta do documento PDF
+    // Cria um iframe oculto para impress├úo direta do documento PDF
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     iframe.src = url;
@@ -390,13 +369,13 @@ export const printLabelsNative = async (products: any[]) => {
             iframe.contentWindow?.focus();
             iframe.contentWindow?.print();
         } catch (e) {
-            console.error('Erro na impressão nativa do PDF:', e);
+            console.error('Erro na impress├úo nativa do PDF:', e);
         }
     };
     
     document.body.appendChild(iframe);
     
-    // Limpeza após tempo seguro
+    // Limpeza ap├│s tempo seguro
     setTimeout(() => {
         if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);

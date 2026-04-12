@@ -50,9 +50,14 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.6**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.8**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.26.8**:
+  - **Mapeamento de Coordenadas Manual**: Implementada matriz de conversão manual 90° (Design Retrato -> Físico Paisagem) para garantir alinhamento perfeito de linhas e QR Code.
+  - **Correção de Sintaxe TSPL**: Ajustada ordem de coordenadas no comando `BOX` e parâmetros do `QRCODE` para total compatibilidade com Elgin L42 Pro.
+- **v2.26.7**:
+  - **Matriz de Rotação e Paridade**: PDF restaurado para Retrato 55x80 para monitor, enquanto o TSPL envia Landscape 80x55 fisicamente.
 - **v2.26.6**:
   - **Unificação Landscape Real (80x55mm)**: Sincronização total entre TSPL e PDF para o formato nativo da bobina.
   - **Correção de Salto de Bobina**: Ajuste do comando `SIZE 80,55` no TSPL, eliminando a impressão dividida em duas etiquetas.

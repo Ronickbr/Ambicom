@@ -50,3 +50,4 @@ tools/print-bridge/node_modules
 tools/print-bridge/package-lock.json
 tools/print-bridge/bridge.log
 tools/print-bridge/.env
+tools

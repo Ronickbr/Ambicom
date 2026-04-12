@@ -176,13 +176,11 @@ export default function ProfilePage() {
                                                 className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm text-foreground focus:border-sky-500/50 outline-none transition-all font-bold cursor-pointer"
                                             >
                                                 <option value="">Não imprimir automaticamente (Perguntar)</option>
-                                                {activeBridges.map(bridge =>
-                                                    bridge.available_printers.map(printer => (
-                                                        <option key={`${bridge.id}-${printer}`} value={printer}>
-                                                            {printer} ({bridge.bridge_name})
-                                                        </option>
-                                                    ))
-                                                )}
+                                                {activeBridges.map(bridge => (
+                                                    <option key={bridge.id} value={bridge.bridge_name}>
+                                                        Ponte: {bridge.bridge_name}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </div>
 
