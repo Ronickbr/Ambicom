@@ -64,8 +64,12 @@ export function generateLabelsTSPL(products: any[]): string {
 
         // ROW 2: QR & SERIAL
         const serial = sv(p.internal_serial);
+        const commCode = sv(p.commercial_code);
         if (serial !== '-') lines.push(`QRCODE ${X0 + 20},${Y_ROW1_END + 15},L,7,A,0,"${serial}"`);
-        lines.push(`TEXT 280,${Y_ROW1_END+35},"2",0,1,1,2,"SERIAL AMBICOM:"`, `TEXT 280,${Y_ROW1_END+75},"5",0,1,1,2,"${serial}"`);
+        lines.push(`TEXT 280,${Y_ROW1_END + 25},"2",0,1,1,2,"NÚMERO DE SÉRIE AMBICOM:"`);
+        lines.push(`TEXT 280,${Y_ROW1_END + 60},"5",0,1,1,2,"${serial}"`);
+        // Inclusão do Commercial Code
+        lines.push(`TEXT 280,${Y_ROW1_END + 105},"3",0,1,1,2,"${commCode}"`);   
         lines.push(`LINE ${X0},${Y_ROW2_END},${X1},${Y_ROW2_END},2`);
 
         // ROW 3: PNC
@@ -141,12 +145,21 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
 
         // ROW 2 (QR)
         const serial = val(p.internal_serial);
+        const commCode = val(p.commercial_code);
         if (serial !== '-') {
-            const qrImg = await QRCode.toDataURL(serial, { margin: 0 });
-            doc.addImage(qrImg, 'PNG', X0 + 3, curY + 1.5, 15, 15);
+            try {
+                const qrImg = await QRCode.toDataURL(serial, { margin: 0 });
+                doc.addImage(qrImg, 'PNG', X0 + 3, curY + 1.5, 15, 15);
+            } catch (e) {}
         }
-        doc.setFontSize(4.5).text("SERIAL AMBICOM:", X0 + 20, curY + 5);
-        doc.setFontSize(11).text(serial, X0 + 20, curY + 11);
+        const textStartX = X0 + 20;
+        doc.setFontSize(4.5);
+        doc.text("NÚMERO DE SÉRIE AMBICOM:", textStartX, curY + 4);
+        doc.setFontSize(11);
+        doc.text(serial, textStartX, curY + 9.5);
+        // Inclusão do Commercial Code logo abaixo do Serial
+        doc.setFontSize(8);
+        doc.text(commCode, textStartX, curY + 14.5);
         curY += H_QR;
         doc.line(X0, curY, X1, curY);
 
