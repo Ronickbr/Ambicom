@@ -10,7 +10,7 @@ export function useRemotePrint() {
     const [activeBridges, setActiveBridges] = useState<ActiveBridge[]>([]);
     const [selectedPrinter, setSelectedPrinter] = useState<string>(() => {
         if (typeof window !== "undefined") {
-            return localStorage.getItem(STORAGE_KEY) || "";
+            return sessionStorage.getItem(STORAGE_KEY) || "";
         }
         return "";
     });
@@ -35,13 +35,13 @@ export function useRemotePrint() {
         return () => clearInterval(interval);
     }, [refreshBridges]);
 
-    // Persistir seleção e sincronizar entre componentes
+    // Persistir seleção e sincronizar entre componentes na sessão
     useEffect(() => {
         if (typeof window !== "undefined") {
-            const currentSaved = localStorage.getItem(STORAGE_KEY) || "";
+            const currentSaved = sessionStorage.getItem(STORAGE_KEY) || "";
             if (currentSaved !== selectedPrinter) {
-                logger.info(`Salvando nova impressora no localStorage: "${selectedPrinter}"`);
-                localStorage.setItem(STORAGE_KEY, selectedPrinter);
+                logger.info(`Salvando nova impressora no sessionStorage: "${selectedPrinter}"`);
+                sessionStorage.setItem(STORAGE_KEY, selectedPrinter);
                 window.dispatchEvent(new CustomEvent('printer-changed', { detail: selectedPrinter }));
             }
         }
@@ -77,11 +77,13 @@ export function useRemotePrint() {
             toast.info("Nenhuma impressora selecionada. Gerando PDF para download...", { duration: 4000 });
             setIsPrinting(true);
             try {
+                logger.info("Chamando downloadPDF(items)");
                 await downloadPDF(items);
                 logger.info("PDF baixado com sucesso no fallback.");
                 toast.success("Download do PDF concluído com sucesso!");
                 return true;
             } catch (error) {
+                console.error("ERRO COMPLETO:", error);
                 logger.error("Falha ao gerar o PDF de fallback.", error);
                 toast.error("Erro inesperado ao gerar o arquivo PDF.");
                 return false;

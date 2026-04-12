@@ -369,7 +369,77 @@ export const generateLabelsPDF = async (products: any[], rotatedForRemote: boole
 };
 
 export const pdfToBase64 = (doc: jsPDF): string => doc.output('datauristring').split(',')[1];
-export const printLabels = async (products: any[]) => { const doc = await generateLabelsPDF(products); doc.save(`etiquetas_ambicom_${Date.now()}.pdf`); };
+export const printLabels = async (products: any[]) => { 
+    console.log("Chamando printLabels com produtos:", products);
+    try {
+        const doc = await generateLabelsPDF(products); 
+        console.log("Doc PDF gerado, chamando doc.save()...");
+        const fileName = `etiquetas_ambicom_${Date.now()}.pdf`;
+        
+        // Obter blob e url
+        const blob = doc.output('blob');
+        const url = window.URL.createObjectURL(blob);
+
+        // Tentar via Web Share API se estiver num celular/PWA
+        if (navigator.share && navigator.canShare) {
+            const file = new File([blob], fileName, { type: 'application/pdf' });
+            if (navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        title: 'Etiquetas Ambicom',
+                        text: 'Etiquetas em PDF',
+                        files: [file]
+                    });
+                    console.log("PDF compartilhado com sucesso via Web Share API");
+                    return;
+                } catch (e) {
+                    console.log("Falha ou cancelamento no navigator.share:", e);
+                    // Cai para os próximos métodos
+                }
+            }
+        }
+
+        try {
+            doc.save(fileName);
+            console.log("doc.save() executado.");
+        } catch (err) {
+            console.error("Erro no doc.save():", err);
+        }
+        
+        // Método alternativo garantido via Blob e tag <a>
+        try {
+            console.log("Tentando download via Blob e tag <a>...");
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                if (document.body.contains(a)) document.body.removeChild(a);
+            }, 1000);
+            console.log("Download via tag <a> disparado com sucesso.");
+        } catch (err) {
+            console.error("Erro no método alternativo via Blob:", err);
+        }
+
+        // Tentar abrir em nova aba como último recurso (útil em iOS/Safari)
+        try {
+            window.open(url, '_blank');
+        } catch (e) {
+            console.log("Falha ao abrir em nova aba:", e);
+        }
+        
+        // Revoga URL depois de 1 minuto para dar tempo em dispositivos mais lentos
+        setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+        }, 60000);
+        
+    } catch (err) {
+        console.error("Erro interno no printLabels:", err);
+        throw err;
+    }
+};
 
 export const printLabelsNative = async (products: any[]) => {
     const doc = await generateLabelsPDF(products);
