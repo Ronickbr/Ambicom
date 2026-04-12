@@ -30,63 +30,52 @@ export function generateLabelsTSPL(products: any[]): string {
     const sv = (v: any) => String(v ?? '').trim().replace(/"/g, "'").replace(/\r?\n/g, ' ') || '-';
     const MM = 8;
     const X0 = 16, X1 = 424, Y0 = 16;
-    const Y_MAX = 624; // 80mm - margem
+    
+    // Alturas recalculadas para terminar em 616 dots (77mm)
+    // Deixando 1mm de borda branca no fim da etiqueta (80mm = 640 dots)
+    const HEADER_H = 125; 
+    const ROW_QR_H = 140;
+    const ROW_STD = 58; // Reduzido levemente para subir o final da etiqueta
 
-    // Re-distribuição das alturas para ocupar os 624 dots úteis
-    const HEADER_H = 110; 
-    const ROW_MODELO_H = 65;
-    const ROW_QR_H = 145;
-    const ROW_PNC_H = 65;
-    const ROW_DATA_H = 59; // Altura para as 4 linhas restantes (59 * 4 = 236)
-    // Total: 110+65+145+65+236 = 621 dots (quase os 624 disponíveis)
-
-    const Y_HEADER_END = Y0 + HEADER_H;
-    const Y_ROW1_END = Y_HEADER_END + ROW_MODELO_H;
-    const Y_ROW2_END = Y_ROW1_END + ROW_QR_H;
-    const Y_ROW3_END = Y_ROW2_END + ROW_PNC_H;
-
-    const CENTER_DIV = 220;
-    const COL1_DIV = 150, COL2_DIV = 294;
+    const Y_HEADER_END = Y0 + HEADER_H; // 141
+    const Y_ROW1_END = Y_HEADER_END + ROW_STD; // 199
+    const Y_ROW2_END = Y_ROW1_END + ROW_QR_H; // 339
+    const Y_ROW3_END = Y_ROW2_END + ROW_STD; // 397
 
     const lines: string[] = [];
     for (let idx = 0; idx < products.length; idx++) {
         const p = products[idx];
         lines.push('SIZE 55 mm,80 mm', 'GAP 0 mm,0 mm', 'DIRECTION 1', 'CLS', 'CODEPAGE UTF-8');
 
-        // HEADER com quebras de linha
+        // HEADER
         lines.push(`TEXT ${X0 + 5},${Y0 + 20},"4",0,1,1,"Ambicom"`);
-        // Texto à direita com quebra manual (usando múltiplas linhas TEXT)
         lines.push(`TEXT ${X1 - 5},${Y0 + 5},"1",0,1,1,2,"PRODUTO"`);
-        lines.push(`TEXT ${X1 - 5},${Y0 + 25},"1",0,1,1,2,"REMANUFATURADO"`);
-        lines.push(`TEXT ${X1 - 5},${Y0 + 45},"1",0,1,1,2,"GARANTIA"`);
-        lines.push(`TEXT ${X1 - 5},${Y0 + 65},"1",0,1,1,2,"AMBICOM"`);
-        
-        lines.push(`TEXT ${X0 + 5},${Y0 + 75},"3",0,1,1,"SAC: 041-3382-5410"`);
+        lines.push(`TEXT ${X1 - 5},${Y0 + 22},"1",0,1,1,2,"REMANUFATURADO"`);
+        lines.push(`TEXT ${X1 - 5},${Y0 + 39},"1",0,1,1,2,"GARANTIA"`);
+        lines.push(`TEXT ${X1 - 5},${Y0 + 56},"1",0,1,1,2,"AMBICOM"`);
+        lines.push(`TEXT ${X0 + 5},${Y0 + 72},"1",0,1,1,"R. Wenceslau Marek, 10 - Águas Belas, SJP - PR"`);
+        lines.push(`TEXT ${X0 + 5},${Y0 + 95},"3",0,1,1,"SAC: 041-3382-5410"`);
         lines.push(`LINE ${X0},${Y_HEADER_END},${X1},${Y_HEADER_END},3`);
 
         // ROW 1: MODELO
-        lines.push(`LINE ${CENTER_DIV},${Y_HEADER_END},${CENTER_DIV},${Y_ROW1_END},2`);
-        lines.push(`TEXT ${118},${Y_HEADER_END + 10},"1",0,1,1,2,"MODELO"`);
-        lines.push(`TEXT ${118},${Y_HEADER_END + 35},"3",0,1,1,2,"${sv(p.model || p.modelo)}"`);
-        lines.push(`TEXT ${322},${Y_HEADER_END + 10},"1",0,1,1,2,"VOLTAGEM"`);
-        lines.push(`TEXT ${322},${Y_HEADER_END + 35},"3",0,1,1,2,"${sv(p.voltage || p.tensao)}"`);
+        lines.push(`LINE 220,${Y_HEADER_END},220,${Y_ROW1_END},2`);
+        lines.push(`TEXT 118,${Y_HEADER_END+12},"1",0,1,1,2,"MODELO"`, `TEXT 118,${Y_HEADER_END+38},"3",0,1,1,2,"${sv(p.model || p.modelo)}"`);
+        lines.push(`TEXT 322,${Y_HEADER_END+12},"1",0,1,1,2,"VOLTAGEM"`, `TEXT 322,${Y_HEADER_END+38},"3",0,1,1,2,"${sv(p.voltage || p.tensao)}"`);
         lines.push(`LINE ${X0},${Y_ROW1_END},${X1},${Y_ROW1_END},2`);
 
         // ROW 2: QR
         const serial = sv(p.internal_serial);
-        if (serial !== '-') lines.push(`QRCODE ${X0 + 15},${Y_ROW1_END + 15},L,8,A,0,"${serial}"`);
-        lines.push(`TEXT ${X0 + 160},${Y_ROW1_END + 30},"2",0,1,1,"SERIAL AMBICOM:"`);
-        lines.push(`TEXT ${X0 + 160},${Y_ROW1_END + 70},"5",0,1,1,"${serial}"`);
+        if (serial !== '-') lines.push(`QRCODE ${X0 + 20},${Y_ROW1_END + 15},L,7,A,0,"${serial}"`);
+        lines.push(`TEXT 280,${Y_ROW1_END+35},"2",0,1,1,2,"SERIAL AMBICOM:"`, `TEXT 280,${Y_ROW1_END+75},"5",0,1,1,2,"${serial}"`);
         lines.push(`LINE ${X0},${Y_ROW2_END},${X1},${Y_ROW2_END},2`);
 
         // ROW 3: PNC
-        lines.push(`LINE ${CENTER_DIV},${Y_ROW2_END},${CENTER_DIV},${Y_ROW3_END},2`);
-        lines.push(`TEXT ${118},${Y_ROW2_END + 10},"1",0,1,1,2,"PNC/ML"`);
-        lines.push(`TEXT ${118},${Y_ROW2_END + 35},"3",0,1,1,2,"${sv(p.pnc_ml)}"`);
-        lines.push(`TEXT ${322},${Y_ROW2_END + 25},"3",0,1,1,2,"${sv(p.frequency) || "60 Hz"}"`);
+        lines.push(`LINE 220,${Y_ROW2_END},220,${Y_ROW3_END},2`);
+        lines.push(`TEXT 118,${Y_ROW2_END+10},"1",0,1,1,2,"PNC/ML"`, `TEXT 118,${Y_ROW2_END+35},"3",0,1,1,2,"${sv(p.pnc_ml)}"`);
+        lines.push(`TEXT 322,${Y_ROW2_END+25},"3",0,1,1,2,"${sv(p.frequency) || '60 Hz'}"`);
         lines.push(`LINE ${X0},${Y_ROW3_END},${X1},${Y_ROW3_END},2`);
 
-        // ROWS 4-7: Dados Técnicos (Distribuídos)
+        // ROWS 4-7
         let curY = Y_ROW3_END;
         const rows = [
             { l: ["GÁS FRIG.", "CARGA GÁS", "COMPR."], v: [p.refrigerant_gas, p.gas_charge, p.compressor] },
@@ -96,18 +85,17 @@ export function generateLabelsTSPL(products: any[]): string {
         ];
 
         rows.forEach(r => {
-            const nextY = curY + ROW_DATA_H;
-            lines.push(`LINE ${COL1_DIV},${curY},${COL1_DIV},${nextY},2`,`LINE ${COL2_DIV},${curY},${COL2_DIV},${nextY},2`);
-            const centers = [83, 222, 359];
+            lines.push(`LINE 150,${curY},150,${curY+ROW_STD},2`, `LINE 294,${curY},294,${curY+ROW_STD},2`);
+            const c = [83, 222, 359];
             r.l.forEach((lbl, i) => {
-                lines.push(`TEXT ${centers[i]},${curY + 8},"1",0,1,1,2,"${lbl}"`);
-                lines.push(`TEXT ${centers[i]},${curY + 32},"2",0,1,1,2,"${sv(r.v[i])}"`);
+                lines.push(`TEXT ${c[i]},${curY+10},"1",0,1,1,2,"${lbl}"`, `TEXT ${c[i]},${curY+33},"2",0,1,1,2,"${sv(r.v[i])}"`);
             });
-            lines.push(`LINE ${X0},${nextY},${X1},${nextY},2`);
-            curY = nextY;
+            curY += ROW_STD;
+            lines.push(`LINE ${X0},${curY},${X1},${curY},2`);
         });
 
-        lines.push(`LINE ${X0},${Y_HEADER_END},${X0},Y_MAX,3`,`LINE ${X1},${Y_HEADER_END},${X1},Y_MAX,3`);
+        // Bordas verticais finalizando em curY (629 dots aprox, ajustado para segurança)
+        lines.push(`LINE ${X0},${Y_HEADER_END},${X0},${curY},3`, `LINE ${X1},${Y_HEADER_END},${X1},${curY},3`);
         lines.push('PRINT 1,1');
     }
     return lines.join('\r\n');
@@ -121,85 +109,78 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         const p = products[idx];
         if (idx > 0) doc.addPage([55, 80], 'p');
         const val = (v: any) => String(v ?? '').trim() || '-';
+        const X0 = 2, X1 = 53, Y0 = 2, CENTER_X = 27.5;
 
-        const X0 = 2, X1 = 53, Y0 = 2;
-        const CENTER_X = 27.5;
-
-        // Distribuição vertical (em mm)
-        const H_HEADER = 15;
-        const H_MODELO = 8;
+        // Alturas MM ajustadas para sobrar 1mm no fim (Total usado ~77-78mm)
+        const H_HEADER = 17; 
+        const H_STD = 7.2; 
         const H_QR = 18;
-        const H_PNC = 8;
-        const H_ROW = 7.5; // Altura para as linhas técnicas
 
-        let currentY = Y0;
+        let curY = Y0;
 
-        // --- HEADER ---
-        doc.setFont("helvetica", "bold").setFontSize(16).text("Ambicom", X0 + 1, currentY + 7);
+        // HEADER
+        doc.setFont("helvetica", "bold").setFontSize(16).text("Ambicom", X0 + 1, curY + 6);
+        doc.setFontSize(4.5);
+        doc.text("PRODUTO", X1 - 1, curY + 3, { align: 'right' });
+        doc.text("REMANUFATURADO", X1 - 1, curY + 5.2, { align: 'right' });
+        doc.text("GARANTIA", X1 - 1, curY + 7.4, { align: 'right' });
+        doc.text("AMBICOM", X1 - 1, curY + 9.6, { align: 'right' });
+        doc.setFont("helvetica", "normal").setFontSize(3.8).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
+        doc.setFont("helvetica", "bold").setFontSize(8).text("SAC: 041-3382-5410", X0 + 1, curY + 15);
         
-        doc.setFontSize(5);
-        // Texto solicitado com quebras de linha à direita
-        doc.text("PRODUTO", X1 - 1, currentY + 3, { align: 'right' });
-        doc.text("REMANUFATURADO", X1 - 1, currentY + 5.5, { align: 'right' });
-        doc.text("GARANTIA", X1 - 1, currentY + 8, { align: 'right' });
-        doc.text("AMBICOM", X1 - 1, currentY + 10.5, { align: 'right' });
+        curY += H_HEADER;
+        doc.setLineWidth(0.4).line(X0, curY, X1, curY);
 
-        doc.setFontSize(9).text("SAC: 041-3382-5410", X0 + 1, currentY + 13);
-        currentY += H_HEADER;
-        doc.setLineWidth(0.4).line(X0, currentY, X1, currentY);
+        // ROW 1
+        doc.setLineWidth(0.2).line(CENTER_X, curY, CENTER_X, curY + H_STD);
+        doc.setFontSize(3.5).text("MODELO", (X0+CENTER_X)/2, curY + 2.5, { align: 'center' });
+        doc.setFontSize(9).text(val(p.model || p.modelo), (X0+CENTER_X)/2, curY + 6, { align: 'center' });
+        doc.setFontSize(3.5).text("VOLTAGEM", (X1+CENTER_X)/2, curY + 2.5, { align: 'center' });
+        doc.setFontSize(9).text(val(p.voltage || p.tensao), (X1+CENTER_X)/2, curY + 6, { align: 'center' });
+        curY += H_STD;
+        doc.line(X0, curY, X1, curY);
 
-        // --- ROW 1: MODELO ---
-        doc.setLineWidth(0.2).line(CENTER_X, currentY, CENTER_X, currentY + H_MODELO);
-        doc.setFontSize(4).text("MODELO", (X0 + CENTER_X) / 2, currentY + 2.5, { align: 'center' });
-        doc.setFontSize(10).text(val(p.model || p.modelo), (X0 + CENTER_X) / 2, currentY + 6.5, { align: 'center' });
-        doc.setFontSize(4).text("VOLTAGEM", (X1 + CENTER_X) / 2, currentY + 2.5, { align: 'center' });
-        doc.setFontSize(10).text(val(p.voltage || p.tensao), (X1 + CENTER_X) / 2, currentY + 6.5, { align: 'center' });
-        currentY += H_MODELO;
-        doc.line(X0, currentY, X1, currentY);
-
-        // --- ROW 2: QR & SERIAL ---
+        // ROW 2 (QR)
         const serial = val(p.internal_serial);
         if (serial !== '-') {
             const qrImg = await QRCode.toDataURL(serial, { margin: 0 });
-            doc.addImage(qrImg, 'PNG', X0 + 2, currentY + 1.5, 15, 15);
+            doc.addImage(qrImg, 'PNG', X0 + 3, curY + 1.5, 15, 15);
         }
-        doc.setFontSize(5).text("SERIAL AMBICOM:", X0 + 20, currentY + 5);
-        doc.setFontSize(12).text(serial, X0 + 20, currentY + 11);
-        currentY += H_QR;
-        doc.line(X0, currentY, X1, currentY);
+        doc.setFontSize(4.5).text("SERIAL AMBICOM:", X0 + 20, curY + 5);
+        doc.setFontSize(11).text(serial, X0 + 20, curY + 11);
+        curY += H_QR;
+        doc.line(X0, curY, X1, curY);
 
-        // --- ROW 3: PNC ---
-        doc.line(CENTER_X, currentY, CENTER_X, currentY + H_PNC);
-        doc.setFontSize(4).text("PNC/ML", (X0 + CENTER_X) / 2, currentY + 2.5, { align: 'center' });
-        doc.setFontSize(9).text(val(p.pnc_ml), (X0 + CENTER_X) / 2, currentY + 6.5, { align: 'center' });
-        doc.setFontSize(9).text(val(p.frequency) || "60 Hz", (X1 + CENTER_X) / 2, currentY + 5.5, { align: 'center' });
-        currentY += H_PNC;
-        doc.line(X0, currentY, X1, currentY);
-
-        // --- ROWS TÉCNICAS (4-7) ---
         const rows = [
+            { isPnc: true, l: ["PNC/ML", "FREQ."], v: [p.pnc_ml, p.frequency || "60 Hz"] },
             { l: ["GÁS FRIG.", "CARGA GÁS", "COMPR."], v: [p.refrigerant_gas, p.gas_charge, p.compressor] },
             { l: ["VOL. FRZ", "VOL. REF.", "VOL. TOT."], v: [p.volume_freezer, p.volume_refrigerator, p.volume_total] },
             { l: ["P. ALTA", "P. BAIXA", "CAP. CONG."], v: [String(p.pressure_high_low).split('/')[0], String(p.pressure_high_low).split('/')[1], p.freezing_capacity] },
             { l: ["CORRENTE", "POT. DEG.", "TAM."], v: [p.electric_current, p.defrost_power, p.size] }
         ];
 
-        const COL1_X = X0 + (X1 - X0) * 0.33, COL2_X = X0 + (X1 - X0) * 0.66;
+        const COL1 = X0 + (X1-X0)*0.33, COL2 = X0 + (X1-X0)*0.66;
         rows.forEach(r => {
-            doc.line(COL1_X, currentY, COL1_X, currentY + H_ROW);
-            doc.line(COL2_X, currentY, COL2_X, currentY + H_ROW);
-            const centers = [(X0 + COL1_X) / 2, (COL1_X + COL2_X) / 2, (COL2_X + X1) / 2];
-            r.l.forEach((lbl, i) => {
-                doc.setFontSize(3.5).text(lbl, centers[i], currentY + 2.5, { align: 'center' });
-                doc.setFontSize(7).text(val(r.v[i]), centers[i], currentY + 6, { align: 'center' });
-            });
-            currentY += H_ROW;
-            doc.line(X0, currentY, X1, currentY);
+            if(r.isPnc) {
+                doc.line(CENTER_X, curY, CENTER_X, curY + H_STD);
+                doc.setFontSize(3.5).text(r.l[0], (X0+CENTER_X)/2, curY + 2.5, { align: 'center' });
+                doc.setFontSize(8).text(val(r.v[0]), (X0+CENTER_X)/2, curY + 6, { align: 'center' });
+                doc.setFontSize(8).text(val(r.v[1]), (X1+CENTER_X)/2, curY + 5, { align: 'center' });
+            } else {
+                doc.line(COL1, curY, COL1, curY + H_STD); doc.line(COL2, curY, COL2, curY + H_STD);
+                const centers = [(X0+COL1)/2, (COL1+COL2)/2, (COL2+X1)/2];
+                r.l.forEach((lbl, i) => {
+                    doc.setFontSize(3).text(lbl, centers[i], curY+2.2, {align:'center'});
+                    doc.setFontSize(6.5).text(val(r.v[i]), centers[i], curY+5.8, {align:'center'});
+                });
+            }
+            curY += H_STD;
+            doc.line(X0, curY, X1, curY);
         });
 
-        // Moldura lateral final
-        doc.line(X0, Y0 + H_HEADER, X0, currentY);
-        doc.line(X1, Y0 + H_HEADER, X1, currentY);
+        // Borda lateral externa
+        doc.line(X0, Y0 + H_HEADER, X0, curY); 
+        doc.line(X1, Y0 + H_HEADER, X1, curY);
     }
     return doc;
 };
