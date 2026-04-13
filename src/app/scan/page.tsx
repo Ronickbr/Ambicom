@@ -204,6 +204,7 @@ const ScanPage = () => {
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const [videoConstraints, setVideoConstraints] = useState<MediaTrackConstraints | boolean>(CAMERA_CONSTRAINTS);
+    const [isInitializingCamera, setIsInitializingCamera] = useState(true);
     const [showHistory, setShowHistory] = useState(false);
 
     // Hook de Impressão Remota Centralizado
@@ -274,6 +275,55 @@ const ScanPage = () => {
 
     useEffect(() => {
         isMounted.current = true;
+
+        const initCamera = async () => {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("MediaDevices API não suportada neste navegador.");
+                }
+
+                // 1. Pedimos permissão básica para listar os dispositivos com nomes
+                const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                
+                // Libera o stream temporário para não bloquear a câmera
+                tempStream.getTracks().forEach(track => track.stop());
+
+                // 2. Listamos os dispositivos
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+                // 3. Logica de seleção (Câmera 1 como principal)
+                if (videoDevices.length > 0) {
+                    let selectedId = videoDevices[0].deviceId;
+                    if (videoDevices.length > 1) {
+                        // Procura por labels que indiquem a câmera traseira principal ou usa o índice 1
+                        const mainCamera = videoDevices.find(d => {
+                            const label = d.label?.toLowerCase() || '';
+                            return label.includes('back') && !label.includes('0');
+                        });
+                        selectedId = mainCamera ? mainCamera.deviceId : videoDevices[1].deviceId;
+                    }
+
+                    if (isMounted.current) {
+                        setVideoConstraints({
+                            ...CAMERA_CONSTRAINTS,
+                            facingMode: undefined, // Remove facingMode pois usaremos deviceId
+                            deviceId: { exact: selectedId },
+                            advanced: [{ focusMode: "continuous" } as any]
+                        });
+                    }
+                }
+            } catch (error) {
+                logger.error("Erro ao selecionar câmera específica:", error);
+                // Fallback: mantém CAMERA_CONSTRAINTS (que usa facingMode: "environment")
+            } finally {
+                if (isMounted.current) {
+                    setIsInitializingCamera(false);
+                }
+            }
+        };
+
+        initCamera();
 
         return () => {
             isMounted.current = false;
@@ -583,7 +633,7 @@ const ScanPage = () => {
                     <div className="lg:col-span-3 space-y-6">
                         <div className="glass-card p-2 border-border/20 bg-black shadow-2xl relative overflow-hidden group max-w-sm mx-auto">
                             <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-card border border-border/10">
-                                {!cameraError ? (
+                                {!cameraError && !isInitializingCamera ? (
                                     <>
                                         <Webcam
                                             ref={webcamRef}
@@ -679,6 +729,14 @@ const ScanPage = () => {
                                             aria-label="Acionar autofoco"
                                         />
                                     </>
+                                ) : isInitializingCamera ? (
+                                    <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-4">
+                                        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
+                                            <Loader2 className="h-8 w-8 animate-spin" />
+                                        </div>
+                                        <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Iniciando Câmera</h3>
+                                        <p className="text-sm text-muted-foreground max-w-xs mx-auto">Selecionando a melhor lente para leitura...</p>
+                                    </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-4">
                                         <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-2">
