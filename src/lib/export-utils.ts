@@ -161,41 +161,57 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         curY += H_QR;
         doc.line(X0, curY, X1, curY);
 
-        // --- LISTA DE LINHAS RESTANTES (PNC + TÉCNICAS) ---
-        const rows = [
-            { isPnc: true, l: ["PNC/ML", "FREQUÊNCIA"], v: [p.pnc_ml, p.frequency || "60 Hz"] },
-            { l: ["GÁS FRIG.", "CARGA GÁS", "COMPR."], v: [p.refrigerant_gas, p.gas_charge, p.compressor] },
-            { l: ["VOL. FRZ", "VOL. REF.", "VOL. TOT."], v: [p.volume_freezer, p.volume_refrigerator, p.volume_total] },
-            { l: ["P. ALTA em kpa", "P. BAIXA em kpa", "CAP. CONG."], v: [String(p.pressure_high_low).split('/')[0], String(p.pressure_high_low).split('/')[1], p.freezing_capacity] },
-            { l: ["CORRENTE", "POT. DEG.", "TAM."], v: [p.electric_current, p.defrost_power, p.size] }
-        ];
-
+        // --- DEFINIÇÃO DE COLUNAS TÉCNICAS ---
         const COL1 = X0 + (X1 - X0) * 0.33, COL2 = X0 + (X1 - X0) * 0.66;
-        
-        rows.forEach(r => {
-            if (r.isPnc) {
-                // Row 3: PNC | FREQUÊNCIA
-                doc.line(CENTER_X, curY, CENTER_X, curY + H_STD);
-                doc.setFontSize(5).text(r.l[0], (X0 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
-                doc.setFontSize(8).text(val(r.v[0]), (X0 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
-                
-                doc.setFontSize(5).text(r.l[1], (X1 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
-                doc.setFontSize(8).text(val(r.v[1]), (X1 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
-            } else {
-                // Rows 4 a 7: Dados técnicos em 3 colunas
-                doc.line(COL1, curY, COL1, curY + H_STD); 
-                doc.line(COL2, curY, COL2, curY + H_STD);
-                const centers = [(X0 + COL1) / 2, (COL1 + COL2) / 2, (COL2 + X1) / 2];
-                r.l.forEach((lbl, i) => {
-                    doc.setFontSize(5).text(lbl, centers[i], curY + 2.2, { align: 'center' });
-                    doc.setFontSize(6.5).text(val(r.v[i]), centers[i], curY + 5.8, { align: 'center' });
-                });
-            }
-            curY += H_STD;
-            doc.line(X0, curY, X1, curY);
-        });
 
-        // Bordas laterais para fechar o desenho da tabela
+        // ROW 3: PNC | FREQUÊNCIA (Divisão Central)
+        doc.line(CENTER_X, curY, CENTER_X, curY + H_STD);
+        doc.setFontSize(5).text("PNC/ML", (X0 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(8).text(val(p.pnc_ml), (X0 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
+        doc.text("FREQUÊNCIA", (X1 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
+        doc.text(val(p.frequency) || "60 Hz", (X1 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
+        curY += H_STD; doc.line(X0, curY, X1, curY);
+
+        // ROW 4: GÁS | CARGA | COMPR. (3 Colunas)
+        doc.line(COL1, curY, COL1, curY + H_STD); doc.line(COL2, curY, COL2, curY + H_STD);
+        doc.text("GÁS FRIG.", (X0 + COL1) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(6.5).text(val(p.refrigerant_gas), (X0 + COL1) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(5).text("CARGA GÁS", (COL1 + COL2) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(6.5).text(val(p.gas_charge), (COL1 + COL2) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(5).text("COMPR.", (COL2 + X1) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(6.5).text(val(p.compressor), (COL2 + X1) / 2, curY + 5.8, { align: 'center' });
+        curY += H_STD; doc.line(X0, curY, X1, curY);
+
+        // ROW 5: VOLUMES (3 Colunas)
+        doc.line(COL1, curY, COL1, curY + H_STD); doc.line(COL2, curY, COL2, curY + H_STD);
+        doc.setFontSize(5).text("VOL. FRZ", (X0 + COL1) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(6.5).text(val(p.volume_freezer), (X0 + COL1) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(5).text("VOL. REF.", (COL1 + COL2) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(6.5).text(val(p.volume_refrigerator), (COL1 + COL2) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(5).text("VOL. TOT.", (COL2 + X1) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(6.5).text(val(p.volume_total), (COL2 + X1) / 2, curY + 5.8, { align: 'center' });
+        curY += H_STD; doc.line(X0, curY, X1, curY);
+
+        // ROW 6: PRESSÃO (UNIDA) | CAP. CONG.
+        // Removida a linha COL1 para unir as duas primeiras colunas
+        doc.line(COL2, curY, COL2, curY + H_STD);
+        doc.setFontSize(5).text("PRESSÃO ALTA / BAIXA", (X0 + COL2) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(7).text(val(p.pressure_high_low), (X0 + COL2) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(5).text("CAP. CONG.", (COL2 + X1) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(7).text(val(p.freezing_capacity), (COL2 + X1) / 2, curY + 5.8, { align: 'center' });
+        curY += H_STD; doc.line(X0, curY, X1, curY);
+
+        // ROW 7: CORRENTE | POTÊNCIA | TAMANHO (3 Colunas)
+        doc.line(COL1, curY, COL1, curY + H_STD); doc.line(COL2, curY, COL2, curY + H_STD);
+        doc.setFontSize(5).text("CORRENTE", (X0 + COL1) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(6.5).text(val(p.electric_current), (X0 + COL1) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(5).text("POT. DEG.", (COL1 + COL2) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(6.5).text(val(p.defrost_power), (COL1 + COL2) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(5).text("TAM.", (COL2 + X1) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(6.5).text(val(p.size), (COL2 + X1) / 2, curY + 5.8, { align: 'center' });
+        curY += H_STD; doc.line(X0, curY, X1, curY);
+
+        // Bordas externas laterais
         doc.line(X0, Y0 + H_HEADER, X0, curY); 
         doc.line(X1, Y0 + H_HEADER, X1, curY);
     }
