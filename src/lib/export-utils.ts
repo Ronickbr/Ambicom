@@ -168,13 +168,13 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         doc.line(CENTER_X, curY, CENTER_X, curY + H_STD);
         doc.setFontSize(5).text("PNC/ML", (X0 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
         doc.setFontSize(8).text(val(p.pnc_ml), (X0 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
-        doc.text("FREQUÊNCIA", (X1 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
-        doc.text(val(p.frequency) || "60 Hz", (X1 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(5).text("FREQUÊNCIA", (X1 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(8).text(val(p.frequency) || "60 Hz", (X1 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
         curY += H_STD; doc.line(X0, curY, X1, curY);
 
         // ROW 4: GÁS | CARGA | COMPR. (3 Colunas)
         doc.line(COL1, curY, COL1, curY + H_STD); doc.line(COL2, curY, COL2, curY + H_STD);
-        doc.text("GÁS FRIG.", (X0 + COL1) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(5).text("GÁS FRIG.", (X0 + COL1) / 2, curY + 2.2, { align: 'center' });
         doc.setFontSize(6.5).text(val(p.refrigerant_gas), (X0 + COL1) / 2, curY + 5.8, { align: 'center' });
         doc.setFontSize(5).text("CARGA GÁS", (COL1 + COL2) / 2, curY + 2.2, { align: 'center' });
         doc.setFontSize(6.5).text(val(p.gas_charge), (COL1 + COL2) / 2, curY + 5.8, { align: 'center' });
@@ -196,9 +196,9 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         // Removida a linha COL1 para unir as duas primeiras colunas
         doc.line(COL2, curY, COL2, curY + H_STD);
         doc.setFontSize(5).text("PRESSÃO ALTA / BAIXA", (X0 + COL2) / 2, curY + 2.2, { align: 'center' });
-        doc.setFontSize(7).text(val(p.pressure_high_low), (X0 + COL2) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(6.5).text(val(p.pressure_high_low), (X0 + COL2) / 2, curY + 5.8, { align: 'center' });
         doc.setFontSize(5).text("CAP. CONG.", (COL2 + X1) / 2, curY + 2.2, { align: 'center' });
-        doc.setFontSize(7).text(val(p.freezing_capacity), (COL2 + X1) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(6.5).text(val(p.freezing_capacity), (COL2 + X1) / 2, curY + 5.8, { align: 'center' });
         curY += H_STD; doc.line(X0, curY, X1, curY);
 
         // ROW 7: CORRENTE | POTÊNCIA | TAMANHO (3 Colunas)
