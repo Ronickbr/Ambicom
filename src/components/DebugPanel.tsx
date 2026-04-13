@@ -31,7 +31,7 @@ export function DebugPanel() {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] bg-background/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] bg-background/80 backdrop-blur-md flex items-center justify-center p-4">
             <div className="bg-card border border-border/20 w-full max-w-4xl h-[80vh] rounded-xl flex flex-col shadow-2xl">
                 <div className="flex items-center justify-between p-4 border-b border-border/20 bg-background/20">
                     <h3 className="font-bold text-foreground flex items-center gap-2">

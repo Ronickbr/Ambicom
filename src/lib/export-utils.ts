@@ -130,7 +130,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         doc.text("GARANTIA", X1 - 1, curY + 7.4, { align: 'right' });
         doc.text("AMBICOM", X1 - 1, curY + 9.6, { align: 'right' });
 
-        doc.setFont("helvetica", "normal").setFontSize(5).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
+        doc.setFont("helvetica", "bold").setFontSize(5).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
         doc.setFont("helvetica", "bold").setFontSize(8).text("SAC: 41-3382-5410", X0 + 1, curY + 15);
         
         curY += H_HEADER;
@@ -166,7 +166,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
             { isPnc: true, l: ["PNC/ML", "FREQUÊNCIA"], v: [p.pnc_ml, p.frequency || "60 Hz"] },
             { l: ["GÁS FRIG.", "CARGA GÁS", "COMPR."], v: [p.refrigerant_gas, p.gas_charge, p.compressor] },
             { l: ["VOL. FRZ", "VOL. REF.", "VOL. TOT."], v: [p.volume_freezer, p.volume_refrigerator, p.volume_total] },
-            { l: ["P. ALTA", "P. BAIXA", "CAP. CONG."], v: [String(p.pressure_high_low).split('/')[0], String(p.pressure_high_low).split('/')[1], p.freezing_capacity] },
+            { l: ["P. ALTA em kpa", "P. BAIXA em kpa", "CAP. CONG."], v: [String(p.pressure_high_low).split('/')[0], String(p.pressure_high_low).split('/')[1], p.freezing_capacity] },
             { l: ["CORRENTE", "POT. DEG.", "TAM."], v: [p.electric_current, p.defrost_power, p.size] }
         ];
 
@@ -210,39 +210,8 @@ export const printLabels = async (products: any[]) => {
         console.log("Doc PDF gerado, chamando doc.save()...");
         const fileName = `etiquetas_ambicom_${Date.now()}.pdf`;
         
-        // Obter blob e url
-        const blob = doc.output('blob');
-        const url = window.URL.createObjectURL(blob);
-
-        try {
-            doc.save(fileName);
-            console.log("doc.save() executado.");
-        } catch (err) {
-            console.error("Erro no doc.save():", err);
-        }
-        
-        // Método alternativo garantido via Blob e tag <a>
-        try {
-            console.log("Tentando download via Blob e tag <a>...");
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => {
-                if (document.body.contains(a)) document.body.removeChild(a);
-            }, 1000);
-            console.log("Download via tag <a> disparado com sucesso.");
-        } catch (err) {
-            console.error("Erro no método alternativo via Blob:", err);
-        }
-
-        // Revoga URL depois de 1 minuto para dar tempo em dispositivos mais lentos
-        setTimeout(() => {
-            window.URL.revokeObjectURL(url);
-        }, 60000);
-        
+        doc.save(fileName);
+        console.log("doc.save() executado com sucesso.");
     } catch (err) {
         console.error("Erro interno no printLabels:", err);
         throw err;
