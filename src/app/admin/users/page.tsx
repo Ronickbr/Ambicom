@@ -407,7 +407,7 @@ export default function UsersManagementPage() {
 
                 {/* Policies Modal */}
                 {showPoliciesModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl animate-in fade-in duration-500">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-500">
                         <div className="glass-card w-full max-w-lg space-y-8 border-border/20 shadow-2xl p-10 bg-card/90 relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
@@ -460,7 +460,7 @@ export default function UsersManagementPage() {
 
                 {/* Create Profile Modal */}
                 {showAddModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl animate-in fade-in duration-500">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-500">
                         <div className="glass-card w-full max-w-md space-y-8 border-border/20 shadow-2xl p-10 bg-card/90 relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
@@ -562,7 +562,7 @@ export default function UsersManagementPage() {
                 )}
                 {/* Edit User Modal */}
                 {editingUser && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl animate-in fade-in duration-500">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-500">
                         <div className="glass-card w-full max-w-md space-y-8 border-border/20 shadow-2xl p-10 bg-card/90 relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 

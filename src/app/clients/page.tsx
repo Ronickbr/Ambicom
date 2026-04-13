@@ -173,7 +173,7 @@ export default function ClientsPage() {
           {canEdit && (
             <button
               onClick={() => handleOpenModal()}
-              className="glass-button px-4 py-2 bg-white text-black hover:bg-foreground/90 flex items-center gap-2 text-sm font-bold uppercase tracking-wider w-full sm:w-auto justify-center rounded-lg transition-colors"
+              className="glass-button px-4 py-2 bg-white text-black hover:bg-foreground/90 flex items-center gap-2 text-sm font-bold uppercase tracking-wider w-full sm:w-auto justify-center rounded-lg transition-all active:scale-95"
             >
               <Plus className="h-4 w-4" />
               Novo Cliente
@@ -277,7 +277,7 @@ export default function ClientsPage() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleOpenModal(client)}
-                              className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-white text-black hover:bg-primary hover:text-primary-foreground transition-all text-[10px] font-black uppercase tracking-widest border border-primary/10 shadow-lg"
+                              className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-white text-black hover:bg-primary hover:text-primary-foreground transition-all text-[10px] font-black uppercase tracking-widest border border-primary/10 shadow-lg active:scale-95"
                             >
                               <Settings className="h-4 w-4" />
                               Configurações
@@ -285,7 +285,7 @@ export default function ClientsPage() {
                             {canEdit && (
                               <button
                                 onClick={() => handleDeleteClient(client.id, client.name)}
-                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20"
+                                className="h-12 w-12 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20 active:scale-95"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -426,7 +426,7 @@ export default function ClientsPage() {
 
         {/* Modal de Cadastro/Edição */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xl animate-in fade-in duration-500">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-500">
             <div className="glass-card w-full max-w-lg space-y-6 sm:space-y-8 border-border/20 shadow-2xl p-6 sm:p-10 bg-card/95 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
@@ -435,7 +435,7 @@ export default function ClientsPage() {
                   <h2 className="text-3xl font-black text-foreground tracking-tight">{editingClient ? "Sincronizar Perfil" : "Novo Cadastro"}</h2>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-black">Informações do Cliente / Parceiro</p>
                 </div>
-                <button onClick={() => setShowModal(false)} className="h-12 w-12 rounded-2xl bg-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all hover:bg-red-500/20 hover:text-red-500 border border-border/20">
+                <button onClick={() => setShowModal(false)} className="h-12 w-12 rounded-2xl bg-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all active:scale-95 hover:bg-red-500/20 hover:text-red-500 border border-border/20">
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -554,7 +554,7 @@ export default function ClientsPage() {
                   </div>
                 </div>
                 <div className="flex gap-4 pt-4">
-                  <button
+                  <button 
                     type="submit"
                     disabled={isSaving}
                     className="flex-[2] bg-primary hover:brightness-110 text-primary-foreground font-black uppercase tracking-[0.2em] text-[10px] h-16 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 border-t border-border/20 flex items-center justify-center gap-3"
@@ -565,7 +565,7 @@ export default function ClientsPage() {
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="flex-1 rounded-2xl border border-border/20 bg-foreground/5 hover:bg-foreground/10 transition-all text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground h-16"
+                    className="flex-1 rounded-2xl border border-border/20 bg-foreground/5 hover:bg-foreground/10 transition-all text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground h-16 active:scale-95"
                   >
                     Cancelar
                   </button>

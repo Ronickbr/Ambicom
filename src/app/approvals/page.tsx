@@ -475,7 +475,7 @@ export default function ApprovalsPage() {
             {/* Detailed Product Modal */}
             {selectedProduct && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)} />
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={() => setSelectedProduct(null)} />
                     <div className="glass-card w-full max-w-5xl bg-[#0a0a0a] border border-border/20 max-h-[95vh] overflow-y-auto relative z-10 animate-in zoom-in-95 duration-200">
                         <div className="p-4 sm:p-10 space-y-6 sm:space-y-8">
                             {/* Modal Header */}
@@ -675,7 +675,7 @@ export default function ApprovalsPage() {
             )}
             {/* Full Image Zoom Modal */}
             {fullImageUrl && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-xl p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
                     <button
                         onClick={() => setFullImageUrl(null)}
                         className="absolute top-6 right-6 h-12 w-12 rounded-full bg-foreground/10 flex items-center justify-center text-foreground hover:bg-foreground/20 transition-all z-10"

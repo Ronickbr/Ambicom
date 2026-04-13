@@ -899,7 +899,7 @@ export default function OrdersPage() {
 
                 {/* Modal de Novo Pedido */}
                 {showAddModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-xl animate-in fade-in duration-500">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-500">
                         <div className="glass-card w-full max-w-2xl space-y-6 sm:space-y-8 border-border/20 shadow-2xl p-6 sm:p-10 bg-card/90 relative overflow-y-auto max-h-[95vh]">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
@@ -960,7 +960,7 @@ export default function OrdersPage() {
 
             {/* Modal de Detalhes do Pedido */}
             {showDetailsModal && selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-xl animate-in fade-in duration-500">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-500">
                     <div className="glass-card w-full max-w-4xl max-h-[95vh] overflow-hidden border-border/20 shadow-2xl bg-card/90 relative flex flex-col">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 

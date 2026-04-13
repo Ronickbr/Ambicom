@@ -219,7 +219,7 @@ const OCRModal = ({
 
     return (
         <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
                 <div className="bg-card border border-border/20 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                     <div className="flex items-center justify-between p-6 border-b border-border/10 bg-foreground/5 shrink-0">
                         <div className="flex items-center gap-3">
@@ -363,7 +363,7 @@ const OCRModal = ({
             {/* Fullscreen Image Modal - Movido para dentro do OCRModal */}
             {isFullscreenImage && (
                 <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/95 backdrop-blur-md animate-in zoom-in-95 duration-200 cursor-zoom-out"
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in zoom-in-95 duration-200 cursor-zoom-out"
                     onClick={() => setIsFullscreenImage(false)}
                 >
                     <button
@@ -975,7 +975,7 @@ const ScanPage = () => {
                                         />
 
                                         {!cameraReady && (
-                                            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
+                                            <div className="absolute inset-0 bg-background/80 backdrop-blur-md flex flex-col items-center justify-center z-50">
                                                 <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-primary">Trocando Câmera...</p>
                                             </div>
@@ -1070,7 +1070,7 @@ const ScanPage = () => {
 
             {/* NotFound Modal */}
             {notFound && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
                     <div className="bg-card border border-border/20 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl space-y-6 p-8 relative">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
                         <div className="text-center space-y-2">

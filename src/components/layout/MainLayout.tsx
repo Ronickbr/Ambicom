@@ -231,7 +231,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             {/* Mobile Menu Backdrop */}
             {isMobileMenuOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm lg:hidden"
+                    className="fixed inset-0 z-40 bg-background/80 backdrop-blur-md lg:hidden"
                     onClick={() => setIsMobileMenuOpen(false)}
                 />
             )}
