@@ -476,32 +476,34 @@ export default function ApprovalsPage() {
             {selectedProduct && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="absolute inset-0" onClick={() => setSelectedProduct(null)} />
-                    <div className="glass-card w-full max-w-5xl bg-card border border-border/20 max-h-[95vh] overflow-y-auto relative z-10 animate-in zoom-in-95 duration-300 shadow-2xl rounded-2xl">
-                        <div className="p-4 sm:p-10 space-y-6 sm:space-y-8">
-                            {/* Modal Header */}
-                            <div className="flex justify-between items-start gap-4 sm:gap-6 border-b border-border/10 pb-6 sm:pb-8">
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                            <Package className="h-4 w-4" />
-                                        </div>
-                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Detalhamento Técnico</span>
+                    <div className="glass-card w-full max-w-5xl bg-card border border-border/20 max-h-[95vh] flex flex-col relative z-10 animate-in zoom-in-95 duration-300 shadow-2xl rounded-2xl overflow-hidden">
+                        
+                        {/* Header Fixo */}
+                        <div className="shrink-0 bg-card/95 backdrop-blur-md border-b border-border/10 p-6 sm:p-8 flex justify-between items-start gap-4 sm:gap-6 z-20">
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                                        <Package className="h-4 w-4" />
                                     </div>
-                                    <h2 className="text-2xl sm:text-4xl font-black text-foreground uppercase italic tracking-tighter">
-                                        {selectedProduct.model}
-                                    </h2>
-                                    <p className="text-muted-foreground text-xs uppercase font-black tracking-widest">
-                                        {selectedProduct.brand} • <span className="text-foreground/60 font-mono">{selectedProduct.internal_serial}</span>
-                                    </p>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Detalhamento Técnico</span>
                                 </div>
-                                <button
-                                    onClick={() => setSelectedProduct(null)}
-                                    className="h-10 w-10 rounded-full border border-border/20 flex items-center justify-center text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-all"
-                                >
-                                    <XCircle className="h-5 w-5" />
-                                </button>
+                                <h2 className="text-2xl sm:text-4xl font-black text-foreground uppercase italic tracking-tighter">
+                                    {selectedProduct.model}
+                                </h2>
+                                <p className="text-muted-foreground text-xs uppercase font-black tracking-widest">
+                                    {selectedProduct.brand} • <span className="text-foreground/60 font-mono">{selectedProduct.internal_serial}</span>
+                                </p>
                             </div>
+                            <button
+                                onClick={() => setSelectedProduct(null)}
+                                className="h-10 w-10 rounded-full border border-border/20 flex items-center justify-center text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-all"
+                            >
+                                <XCircle className="h-5 w-5" />
+                            </button>
+                        </div>
 
+                        {/* Conteúdo Rolável */}
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-10 space-y-6 sm:space-y-8 scrollbar-thin">
                             {/* Photos Section */}
                             <div className="space-y-6">
                                 <div className="flex items-center gap-3">
@@ -650,23 +652,22 @@ export default function ApprovalsPage() {
                             </div>
 
                             {/* Modal Actions */}
-                            <div className="pt-8 border-t border-border/10 flex flex-col sm:flex-row gap-4">
-                                <button
-                                    onClick={() => handleAction(selectedProduct.id, "APPROVE")}
-                                    disabled={!!isProcessing}
-                                    className="flex-1 h-16 bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-4 active:scale-95 shadow-xl relative overflow-hidden group/btn"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
-                                    {isProcessing === selectedProduct.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-                                    Aprovar e Liberar Ativo
-                                </button>
+                            <div className="shrink-0 bg-card/95 backdrop-blur-md border-t border-border/10 p-6 sm:p-8 flex flex-col sm:flex-row gap-4 z-20">
                                 <button
                                     onClick={() => handleAction(selectedProduct.id, "REJECT")}
                                     disabled={!!isProcessing}
-                                    className="px-10 h-16 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-foreground transition-all flex items-center justify-center gap-4 font-black text-xs uppercase tracking-[0.2em] active:scale-95"
+                                    className="flex-1 h-14 rounded-2xl bg-foreground/5 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 font-black uppercase tracking-widest text-[10px] transition-all border border-border/20 hover:border-red-500/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
                                 >
-                                    <XCircle className="h-6 w-6" />
-                                    Reprovar
+                                    {isProcessing === selectedProduct.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <XCircle className="h-5 w-5" />}
+                                    Recusar Revisão
+                                </button>
+                                <button
+                                    onClick={() => handleAction(selectedProduct.id, "APPROVE")}
+                                    disabled={!!isProcessing}
+                                    className="flex-1 h-14 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-primary/20 border-t border-border/40 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
+                                >
+                                    {isProcessing === selectedProduct.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
+                                    Aprovar & Disponibilizar
                                 </button>
                             </div>
                         </div>
