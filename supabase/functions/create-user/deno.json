@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "lib": [
+            "deno.window",
+            "deno.ns",
+            "esnext"
+        ],
+        "strict": true
+    },
+    "imports": {
+        "@supabase/supabase-js": "npm:@supabase/supabase-js@2"
+    }
+}
