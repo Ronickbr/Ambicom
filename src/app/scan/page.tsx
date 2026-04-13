@@ -959,34 +959,55 @@ const ScanPage = () => {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Debug das câmeras disponíveis clicáveis */}
+                                {availableCameras.length > 0 && (
+                                    <div className="absolute top-4 left-4 z-50 bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-xl max-w-[200px] pointer-events-auto">
+                                        <h4 className="text-[8px] font-black text-primary uppercase tracking-widest mb-2 border-l-2 border-primary pl-1.5">
+                                            Câmeras Detectadas
+                                        </h4>
+                                        <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1 flex flex-col">
+                                            {availableCameras.map((cam, idx) => {
+                                                const currentDeviceId = typeof videoConstraints === 'object' && typeof videoConstraints.deviceId === 'object'
+                                                    ? videoConstraints.deviceId.exact
+                                                    : undefined;
+                                                const isSelected = currentDeviceId === cam.deviceId;
+
+                                                return (
+                                                    <button
+                                                        key={cam.deviceId}
+                                                        onClick={() => {
+                                                            setIsInitializingCamera(true);
+                                                            setCameraReady(false);
+                                                            setVideoConstraints({
+                                                                ...CAMERA_CONSTRAINTS,
+                                                                facingMode: undefined,
+                                                                deviceId: { exact: cam.deviceId },
+                                                                advanced: [{ focusMode: "continuous" } as any]
+                                                            });
+                                                        }}
+                                                        className={cn(
+                                                            "text-[9px] rounded p-1.5 border text-left transition-all w-full flex flex-col",
+                                                            isSelected ? "bg-primary/20 border-primary" : "bg-white/5 border-white/5 hover:bg-white/10"
+                                                        )}
+                                                    >
+                                                        <p className="font-bold text-white mb-0.5 truncate w-full">
+                                                            <span className="text-primary mr-1">[{idx}]</span>
+                                                            {cam.label || `Câmera ${idx + 1}`}
+                                                        </p>
+                                                        <p className="text-[7px] text-muted-foreground font-mono truncate w-full">
+                                                            ID: {cam.deviceId.substring(0, 15)}...
+                                                        </p>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Debug das câmeras disponíveis */}
-                            {availableCameras.length > 0 && (
-                                <div className="absolute top-4 left-4 z-50 bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-xl max-w-[200px] pointer-events-none">
-                                    <h4 className="text-[8px] font-black text-primary uppercase tracking-widest mb-2 border-l-2 border-primary pl-1.5">
-                                        Câmeras Detectadas
-                                    </h4>
-                                    <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar pr-1">
-                                        {availableCameras.map((cam, idx) => (
-                                            <div key={cam.deviceId} className="text-[9px] bg-white/5 rounded p-1.5 border border-white/5">
-                                                <p className="font-bold text-white mb-0.5 truncate">
-                                                    <span className="text-primary mr-1">[{idx}]</span>
-                                                    {cam.label || `Câmera Desconhecida ${idx + 1}`}
-                                                </p>
-                                                <p className="text-[7px] text-muted-foreground font-mono truncate">
-                                                    ID: {cam.deviceId}
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
+                    {/* Lado Direito: Histórico / Ações adicionais */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="glass-card bg-card/50 border-border/10 h-full flex flex-col p-8 relative overflow-hidden">
                             <div className="flex items-center gap-3 mb-8">
                                 <HistoryIcon className="h-5 w-5 text-primary" />
                                 <h2 className="text-[10px] font-black text-foreground uppercase tracking-[0.3em]">Registro de Sessão</h2>
