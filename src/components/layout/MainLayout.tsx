@@ -21,6 +21,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { logger } from "@/lib/logger";
 import { DebugPanel } from "@/components/DebugPanel";
+import { version as appVersion } from "../../../package.json";
 
 const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ["TECNICO", "SUPERVISOR", "GESTOR", "ADMIN"] },
@@ -73,7 +74,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                         <div className="text-center space-y-2">
                             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary animate-pulse">Sincronizando Ambiente</p>
                             <p className="text-[8px] text-muted-foreground uppercase tracking-widest opacity-40">Segurança de Dados • Ambicom</p>
-                            <p className="text-[8px] text-muted-foreground/20 mt-4 cursor-help" title="Pressione Ctrl+Shift+D para abrir o debug">v1.0.0</p>
+                            <p className="text-[8px] text-muted-foreground/20 mt-4 cursor-help" title="Pressione Ctrl+Shift+D para abrir o debug">v{appVersion}</p>
                         </div>
 
                         {showRecovery && (
@@ -209,6 +210,12 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                             <span className="text-sm truncate animate-in slide-in-from-left-1 duration-300">Sair do Sistema</span>
                         )}
                     </button>
+                    <div className={cn(
+                        "mt-1 text-center text-muted-foreground/50 uppercase tracking-widest font-bold",
+                        isSidebarCollapsed ? "text-[8px]" : "text-[10px]"
+                    )}>
+                        v{appVersion}
+                    </div>
                 </div>
             </aside>
 
@@ -301,6 +308,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                         <LogOut className="h-4 w-4" />
                         Sair do Sistema
                     </button>
+                    <div className="mt-2 text-center text-xs text-muted-foreground/50 uppercase tracking-widest font-bold">
+                        Versão {appVersion}
+                    </div>
                 </div>
             </aside>
 

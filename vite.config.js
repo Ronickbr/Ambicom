@@ -3,14 +3,18 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { VitePWA } from 'vite-plugin-pwa';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import packageJson from './package.json';
 // https://vitejs.dev/config/
 export default defineConfig({
-    base: './',
+    base: '/',
+    define: {
+        __APP_VERSION__: JSON.stringify(packageJson.version),
+    },
     plugins: [
         basicSsl(),
         react(),
         VitePWA({
-            registerType: 'autoUpdate',
+            registerType: 'prompt',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
             manifest: {
                 name: 'Ambicom Scan',
