@@ -75,6 +75,27 @@ export default function TechnicianChecklist() {
                 if (productError) throw productError;
                 setProduct(productData as Product);
 
+                // Fetch dynamic categories first
+                const { data: settingsData } = await supabase
+                    .from("system_settings")
+                    .select("value")
+                    .eq("key", "checklist_categories")
+                    .single();
+
+                let activeCategories: string[] = [];
+                if (settingsData?.value) {
+                    const parsedCategories = typeof settingsData.value === 'string'
+                        ? JSON.parse(settingsData.value)
+                        : settingsData.value;
+                    if (Array.isArray(parsedCategories)) {
+                        activeCategories = parsedCategories;
+                        setDynamicCategories(parsedCategories);
+                        if (!parsedCategories.includes(newFieldCategory)) {
+                            setNewFieldCategory(parsedCategories[0] || "Geral");
+                        }
+                    }
+                }
+
                 // Fetch Checklist Items
                 const { data: itemsData, error: itemsError } = await supabase
                     .from("checklist_items")
@@ -84,31 +105,16 @@ export default function TechnicianChecklist() {
 
                 if (itemsError) throw itemsError;
 
-                const items = itemsData as ChecklistItem[];
+                // Filter items to only include those in active categories
+                const items = (itemsData as ChecklistItem[]).filter(item => 
+                    activeCategories.length === 0 || activeCategories.includes(item.category)
+                );
+                
                 setChecklistItems(items);
 
                 const initial: Record<string, boolean> = {};
                 items.forEach(item => initial[item.id] = false);
                 setChecklistData(initial);
-
-                // Fetch dynamic categories
-                const { data: settingsData } = await supabase
-                    .from("system_settings")
-                    .select("value")
-                    .eq("key", "checklist_categories")
-                    .single();
-
-                if (settingsData?.value) {
-                    const parsedCategories = typeof settingsData.value === 'string'
-                        ? JSON.parse(settingsData.value)
-                        : settingsData.value;
-                    if (Array.isArray(parsedCategories)) {
-                        setDynamicCategories(parsedCategories);
-                        if (!parsedCategories.includes(newFieldCategory)) {
-                            setNewFieldCategory(parsedCategories[0] || "Geral");
-                        }
-                    }
-                }
             } catch (error) {
                 logger.error("Erro ao carregar dados do checklist:", error);
                 toast.error("Erro ao carregar dados");

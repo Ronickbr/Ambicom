@@ -68,6 +68,20 @@ export default function ApprovalsPage() {
 
     const fetchChecklistSchema = async () => {
         try {
+            // Primeiro busca as categorias ativas
+            const { data: settingsData } = await supabase
+                .from("system_settings")
+                .select("value")
+                .eq("key", "checklist_categories")
+                .single();
+
+            let activeCategories: string[] = [];
+            if (settingsData?.value) {
+                activeCategories = typeof settingsData.value === 'string'
+                    ? JSON.parse(settingsData.value)
+                    : settingsData.value;
+            }
+
             const { data, error } = await supabase
                 .from("checklist_items")
                 .select("*")
@@ -75,7 +89,13 @@ export default function ApprovalsPage() {
                 .order("category", { ascending: true });
 
             if (error) throw error;
-            setChecklistSchema(data || []);
+            
+            // Filtra os itens apenas para as categorias ativas
+            const validItems = (data || []).filter(item => 
+                activeCategories.length === 0 || activeCategories.includes(item.category)
+            );
+            
+            setChecklistSchema(validItems);
         } catch (error) {
             logger.error("Erro ao buscar esquema do checklist:", error);
         }
@@ -87,14 +107,16 @@ export default function ApprovalsPage() {
             const { data, error } = await supabase
                 .from("products")
                 .select(`
-    *,
-    product_logs(
-        data,
-        created_at
-    )
-        `)
+                    *,
+                    product_logs (
+                        data,
+                        created_at
+                    )
+                `)
                 .eq("status", "EM AVALIAÇÃO")
-                .order("updated_at", { ascending: false });
+                .order("updated_at", { ascending: false })
+                .order("created_at", { foreignTable: "product_logs", ascending: false })
+                .limit(50); // Limite adicionado para melhorar a performance
 
             if (error) throw error;
             setProducts((data as any[]) || []);
