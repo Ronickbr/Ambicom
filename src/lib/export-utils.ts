@@ -130,7 +130,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         doc.text("GARANTIA", X1 - 1, curY + 7.4, { align: 'right' });
         doc.text("AMBICOM", X1 - 1, curY + 9.6, { align: 'right' });
 
-        doc.setFont("helvetica", "normal").setFontSize(3.8).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
+        doc.setFont("helvetica", "normal").setFontSize(5).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
         doc.setFont("helvetica", "bold").setFontSize(8).text("SAC: 41-3382-5410", X0 + 1, curY + 15);
         
         curY += H_HEADER;
