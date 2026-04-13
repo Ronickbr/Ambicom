@@ -393,6 +393,7 @@ const ScanPage = () => {
     const [isInitializingCamera, setIsInitializingCamera] = useState(true);
     const [isCapturing, setIsCapturing] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
+    const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
 
     // Hook de Impressão Remota Centralizado
     const {
@@ -455,6 +456,10 @@ const ScanPage = () => {
                 // 2. Listamos os dispositivos
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+                if (isMounted.current) {
+                    setAvailableCameras(videoDevices);
+                }
 
                 // 3. Lógica de seleção (Evitar Ultrawide, priorizar principal traseira)
                 if (videoDevices.length > 0) {
@@ -955,6 +960,28 @@ const ScanPage = () => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Debug das câmeras disponíveis */}
+                            {availableCameras.length > 0 && (
+                                <div className="absolute top-4 left-4 z-50 bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-xl max-w-[200px] pointer-events-none">
+                                    <h4 className="text-[8px] font-black text-primary uppercase tracking-widest mb-2 border-l-2 border-primary pl-1.5">
+                                        Câmeras Detectadas
+                                    </h4>
+                                    <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar pr-1">
+                                        {availableCameras.map((cam, idx) => (
+                                            <div key={cam.deviceId} className="text-[9px] bg-white/5 rounded p-1.5 border border-white/5">
+                                                <p className="font-bold text-white mb-0.5 truncate">
+                                                    <span className="text-primary mr-1">[{idx}]</span>
+                                                    {cam.label || `Câmera Desconhecida ${idx + 1}`}
+                                                </p>
+                                                <p className="text-[7px] text-muted-foreground font-mono truncate">
+                                                    ID: {cam.deviceId}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
