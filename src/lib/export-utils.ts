@@ -116,34 +116,36 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
 
         // --- AJUSTE PARA TERMINAR EM 76mm (608 dots) ---
         const H_HEADER = 17; 
-        const H_STD = 7.0; // Reduzido de 7.2 para 7.0
+        const H_STD = 7.0; 
         const H_QR = 18;
 
         let curY = Y0;
 
-        // HEADER
+        // --- HEADER ---
         doc.setFont("helvetica", "bold").setFontSize(16).text("Ambicom", X0 + 1, curY + 6);
-        doc.setFontSize(4.5);
+        
+        doc.setFontSize(5);
         doc.text("PRODUTO", X1 - 1, curY + 3, { align: 'right' });
         doc.text("REMANUFATURADO", X1 - 1, curY + 5.2, { align: 'right' });
         doc.text("GARANTIA", X1 - 1, curY + 7.4, { align: 'right' });
         doc.text("AMBICOM", X1 - 1, curY + 9.6, { align: 'right' });
-        doc.setFont("helvetica", "bold").setFontSize(5).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
+
+        doc.setFont("helvetica", "normal").setFontSize(3.8).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
         doc.setFont("helvetica", "bold").setFontSize(8).text("SAC: 41-3382-5410", X0 + 1, curY + 15);
         
         curY += H_HEADER;
         doc.setLineWidth(0.4).line(X0, curY, X1, curY);
 
-        // ROW 1
+        // --- ROW 1: MODELO | VOLTAGEM ---
         doc.setLineWidth(0.2).line(CENTER_X, curY, CENTER_X, curY + H_STD);
-        doc.setFontSize(5).text("MODELO", (X0+CENTER_X)/2, curY + 2.5, { align: 'center' });
-        doc.setFontSize(9).text(val(p.model || p.modelo), (X0+CENTER_X)/2, curY + 6, { align: 'center' });
-        doc.setFontSize(4.5).text("VOLTAGEM", (X1+CENTER_X)/2, curY + 2.5, { align: 'center' });
-        doc.setFontSize(9).text(val(p.voltage || p.tensao), (X1+CENTER_X)/2, curY + 6, { align: 'center' });
+        doc.setFontSize(5).text("MODELO", (X0 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(9).text(val(p.model || p.modelo), (X0 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(5).text("VOLTAGEM", (X1 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
+        doc.setFontSize(9).text(val(p.voltage || p.tensao), (X1 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
         curY += H_STD;
         doc.line(X0, curY, X1, curY);
 
-        // ROW 2 (QR)
+        // --- ROW 2: QR & SERIAL & COMMERCIAL ---
         const serial = val(p.internal_serial);
         const commCode = val(p.commercial_code);
         if (serial !== '-') {
@@ -153,43 +155,47 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
             } catch (e) {}
         }
         const textStartX = X0 + 20;
-        doc.setFontSize(4.5);
-        doc.text("NÚMERO DE SÉRIE AMBICOM:", textStartX, curY + 4);
-        doc.setFontSize(11);
-        doc.text(serial, textStartX, curY + 9.5);
-        // Inclusão do Commercial Code logo abaixo do Serial
-        doc.setFontSize(8);
-        doc.text(commCode, textStartX, curY + 14.5);
+        doc.setFontSize(5).text("NÚMERO DE SÉRIE AMBICOM:", textStartX, curY + 4);
+        doc.setFontSize(11).text(serial, textStartX, curY + 9.5);
+        doc.setFontSize(8).text(commCode, textStartX, curY + 14.5);
         curY += H_QR;
         doc.line(X0, curY, X1, curY);
 
+        // --- LISTA DE LINHAS RESTANTES (PNC + TÉCNICAS) ---
         const rows = [
-            { isPnc: true, l: ["PNC/ML", "FREQ."], v: [p.pnc_ml, p.frequency || "60 Hz"] },
+            { isPnc: true, l: ["PNC/ML", "FREQUÊNCIA"], v: [p.pnc_ml, p.frequency || "60 Hz"] },
             { l: ["GÁS FRIG.", "CARGA GÁS", "COMPR."], v: [p.refrigerant_gas, p.gas_charge, p.compressor] },
             { l: ["VOL. FRZ", "VOL. REF.", "VOL. TOT."], v: [p.volume_freezer, p.volume_refrigerator, p.volume_total] },
             { l: ["P. ALTA", "P. BAIXA", "CAP. CONG."], v: [String(p.pressure_high_low).split('/')[0], String(p.pressure_high_low).split('/')[1], p.freezing_capacity] },
             { l: ["CORRENTE", "POT. DEG.", "TAM."], v: [p.electric_current, p.defrost_power, p.size] }
         ];
 
-        const COL1 = X0 + (X1-X0)*0.33, COL2 = X0 + (X1-X0)*0.66;
+        const COL1 = X0 + (X1 - X0) * 0.33, COL2 = X0 + (X1 - X0) * 0.66;
+        
         rows.forEach(r => {
-            if(r.isPnc) {
+            if (r.isPnc) {
+                // Row 3: PNC | FREQUÊNCIA
                 doc.line(CENTER_X, curY, CENTER_X, curY + H_STD);
-                doc.setFontSize(3.5).text(r.l[0], (X0+CENTER_X)/2, curY + 2.5, { align: 'center' });
-                doc.setFontSize(8).text(val(r.v[0]), (X0+CENTER_X)/2, curY + 6, { align: 'center' });
-                doc.setFontSize(8).text(val(r.v[1]), (X1+CENTER_X)/2, curY + 5, { align: 'center' });
+                doc.setFontSize(5).text(r.l[0], (X0 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
+                doc.setFontSize(8).text(val(r.v[0]), (X0 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
+                
+                doc.setFontSize(5).text(r.l[1], (X1 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
+                doc.setFontSize(8).text(val(r.v[1]), (X1 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
             } else {
-                doc.line(COL1, curY, COL1, curY + H_STD); doc.line(COL2, curY, COL2, curY + H_STD);
-                const centers = [(X0+COL1)/2, (COL1+COL2)/2, (COL2+X1)/2];
+                // Rows 4 a 7: Dados técnicos em 3 colunas
+                doc.line(COL1, curY, COL1, curY + H_STD); 
+                doc.line(COL2, curY, COL2, curY + H_STD);
+                const centers = [(X0 + COL1) / 2, (COL1 + COL2) / 2, (COL2 + X1) / 2];
                 r.l.forEach((lbl, i) => {
-                    doc.setFontSize(3).text(lbl, centers[i], curY+2.2, {align:'center'});
-                    doc.setFontSize(6.5).text(val(r.v[i]), centers[i], curY+5.8, {align:'center'});
+                    doc.setFontSize(5).text(lbl, centers[i], curY + 2.2, { align: 'center' });
+                    doc.setFontSize(6.5).text(val(r.v[i]), centers[i], curY + 5.8, { align: 'center' });
                 });
             }
             curY += H_STD;
             doc.line(X0, curY, X1, curY);
         });
 
+        // Bordas laterais para fechar o desenho da tabela
         doc.line(X0, Y0 + H_HEADER, X0, curY); 
         doc.line(X1, Y0 + H_HEADER, X1, curY);
     }
