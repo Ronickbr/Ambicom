@@ -1014,6 +1014,7 @@ const ScanPage = () => {
                                 </div>
                             )}
                         </div>
+                    </div>
 
                     {/* Lado Direito: Histórico / Ações adicionais */}
                     <div className="lg:col-span-2 space-y-6">
