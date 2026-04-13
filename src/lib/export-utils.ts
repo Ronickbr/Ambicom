@@ -130,7 +130,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         doc.text("GARANTIA", X1 - 1, curY + 7.4, { align: 'right' });
         doc.text("AMBICOM", X1 - 1, curY + 9.6, { align: 'right' });
 
-        doc.setFont("helvetica", "normal").setFontSize(5).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
+        doc.setFont("helvetica", "normal").setFontSize(6).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
         doc.setFont("helvetica", "bold").setFontSize(8).text("SAC: 41-3382-5410", X0 + 1, curY + 15);
         
         curY += H_HEADER;
@@ -166,7 +166,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
             { isPnc: true, l: ["PNC/ML", "FREQUÊNCIA"], v: [p.pnc_ml, p.frequency || "60 Hz"] },
             { l: ["GÁS FRIG.", "CARGA GÁS", "COMPR."], v: [p.refrigerant_gas, p.gas_charge, p.compressor] },
             { l: ["VOL. FRZ", "VOL. REF.", "VOL. TOT."], v: [p.volume_freezer, p.volume_refrigerator, p.volume_total] },
-            { l: ["P. ALTA", "P. BAIXA", "CAP. CONG."], v: [String(p.pressure_high_low).split('/')[0], String(p.pressure_high_low).split('/')[1], p.freezing_capacity] },
+            { l: ["P. ALTA em kpa", "P. BAIXA em kpa", "CAP. CONG."], v: [String(p.pressure_high_low).split('/')[0], String(p.pressure_high_low).split('/')[1], p.freezing_capacity] },
             { l: ["CORRENTE", "POT. DEG.", "TAM."], v: [p.electric_current, p.defrost_power, p.size] }
         ];
 

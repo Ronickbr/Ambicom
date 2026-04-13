@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.26.8**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.27.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.27.0**:
+  - **Unificação de Temas (Modais)**: Padronização visual completa dos modais de detalhes em Aprovações e Inventário, corrigindo alto contraste e visibilidade no tema claro.
+  - **Otimização de Tabelas (No-Scroll)**: Remoção do scroll vertical interno das tabelas de listagem, aproveitando o fluxo natural da página já paginada.
+  - **Simplificação de Arquitetura**: Remoção da biblioteca de virtualização e refatoração do mapeamento de dados no módulo de Inventário.
 - **v2.26.8**:
   - **Mapeamento de Coordenadas Manual**: Implementada matriz de conversão manual 90° (Design Retrato -> Físico Paisagem) para garantir alinhamento perfeito de linhas e QR Code.
   - **Correção de Sintaxe TSPL**: Ajustada ordem de coordenadas no comando `BOX` e parâmetros do `QRCODE` para total compatibilidade com Elgin L42 Pro.

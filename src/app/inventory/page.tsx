@@ -41,7 +41,6 @@ import { handleError } from "@/lib/errors";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Product, ProductLog } from "@/lib/types";
 import { calculateProductSize, formatTotalVolume } from "@/lib/product-utils";
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRemotePrint } from "@/hooks/useRemotePrint";
 import { RemotePrinterSelector } from "@/components/printing/RemotePrinterSelector";
 
@@ -104,18 +103,28 @@ export default function InventoryPage() {
     useEffect(() => {
         const fetchFilters = async () => {
             try {
-                // Usa a nova RPC para buscar todos os filtros de forma performática
-                const { data } = await supabase.rpc('get_inventory_advanced_filters');
+                // Tenta usar a RPC para os filtros principais (mais performático)
+                const { data: rpcData } = await supabase.rpc('get_inventory_filters');
 
-                if (data) {
-                    const brands = (data.brands || []) as string[];
-                    const voltages = (data.voltages || []) as string[];
-                    const types = (data.types || []) as string[];
-                    const classes = (data.classes || []) as string[];
-                    const gases = (data.gases || []) as string[];
-
+                if (rpcData && rpcData.length > 0) {
+                    const brands = Array.from(new Set(rpcData.map((p: any) => p.brand))).filter(Boolean) as string[];
+                    const voltages = Array.from(new Set(rpcData.map((p: any) => p.voltage))).filter(Boolean) as string[];
                     setAvailableBrands(brands.sort());
                     setAvailableVoltages(voltages.sort());
+                }
+
+                // Busca os outros filtros de forma otimizada (apenas as colunas necessárias)
+                // Nota: Idealmente isso deveria estar em uma RPC também para evitar download de muitos dados
+                const { data } = await supabase
+                    .from('products')
+                    .select('product_type, market_class, refrigerant_gas')
+                    .limit(1000); // Limite de amostragem para evitar excesso de dados no client
+
+                if (data) {
+                    const types = Array.from(new Set(data.map((p: any) => p.product_type))).filter(Boolean) as string[];
+                    const classes = Array.from(new Set(data.map((p: any) => p.market_class))).filter(Boolean) as string[];
+                    const gases = Array.from(new Set(data.map((p: any) => p.refrigerant_gas))).filter(Boolean) as string[];
+
                     setAvailableTypes(types.sort());
                     setAvailableClasses(classes.sort());
                     setAvailableGases(gases.sort());
@@ -143,14 +152,6 @@ export default function InventoryPage() {
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-
-    const parentRef = React.useRef<HTMLDivElement>(null);
-    const rowVirtualizer = useVirtualizer({
-        count: products.length,
-        getScrollElement: () => parentRef.current,
-        estimateSize: () => 88, // Altura estimada da linha (px)
-        overscan: 5,
-    });
 
     const fetchInventory = React.useCallback(async () => {
         setIsLoading(true);
@@ -393,7 +394,7 @@ export default function InventoryPage() {
                             <button
                                 onClick={() => handleExport('PDF')}
                                 className={cn(
-                                    "p-3.5 hover:bg-white/10 rounded-xl text-muted-foreground hover:text-foreground transition-all active:scale-95 flex justify-center border border-transparent",
+                                    "p-3.5 hover:bg-white/10 rounded-xl text-muted-foreground hover:text-foreground transition-all active:scale-90 flex justify-center border border-transparent",
                                     selectedIds.size > 0 ? "col-span-1" : "col-span-1"
                                 )}
                                 title="Exportar PDF Geral"
@@ -402,7 +403,7 @@ export default function InventoryPage() {
                             </button>
                             <button
                                 onClick={() => handleExport('EXCEL')}
-                                className="p-3.5 hover:bg-emerald-500/10 rounded-xl text-emerald-500 hover:text-emerald-400 transition-all active:scale-95 flex justify-center border border-transparent"
+                                className="p-3.5 hover:bg-emerald-500/10 rounded-xl text-emerald-500 hover:text-emerald-400 transition-all active:scale-90 flex justify-center border border-transparent"
                                 title="Exportar Excel"
                             >
                                 <Download className="h-6 w-6" />
@@ -440,7 +441,7 @@ export default function InventoryPage() {
                         <button
                             onClick={() => setShowFilters(!showFilters)}
                             className={cn(
-                                "flex items-center justify-center gap-2 h-14 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest active:scale-95",
+                                "flex items-center justify-center gap-2 h-14 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest",
                                 showFilters ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" : "bg-foreground/5 border-border/10 text-muted-foreground hover:bg-foreground/10"
                             )}
                         >
@@ -712,8 +713,7 @@ export default function InventoryPage() {
                                 <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
                                 <div
-                                    ref={parentRef}
-                                    className="overflow-x-auto overflow-y-auto max-h-[60vh] scrollbar-hide"
+                                    className="overflow-x-auto scrollbar-hide"
                                     onScroll={(e) => {
                                         const target = e.currentTarget;
                                         const group = target.parentElement;
@@ -730,44 +730,37 @@ export default function InventoryPage() {
                                         }
                                     }}
                                 >
-                                    <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
-                                        <table className="w-full text-left border-collapse min-w-[700px] sm:min-w-full">
-                                            <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
-                                                <tr>
-                                                    <th className="px-4 py-6 text-center w-12 sticky left-0 z-50 bg-card/95 border-r border-border/10">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={products.length > 0 && selectedIds.size === products.length}
-                                                            onChange={toggleSelectAll}
-                                                            className="h-4 w-4 rounded border-border/40 bg-foreground/5 text-primary focus:ring-primary/30 cursor-pointer"
-                                                        />
-                                                    </th>
-                                                    <th className="px-4 sm:px-6 py-4 whitespace-nowrap sticky left-12 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Equipamento</th>
-                                                    <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Especificações</th>
-                                                    <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Rastreabilidade</th>
-                                                    <th className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">Status</th>
-                                                    <th className="px-4 sm:px-6 py-4 text-right whitespace-nowrap pr-6 sm:pr-10">Ações</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-white/5">
-                                                {rowVirtualizer.getVirtualItems().length > 0 && (
-                                                    <tr style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }}><td colSpan={6} /></tr>
-                                                )}
-                                                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                                                    const p = products[virtualRow.index];
-                                                    const config = statusConfig[p.status as keyof typeof statusConfig];
-                                                    const isSelected = selectedIds.has(p.id);
-                                                    return (
-                                                        <tr
-                                                            key={virtualRow.key}
-                                                            data-index={virtualRow.index}
-                                                            ref={rowVirtualizer.measureElement}
-                                                            onClick={() => fetchHistory(p)}
-                                                            className={cn(
-                                                                "group border-b border-white/[0.02] hover:bg-white/[0.04] transition-all cursor-pointer active:bg-white/[0.06] relative overflow-hidden",
-                                                                isSelected && "bg-primary/[0.05]"
-                                                            )}
-                                                        >
+                                    <table className="w-full text-left border-collapse min-w-[700px] sm:min-w-full">
+                                        <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
+                                            <tr>
+                                                <th className="px-4 py-6 text-center w-12 sticky left-0 z-50 bg-card/95 border-r border-border/10">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={products.length > 0 && selectedIds.size === products.length}
+                                                        onChange={toggleSelectAll}
+                                                        className="h-4 w-4 rounded border-border/40 bg-foreground/5 text-primary focus:ring-primary/30 cursor-pointer"
+                                                    />
+                                                </th>
+                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap sticky left-12 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Equipamento</th>
+                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Especificações</th>
+                                                <th className="px-4 sm:px-6 py-4 whitespace-nowrap">Rastreabilidade</th>
+                                                <th className="px-4 sm:px-6 py-4 text-center whitespace-nowrap">Status</th>
+                                                <th className="px-4 sm:px-6 py-4 text-right whitespace-nowrap pr-6 sm:pr-10">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {products.map((p) => {
+                                                const config = statusConfig[p.status as keyof typeof statusConfig];
+                                                const isSelected = selectedIds.has(p.id);
+                                                return (
+                                                    <tr
+                                                        key={p.id}
+                                                        onClick={() => fetchHistory(p)}
+                                                        className={cn(
+                                                            "group border-b border-white/[0.02] hover:bg-white/[0.04] transition-all cursor-pointer active:bg-white/[0.06] relative overflow-hidden",
+                                                            isSelected && "bg-primary/[0.05]"
+                                                        )}
+                                                    >
                                                         <td className="px-4 py-6 text-center sticky left-0 z-40 bg-card/95 group-hover:bg-card/95 transition-colors border-r border-border/10" onClick={e => e.stopPropagation()}>
                                                             {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_15px_rgba(14,165,233,0.5)]" />}
                                                             <input
@@ -857,13 +850,9 @@ export default function InventoryPage() {
                                                         </td>
                                                     </tr>
                                                 );
-                                                })}
-                                                {rowVirtualizer.getVirtualItems().length > 0 && (
-                                                    <tr style={{ height: `${rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end}px` }}><td colSpan={6} /></tr>
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                            })}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -904,8 +893,8 @@ export default function InventoryPage() {
                     </div>
                 )}                          {/* Modal de Edição */}
                 {editingProduct && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
-                        <div className="glass-card w-full max-w-xl p-6 sm:p-10 border-border/20 shadow-2xl space-y-6 sm:space-y-10 bg-card relative overflow-y-auto max-h-[95vh]">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-background/95 backdrop-blur-2xl animate-in fade-in duration-300">
+                        <div className="glass-card w-full max-w-xl p-6 sm:p-10 border-border/20 shadow-4xl space-y-6 sm:space-y-10 bg-card relative overflow-y-auto max-h-[95vh]">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
 
                             <div className="flex justify-between items-start relative z-10">
@@ -913,7 +902,7 @@ export default function InventoryPage() {
                                     <h2 className="text-4xl font-black uppercase tracking-tighter text-foreground mb-1">Atualizar Ativo</h2>
                                     <p className="text-[10px] font-black text-primary tracking-[0.4em] uppercase opacity-80">{editingProduct.internal_serial}</p>
                                 </div>
-                                <button onClick={() => setEditingProduct(null)} className="h-12 w-12 rounded-2xl bg-foreground/5 flex items-center justify-center hover:bg-neutral-800 transition-all border border-border/20 text-foreground shadow-lg active:scale-95"><X className="h-6 w-6" /></button>
+                                <button onClick={() => setEditingProduct(null)} className="h-12 w-12 rounded-2xl bg-foreground/5 flex items-center justify-center hover:bg-neutral-800 transition-all border border-border/20 text-foreground shadow-lg"><X className="h-6 w-6" /></button>
                             </div>
 
                             <form onSubmit={handleUpdate} className="space-y-8 relative z-10">
@@ -1156,8 +1145,8 @@ export default function InventoryPage() {
 
                 {/* Modal de Exclusão */}
                 {deletingProduct && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-6 bg-background/80 backdrop-blur-md animate-in zoom-in-95 duration-300">
-                        <div className="glass-card w-full max-w-md p-8 sm:p-12 border-red-500/30 shadow-2xl text-center space-y-8 sm:space-y-10 bg-neutral-950 relative overflow-hidden">
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-6 bg-background/98 backdrop-blur-3xl animate-in zoom-in-95 duration-300">
+                        <div className="glass-card w-full max-w-md p-8 sm:p-12 border-red-500/30 shadow-4xl text-center space-y-8 sm:space-y-10 bg-neutral-950 relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
                             <div className="h-24 w-24 rounded-3xl bg-red-500/10 flex items-center justify-center mx-auto ring-8 ring-red-500/5 rotate-12 group-hover:rotate-0 transition-transform"><AlertCircle className="h-12 w-12 text-red-500" /></div>
                             <div className="space-y-4">
@@ -1188,8 +1177,8 @@ export default function InventoryPage() {
 
                 {/* Detalhes do Produto & Histórico */}
                 {selectedProduct && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
-                        <div className="glass-card w-full max-w-5xl p-6 sm:p-10 border-border/20 shadow-2xl max-h-[95vh] flex flex-col bg-card absolute overflow-hidden">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/95 backdrop-blur-2xl animate-in fade-in duration-300">
+                        <div className="glass-card w-full max-w-5xl p-6 sm:p-10 border-border/20 shadow-5xl max-h-[95vh] flex flex-col bg-card absolute overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
 
                             <div className="flex justify-between items-start mb-8 relative z-10">
@@ -1219,13 +1208,13 @@ export default function InventoryPage() {
                                                 onClick={() => {
                                                     setEditingProduct({ ...selectedProduct });
                                                 }}
-                                                className="h-10 px-4 rounded-xl bg-foreground/5 text-xs font-bold hover:bg-foreground/10 transition-all border border-border/20 text-foreground active:scale-95"
+                                                className="h-10 px-4 rounded-xl bg-foreground/5 text-xs font-bold hover:bg-foreground/10 transition-all border border-border/20 text-foreground"
                                             >
                                                 Editar Ativo
                                             </button>
                                         </div>
                                     )}
-                                    <button onClick={() => setSelectedProduct(null)} className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-foreground/5 flex items-center justify-center hover:bg-neutral-800 transition-all border border-border/20 text-foreground shadow-lg active:scale-95">
+                                    <button onClick={() => setSelectedProduct(null)} className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-foreground/5 flex items-center justify-center hover:bg-neutral-800 transition-all border border-border/20 text-foreground shadow-lg">
                                         <X className="h-5 w-5 sm:h-6 sm:w-6" />
                                     </button>
                                 </div>
@@ -1405,7 +1394,7 @@ export default function InventoryPage() {
             {/* Photo Zoom Modal */}
             {
                 fullImageUrl && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/95 backdrop-blur-2xl animate-in fade-in duration-300">
                         <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
                             <div className="flex items-center gap-1 bg-foreground/5 border border-border/20 rounded-2xl p-1.5 backdrop-blur-xl">
                                 <button

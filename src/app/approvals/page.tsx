@@ -89,12 +89,12 @@ export default function ApprovalsPage() {
                 .order("category", { ascending: true });
 
             if (error) throw error;
-            
+
             // Filtra os itens apenas para as categorias ativas
-            const validItems = (data || []).filter(item => 
+            const validItems = (data || []).filter(item =>
                 activeCategories.length === 0 || activeCategories.includes(item.category)
             );
-            
+
             setChecklistSchema(validItems);
         } catch (error) {
             logger.error("Erro ao buscar esquema do checklist:", error);
@@ -319,7 +319,7 @@ export default function ApprovalsPage() {
                                                         <button
                                                             onClick={() => handleAction(product.id, "APPROVE")}
                                                             disabled={!!isProcessing}
-                                                            className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground transition-all text-[10px] font-black uppercase tracking-widest shadow-lg relative overflow-hidden"
+                                                            className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all text-[10px] font-black uppercase tracking-widest shadow-lg relative overflow-hidden"
                                                         >
                                                             {isProcessing === product.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                                                             Aprovar
@@ -434,9 +434,9 @@ export default function ApprovalsPage() {
                                                             <button
                                                                 onClick={() => handleAction(product.id, "APPROVE")}
                                                                 disabled={!!isProcessing}
-                                                                className="h-9 sm:h-11 px-4 sm:px-6 bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-lg sm:rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-lg group/btn overflow-hidden relative min-w-[100px] sm:min-w-[120px]"
+                                                                className="h-9 sm:h-11 px-4 sm:px-6 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg sm:rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-lg group/btn overflow-hidden relative min-w-[100px] sm:min-w-[120px]"
                                                             >
-                                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
+                                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
                                                                 {isProcessing === product.id ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" /> : <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4" />}
                                                                 Aprovar
                                                             </button>
@@ -477,7 +477,7 @@ export default function ApprovalsPage() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="absolute inset-0" onClick={() => setSelectedProduct(null)} />
                     <div className="glass-card w-full max-w-5xl bg-card border border-border/20 max-h-[95vh] flex flex-col relative z-10 animate-in zoom-in-95 duration-300 shadow-2xl rounded-2xl overflow-hidden">
-                        
+
                         {/* Header Fixo */}
                         <div className="shrink-0 bg-card/95 backdrop-blur-md border-b border-border/10 p-6 sm:p-8 flex justify-between items-start gap-4 sm:gap-6 z-20">
                             <div className="space-y-2">
@@ -582,13 +582,16 @@ export default function ApprovalsPage() {
                                                     {groupedItems[category].map((item) => {
                                                         const ok = checklist[item.id];
                                                         return (
-                                                            <div key={item.id} className="flex items-center justify-between p-4 rounded-xl bg-foreground/5 border border-border/10">
-                                                                <span className="text-xs font-bold text-foreground/80 uppercase italic tracking-tight">{item.label}</span>
+                                                            <div key={item.id} className={cn(
+                                                                "flex items-center justify-between p-4 rounded-xl border transition-all",
+                                                                ok ? "bg-emerald-500/5 text-emerald-600 dark:text-emerald-500 border-emerald-500/10" : "bg-red-500/5 text-red-600 dark:text-red-500 border-red-500/10"
+                                                            )}>
+                                                                <span className="text-xs font-bold uppercase italic tracking-tight">{item.label}</span>
                                                                 <div className={cn(
                                                                     "h-6 w-12 rounded-full flex items-center justify-center text-[8px] font-black uppercase tracking-widest border",
                                                                     ok
-                                                                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                                                        : "bg-red-500/10 text-red-500 border-red-500/20"
+                                                                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-500 border-emerald-500/20"
+                                                                        : "bg-red-500/20 text-red-600 dark:text-red-500 border-red-500/20"
                                                                 )}>
                                                                     {ok ? "OK" : "FALHA"}
                                                                 </div>
@@ -679,7 +682,7 @@ export default function ApprovalsPage() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
                     <button
                         onClick={() => setFullImageUrl(null)}
-                        className="absolute top-6 right-6 h-12 w-12 rounded-full bg-foreground/10 flex items-center justify-center text-foreground hover:bg-foreground/20 transition-all z-10"
+                        className="absolute top-6 right-6 h-12 w-12 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-10 shadow-lg"
                     >
                         <XCircle className="h-6 w-6" />
                     </button>

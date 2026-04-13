@@ -1,6 +1,6 @@
 {
   "name": "ademicom",
-  "version": "2.26.8",
+  "version": "2.27.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.97.0",
-    "@tanstack/react-virtual": "^3.13.23",
     "@types/qrcode": "^1.5.6",
     "clsx": "^2.1.1",
     "html5-qrcode": "^2.3.8",
