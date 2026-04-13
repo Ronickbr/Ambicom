@@ -130,7 +130,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         doc.text("GARANTIA", X1 - 1, curY + 7.4, { align: 'right' });
         doc.text("AMBICOM", X1 - 1, curY + 9.6, { align: 'right' });
 
-        doc.setFont("helvetica", "normal").setFontSize(3.8).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
+        doc.setFont("helvetica", "normal").setFontSize(5).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
         doc.setFont("helvetica", "bold").setFontSize(8).text("SAC: 41-3382-5410", X0 + 1, curY + 15);
         
         curY += H_HEADER;
@@ -210,39 +210,31 @@ export const printLabels = async (products: any[]) => {
         console.log("Doc PDF gerado, chamando doc.save()...");
         const fileName = `etiquetas_ambicom_${Date.now()}.pdf`;
         
-        // Obter blob e url
-        const blob = doc.output('blob');
-        const url = window.URL.createObjectURL(blob);
-
         try {
             doc.save(fileName);
-            console.log("doc.save() executado.");
+            console.log("doc.save() executado com sucesso.");
         } catch (err) {
             console.error("Erro no doc.save():", err);
+            
+            // Método alternativo via Blob caso doc.save falhe
+            try {
+                console.log("Tentando fallback via Blob e tag <a>...");
+                const blob = doc.output('blob');
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    if (document.body.contains(a)) document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 1000);
+            } catch (fallbackErr) {
+                console.error("Erro no fallback de download:", fallbackErr);
+            }
         }
-        
-        // Método alternativo garantido via Blob e tag <a>
-        try {
-            console.log("Tentando download via Blob e tag <a>...");
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => {
-                if (document.body.contains(a)) document.body.removeChild(a);
-            }, 1000);
-            console.log("Download via tag <a> disparado com sucesso.");
-        } catch (err) {
-            console.error("Erro no método alternativo via Blob:", err);
-        }
-
-        // Revoga URL depois de 1 minuto para dar tempo em dispositivos mais lentos
-        setTimeout(() => {
-            window.URL.revokeObjectURL(url);
-        }, 60000);
-        
     } catch (err) {
         console.error("Erro interno no printLabels:", err);
         throw err;

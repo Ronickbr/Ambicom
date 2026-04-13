@@ -319,7 +319,7 @@ export default function ApprovalsPage() {
                                                         <button
                                                             onClick={() => handleAction(product.id, "APPROVE")}
                                                             disabled={!!isProcessing}
-                                                            className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-white text-black hover:bg-primary hover:text-primary-foreground transition-all text-[10px] font-black uppercase tracking-widest shadow-lg relative overflow-hidden"
+                                                            className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-foreground text-background hover:bg-primary hover:text-primary-foreground transition-all text-[10px] font-black uppercase tracking-widest shadow-lg relative overflow-hidden"
                                                         >
                                                             {isProcessing === product.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                                                             Aprovar
@@ -350,8 +350,8 @@ export default function ApprovalsPage() {
                         {/* Desktop Table View */}
                         <div className="hidden md:block relative group/table" data-scroll="right">
                             {/* Horizontal Scroll Indicators */}
-                            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
                             <div
                                 className="overflow-x-auto scrollbar-hide glass-card border-border/10 bg-card/30 shadow-2xl rounded-2xl"
@@ -381,7 +381,7 @@ export default function ApprovalsPage() {
                                             <th className="px-4 sm:px-6 py-5 text-right whitespace-nowrap pr-6 sm:pr-10">Ações de Aprovação</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-white/5">
+                                    <tbody className="divide-y divide-border/20">
                                         {filteredProducts.map((product) => {
                                             const lastLogWithChecklist = product.product_logs?.find(l => l.data?.checklist);
                                             const checklist = lastLogWithChecklist?.data?.checklist || {};
@@ -393,7 +393,7 @@ export default function ApprovalsPage() {
                                                 <tr
                                                     key={product.id}
                                                     onClick={() => setSelectedProduct(product)}
-                                                    className="group hover:bg-white/[0.03] transition-colors cursor-pointer"
+                                                    className="group hover:bg-foreground/5 transition-colors cursor-pointer"
                                                 >
                                                     <td className="px-4 sm:px-6 py-6 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
                                                         <span className="font-mono text-[10px] sm:text-[11px] bg-foreground/5 px-2.5 py-1.5 rounded-xl text-primary border border-primary/10 group-hover:bg-primary group-hover:text-primary-foreground transition-all uppercase tracking-widest font-black">
@@ -434,9 +434,9 @@ export default function ApprovalsPage() {
                                                             <button
                                                                 onClick={() => handleAction(product.id, "APPROVE")}
                                                                 disabled={!!isProcessing}
-                                                                className="h-9 sm:h-11 px-4 sm:px-6 bg-white text-black hover:bg-primary hover:text-primary-foreground rounded-lg sm:rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-lg group/btn overflow-hidden relative min-w-[100px] sm:min-w-[120px]"
+                                                                className="h-9 sm:h-11 px-4 sm:px-6 bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-lg sm:rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-lg group/btn overflow-hidden relative min-w-[100px] sm:min-w-[120px]"
                                                             >
-                                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
+                                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
                                                                 {isProcessing === product.id ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" /> : <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4" />}
                                                                 Aprovar
                                                             </button>
@@ -474,9 +474,9 @@ export default function ApprovalsPage() {
 
             {/* Detailed Product Modal */}
             {selectedProduct && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={() => setSelectedProduct(null)} />
-                    <div className="glass-card w-full max-w-5xl bg-[#0a0a0a] border border-border/20 max-h-[95vh] overflow-y-auto relative z-10 animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="absolute inset-0" onClick={() => setSelectedProduct(null)} />
+                    <div className="glass-card w-full max-w-5xl bg-card border border-border/20 max-h-[95vh] overflow-y-auto relative z-10 animate-in zoom-in-95 duration-300 shadow-2xl rounded-2xl">
                         <div className="p-4 sm:p-10 space-y-6 sm:space-y-8">
                             {/* Modal Header */}
                             <div className="flex justify-between items-start gap-4 sm:gap-6 border-b border-border/10 pb-6 sm:pb-8">
@@ -580,7 +580,7 @@ export default function ApprovalsPage() {
                                                     {groupedItems[category].map((item) => {
                                                         const ok = checklist[item.id];
                                                         return (
-                                                            <div key={item.id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-border/10">
+                                                            <div key={item.id} className="flex items-center justify-between p-4 rounded-xl bg-foreground/5 border border-border/10">
                                                                 <span className="text-xs font-bold text-foreground/80 uppercase italic tracking-tight">{item.label}</span>
                                                                 <div className={cn(
                                                                     "h-6 w-12 rounded-full flex items-center justify-center text-[8px] font-black uppercase tracking-widest border",
@@ -615,7 +615,7 @@ export default function ApprovalsPage() {
                                             { label: "PNC/ML", value: selectedProduct.pnc_ml },
                                             { label: "Fabricação", value: selectedProduct.manufacturing_date },
                                         ].filter(item => item.value).map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center py-2 px-4 border-b border-border/10 last:border-0 hover:bg-white/[0.02] transition-colors">
+                                            <div key={idx} className="flex justify-between items-center py-2 px-4 border-b border-border/10 last:border-0 hover:bg-foreground/5 transition-colors">
                                                 <span className="text-[10px] font-black uppercase text-muted-foreground/60">{item.label}</span>
                                                 <span className="text-xs font-bold text-foreground">{item.value}</span>
                                             </div>
@@ -629,7 +629,7 @@ export default function ApprovalsPage() {
                                             <Search className="h-4 w-4 text-primary" />
                                             <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Observações</h3>
                                         </div>
-                                        <div className="p-6 rounded-2xl bg-white/[0.03] border border-border/10 text-sm text-foreground/80 leading-relaxed italic min-h-[160px]">
+                                        <div className="p-6 rounded-2xl bg-foreground/5 border border-border/10 text-sm text-foreground/80 leading-relaxed italic min-h-[160px]">
                                             {selectedProduct.product_logs?.find(l => l.data?.observations)?.data?.observations || "Nenhuma observação técnica registrada."}
                                         </div>
                                     </div>
@@ -654,9 +654,9 @@ export default function ApprovalsPage() {
                                 <button
                                     onClick={() => handleAction(selectedProduct.id, "APPROVE")}
                                     disabled={!!isProcessing}
-                                    className="flex-1 h-16 bg-white text-black hover:bg-primary hover:text-primary-foreground rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-4 active:scale-95 shadow-xl relative overflow-hidden group/btn"
+                                    className="flex-1 h-16 bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-4 active:scale-95 shadow-xl relative overflow-hidden group/btn"
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
                                     {isProcessing === selectedProduct.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
                                     Aprovar e Liberar Ativo
                                 </button>
