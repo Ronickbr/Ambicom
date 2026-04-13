@@ -128,17 +128,17 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         doc.text("REMANUFATURADO", X1 - 1, curY + 5.2, { align: 'right' });
         doc.text("GARANTIA", X1 - 1, curY + 7.4, { align: 'right' });
         doc.text("AMBICOM", X1 - 1, curY + 9.6, { align: 'right' });
-        doc.setFont("helvetica", "bold").setFontSize(4.5).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
-        doc.setFont("helvetica", "bold").setFontSize(8).text("SAC: 041-3382-5410", X0 + 1, curY + 15);
+        doc.setFont("helvetica", "bold").setFontSize(5).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
+        doc.setFont("helvetica", "bold").setFontSize(8).text("SAC: 41-3382-5410", X0 + 1, curY + 15);
         
         curY += H_HEADER;
         doc.setLineWidth(0.4).line(X0, curY, X1, curY);
 
         // ROW 1
         doc.setLineWidth(0.2).line(CENTER_X, curY, CENTER_X, curY + H_STD);
-        doc.setFontSize(3.5).text("MODELO", (X0+CENTER_X)/2, curY + 2.5, { align: 'center' });
+        doc.setFontSize(5).text("MODELO", (X0+CENTER_X)/2, curY + 2.5, { align: 'center' });
         doc.setFontSize(9).text(val(p.model || p.modelo), (X0+CENTER_X)/2, curY + 6, { align: 'center' });
-        doc.setFontSize(3.5).text("VOLTAGEM", (X1+CENTER_X)/2, curY + 2.5, { align: 'center' });
+        doc.setFontSize(4.5).text("VOLTAGEM", (X1+CENTER_X)/2, curY + 2.5, { align: 'center' });
         doc.setFontSize(9).text(val(p.voltage || p.tensao), (X1+CENTER_X)/2, curY + 6, { align: 'center' });
         curY += H_STD;
         doc.line(X0, curY, X1, curY);

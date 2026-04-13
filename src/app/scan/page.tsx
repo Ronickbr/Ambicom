@@ -822,7 +822,65 @@ const ScanPage = () => {
 
                 <div className="grid lg:grid-cols-5 gap-8">
                     <div className="lg:col-span-3 space-y-6">
-                        <div className="glass-card p-2 border-border/20 bg-black shadow-2xl relative overflow-hidden group max-w-sm mx-auto">
+                        {/* Seletor de Câmeras e Container Principal */}
+                        <div className="flex flex-col gap-4">
+                            {/* Debug das câmeras disponíveis clicáveis - Agora no topo como um seletor */}
+                            {availableCameras.length > 0 && (
+                                <div className="glass-card p-4 border-border/10 bg-card/50 w-full">
+                                    <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-3 border-l-2 border-primary pl-2 flex items-center gap-2">
+                                        <Camera className="h-4 w-4" />
+                                        Selecione a Câmera
+                                    </h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-32 overflow-y-auto custom-scrollbar pr-1">
+                                        {availableCameras.map((cam, idx) => {
+                                            let currentDeviceId: string | undefined = undefined;
+                                            if (typeof videoConstraints === 'object' && videoConstraints !== null) {
+                                                const deviceIdConstraint = (videoConstraints as any).deviceId;
+                                                if (typeof deviceIdConstraint === 'object' && deviceIdConstraint !== null) {
+                                                    currentDeviceId = deviceIdConstraint.exact;
+                                                } else if (typeof deviceIdConstraint === 'string') {
+                                                    currentDeviceId = deviceIdConstraint;
+                                                }
+                                            }
+                                            
+                                            const isSelected = currentDeviceId === cam.deviceId;
+
+                                            return (
+                                                <button
+                                                    key={cam.deviceId}
+                                                    onClick={() => {
+                                                        // Não usamos setIsInitializingCamera(true) aqui pois isso desmontaria o componente Webcam
+                                                        // impedindo o evento onUserMedia de disparar.
+                                                        setCameraReady(false);
+                                                        setVideoConstraints({
+                                                            ...CAMERA_CONSTRAINTS,
+                                                            facingMode: undefined,
+                                                            deviceId: { exact: cam.deviceId },
+                                                            advanced: [{ focusMode: "continuous" } as any]
+                                                        });
+                                                    }}
+                                                    className={cn(
+                                                        "text-xs rounded-xl p-3 border text-left transition-all w-full flex flex-col gap-1 shadow-sm",
+                                                        isSelected 
+                                                            ? "bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(14,165,233,0.15)] ring-1 ring-primary/50" 
+                                                            : "bg-foreground/5 border-border/10 text-foreground hover:bg-foreground/10 hover:border-primary/30"
+                                                    )}
+                                                >
+                                                    <p className="font-bold truncate w-full flex items-center gap-2">
+                                                        {isSelected ? <Zap className="h-3 w-3" /> : <span className="opacity-50">[{idx}]</span>}
+                                                        {cam.label || `Câmera ${idx + 1}`}
+                                                    </p>
+                                                    <p className="text-[9px] font-mono truncate w-full opacity-60">
+                                                        ID: {cam.deviceId.substring(0, 15)}...
+                                                    </p>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="glass-card p-2 border-border/20 bg-black shadow-2xl relative overflow-hidden group max-w-sm mx-auto w-full">
                             <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-card border border-border/10">
                                 {!cameraError && !isInitializingCamera ? (
                                     <>
@@ -919,6 +977,13 @@ const ScanPage = () => {
                                             onClick={triggerFocusAnimation}
                                             aria-label="Acionar autofoco"
                                         />
+
+                                        {!cameraReady && (
+                                            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
+                                                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Trocando Câmera...</p>
+                                            </div>
+                                        )}
                                     </>
                                 ) : isInitializingCamera ? (
                                     <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-4">
@@ -960,63 +1025,11 @@ const ScanPage = () => {
                                     </div>
                                 )}
                             </div>
-
-                            {/* Debug das câmeras disponíveis clicáveis */}
-                            {availableCameras.length > 0 && (
-                                <div className="absolute top-4 left-4 z-50 bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-xl max-w-[200px] pointer-events-auto">
-                                    <h4 className="text-[8px] font-black text-primary uppercase tracking-widest mb-2 border-l-2 border-primary pl-1.5">
-                                        Câmeras Detectadas
-                                    </h4>
-                                    <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1 flex flex-col">
-                                        {availableCameras.map((cam, idx) => {
-                                            // FIX: TypeScript linter error fix for videoConstraints.deviceId
-                                            let currentDeviceId: string | undefined = undefined;
-                                            if (typeof videoConstraints === 'object' && videoConstraints !== null) {
-                                                const deviceIdConstraint = (videoConstraints as any).deviceId;
-                                                if (typeof deviceIdConstraint === 'object' && deviceIdConstraint !== null) {
-                                                    currentDeviceId = deviceIdConstraint.exact;
-                                                } else if (typeof deviceIdConstraint === 'string') {
-                                                    currentDeviceId = deviceIdConstraint;
-                                                }
-                                            }
-                                            
-                                            const isSelected = currentDeviceId === cam.deviceId;
-
-                                            return (
-                                                <button
-                                                    key={cam.deviceId}
-                                                    onClick={() => {
-                                                        setIsInitializingCamera(true);
-                                                        setCameraReady(false);
-                                                        setVideoConstraints({
-                                                            ...CAMERA_CONSTRAINTS,
-                                                            facingMode: undefined,
-                                                            deviceId: { exact: cam.deviceId },
-                                                            advanced: [{ focusMode: "continuous" } as any]
-                                                        });
-                                                    }}
-                                                    className={cn(
-                                                        "text-[9px] rounded p-1.5 border text-left transition-all w-full flex flex-col",
-                                                        isSelected ? "bg-primary/20 border-primary" : "bg-white/5 border-white/5 hover:bg-white/10"
-                                                    )}
-                                                >
-                                                    <p className="font-bold text-white mb-0.5 truncate w-full">
-                                                        <span className="text-primary mr-1">[{idx}]</span>
-                                                        {cam.label || `Câmera ${idx + 1}`}
-                                                    </p>
-                                                    <p className="text-[7px] text-muted-foreground font-mono truncate w-full">
-                                                        ID: {cam.deviceId.substring(0, 15)}...
-                                                    </p>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </div>
+                </div>
 
-                    {/* Lado Direito: Histórico / Ações adicionais */}
+                {/* Lado Direito: Histórico / Ações adicionais */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="glass-card bg-card/50 border-border/10 h-full flex flex-col p-8 relative overflow-hidden">
                             <div className="flex items-center gap-3 mb-8">
