@@ -113,10 +113,10 @@ export default function ApprovalsPage() {
                         created_at
                     )
                 `)
-                .eq("status", "EM AVALIAÇÃO")
+                .in("status", ["EM AVALIAÇÃO", "EM AVALIA├ç├âO"])
                 .order("updated_at", { ascending: false })
                 .order("created_at", { foreignTable: "product_logs", ascending: false })
-                .limit(50); // Limite adicionado para melhorar a performance
+                .limit(50);
 
             if (error) throw error;
             setProducts((data as any[]) || []);
