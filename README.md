@@ -50,13 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.29.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.30.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+  - **v2.30.0**:
+    - **Ajuste de Payload**: Otimização manual do formato de envio de imagem (Base64) para a Edge Function.
   - **v2.29.0**:
-    - **Structured Outputs**: Implementação de `json_schema` na API da OpenAI para garantir respostas 100% íntegras.
-    - **Novo Endpoint**: Migração da Edge Function para suporte a novos recursos da plataforma OpenAI.
-  - **v2.28.0**:
     - **Migração de IA**: Substituição do provedor OpenRouter pela OpenAI oficial.
     - **Otimização de Modelo**: Implementação do modelo `gpt-4o-mini` para OCR de alta performance e baixo custo.
     - **Atualização de Edge Functions**: Refatoração completa da função de OCR para suporte nativo à API da OpenAI.

@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
 
         console.log(`OpenAI Request: Model=${model}`);
 
-        const response = await fetch("https://api.openai.com/v1/responses", {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${openaiKey}`,
@@ -43,17 +43,19 @@ Deno.serve(async (req: Request) => {
             },
             body: JSON.stringify({
                 model: model,
-                input: [
+                messages: [
                     {
                         role: "user",
                         content: [
                             {
-                                type: "input_text",
+                                type: "text",
                                 text: "Extraia dados técnicos desta etiqueta industrial para JSON. Retorne apenas o JSON: fabricante, modelo, codigo_comercial, cor, pnc_ml, numero_serie, data_fabricacao, gas_refrigerante, volume_total, tensao, tipo, classe_mercado, carga_gas, compressor, volume_freezer, volume_refrigerator, pressao_alta_baixa, capacidade_congelamento, corrente_eletrica, potencia_degelo, frequencia."
                             },
                             {
-                                type: "input_image",
-                                image_url: `data:image/jpeg;base64,${image}`
+                                type: "image_url",
+                                image_url: {
+                                    url: `data:image/jpeg;base64,${image}`
+                                }
                             }
                         ]
                     }
@@ -62,6 +64,7 @@ Deno.serve(async (req: Request) => {
                     type: "json_schema",
                     json_schema: {
                         name: "etiqueta_tecnica",
+                        strict: true,
                         schema: {
                             type: "object",
                             properties: {
@@ -87,6 +90,7 @@ Deno.serve(async (req: Request) => {
                                 potencia_degelo: { type: "string" },
                                 frequencia: { type: "string" }
                             },
+                            required: ["fabricante", "modelo", "codigo_comercial", "cor", "pnc_ml", "numero_serie", "data_fabricacao", "gas_refrigerante", "volume_total", "tensao", "tipo", "classe_mercado", "carga_gas", "compressor", "volume_freezer", "volume_refrigerator", "pressao_alta_baixa", "capacidade_congelamento", "corrente_eletrica", "potencia_degelo", "frequencia"],
                             additionalProperties: false
                         }
                     }
