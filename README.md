@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.30.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.30.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+  - **v2.30.1**:
+    - **Correção de OCR**: Ajuste fino na sintaxe da API OpenAI e resolução de erro de autenticação (401) na Edge Function.
   - **v2.30.0**:
     - **Ajuste de Payload**: Otimização manual do formato de envio de imagem (Base64) para a Edge Function.
   - **v2.29.0**:

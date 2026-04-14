@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
 
         console.log(`OpenAI Request: Model=${model}`);
 
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        const response = await fetch("https://api.openai.com/v1/responses", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${openaiKey}`,
@@ -52,10 +52,8 @@ Deno.serve(async (req: Request) => {
                                 text: "Extraia dados técnicos desta etiqueta industrial para JSON. Retorne apenas o JSON: fabricante, modelo, codigo_comercial, cor, pnc_ml, numero_serie, data_fabricacao, gas_refrigerante, volume_total, tensao, tipo, classe_mercado, carga_gas, compressor, volume_freezer, volume_refrigerator, pressao_alta_baixa, capacidade_congelamento, corrente_eletrica, potencia_degelo, frequencia."
                             },
                             {
-                                type: "image_url",
-                                image_url: {
-                                    url: `data:image/jpeg;base64,${image}`
-                                }
+                                type: "input_image",
+                                image_url: `data:image/jpeg;base64,${image}`
                             }
                         ]
                     }
