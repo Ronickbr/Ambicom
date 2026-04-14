@@ -333,7 +333,7 @@ export default function UsersManagementPage() {
                             <table className="w-full text-left text-sm border-collapse min-w-[800px] sm:min-w-full">
                                 <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
                                     <tr>
-                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Membro</th>
+                                        <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-background z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Membro</th>
                                         <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Contato</th>
                                         <th className="px-4 sm:px-6 py-5 text-center whitespace-nowrap">Cargo / Nível</th>
                                         <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Registro</th>
@@ -343,7 +343,7 @@ export default function UsersManagementPage() {
                                 <tbody className="divide-y divide-white/5">
                                     {filteredUsers.map((u) => (
                                         <tr key={u.id} className="group hover:bg-white/[0.02] transition-colors">
-                                            <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                                            <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-background transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
                                                 <div className="flex items-center gap-3 sm:gap-4">
                                                     <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-foreground/5 flex items-center justify-center border border-border/20 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all shrink-0">
                                                         <UserCircle className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />

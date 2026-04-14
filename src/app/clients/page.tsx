@@ -302,8 +302,8 @@ export default function ClientsPage() {
             {/* Desktop Table View */}
             <div className="hidden md:block">
               {/* Horizontal Scroll Indicators */}
-              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-neutral-900 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
-              <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-neutral-900 via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='left']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
+              <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background via-card/80 to-transparent z-20 pointer-events-none opacity-0 group-has-[[data-scroll='right']]:opacity-100 group-has-[[data-scroll='both']]:opacity-100 transition-opacity" />
 
               <div
                 className="overflow-x-auto scrollbar-hide"
@@ -326,7 +326,7 @@ export default function ClientsPage() {
                 <table className="w-full text-left text-sm border-collapse min-w-[800px] sm:min-w-full">
                   <thead className="bg-foreground/5 text-muted-foreground uppercase text-[9px] sm:text-[10px] font-black tracking-widest border-b border-border/10 sticky top-0 z-30 backdrop-blur-md">
                     <tr>
-                      <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Identificação / Nome</th>
+                      <th className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-background z-40 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">Identificação / Nome</th>
                       <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Código</th>
                       <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Contato Principal</th>
                       <th className="px-4 sm:px-6 py-5 whitespace-nowrap">Localização</th>
@@ -355,7 +355,7 @@ export default function ClientsPage() {
                           key={client.id}
                           className="group hover:bg-white/[0.02] transition-colors"
                         >
-                          <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-card/95 group-hover:bg-card/95 transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
+                          <td className="px-4 sm:px-6 py-5 whitespace-nowrap sticky left-0 bg-background group-hover:bg-background transition-colors z-30 border-r border-border/10 shadow-[2px_0_10px_rgba(0,0,0,0.3)]">
                             <div className="flex flex-col">
                               <span className="text-foreground font-black text-[13px] sm:text-base leading-tight group-hover:text-primary transition-colors uppercase italic">{client.name}</span>
                               <span className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest mt-1 font-black flex items-center gap-1.5 opacity-60">
@@ -554,7 +554,7 @@ export default function ClientsPage() {
                   </div>
                 </div>
                 <div className="flex gap-4 pt-4">
-                  <button 
+                  <button
                     type="submit"
                     disabled={isSaving}
                     className="flex-[2] bg-primary hover:brightness-110 text-primary-foreground font-black uppercase tracking-[0.2em] text-[10px] h-16 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 border-t border-border/20 flex items-center justify-center gap-3"

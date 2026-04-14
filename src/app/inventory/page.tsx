@@ -1146,8 +1146,8 @@ export default function InventoryPage() {
 
                 {/* Modal de Exclusão */}
                 {deletingProduct && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-6 bg-background/80 backdrop-blur-sm animate-in zoom-in-95 duration-300">
-                        <div className="w-full max-w-md p-8 sm:p-12 rounded-3xl bg-white border border-red-100 shadow-2xl text-center space-y-8 sm:space-y-10 relative overflow-hidden">
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-6 bg-background/98 backdrop-blur-3xl animate-in zoom-in-95 duration-300">
+                        <div className="glass-card w-full max-w-md p-8 sm:p-12 border-red-500/30 shadow-4xl text-center space-y-8 sm:space-y-10 bg-background relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
                             <div className="h-24 w-24 rounded-3xl bg-red-50 flex items-center justify-center mx-auto ring-8 ring-red-50 rotate-12 transition-transform hover:rotate-0"><AlertCircle className="h-12 w-12 text-red-500" /></div>
                             <div className="space-y-4">

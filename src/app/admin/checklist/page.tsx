@@ -307,7 +307,7 @@ export default function AdminChecklistPage() {
                 </div>
 
                 {/* Categories Management Bar */}
-                <div className="glass-card bg-card/20 border-border/10 p-4 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-4">
+                <div className="glass-card bg-muted/30 border-border/10 p-4 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-4">
                     <div className="flex-1 flex flex-col sm:flex-row items-center gap-4 w-full">
                         <div className="flex items-center gap-3 shrink-0">
                             <Plus className="h-4 w-4 text-primary" />
@@ -349,7 +349,7 @@ export default function AdminChecklistPage() {
                 <div className="grid lg:grid-cols-3 gap-8">
                     {/* Form Column */}
                     <div className="space-y-6">
-                        <div className="glass-card bg-card/40 border-primary/20 p-6 sm:p-8 space-y-6 sticky top-8">
+                        <div className="glass-card bg-background border-primary/20 p-6 sm:p-8 space-y-6 sticky top-8">
                             <div className="flex items-center gap-3 border-b border-border/10 pb-4">
                                 <Plus className="h-5 w-5 text-primary" />
                                 <h3 className="text-sm font-black uppercase tracking-widest">Novo Requisito</h3>
@@ -448,7 +448,7 @@ export default function AdminChecklistPage() {
                                             groupedItems[category].map((item) => (
                                                 <div
                                                     key={item.id}
-                                                    className="glass-card bg-card/20 border-border/10 p-4 rounded-xl flex items-center justify-between group hover:border-primary/20 transition-all"
+                                                    className="glass-card bg-muted/20 border-border/10 p-4 rounded-xl flex items-center justify-between group hover:border-primary/20 transition-all"
                                                 >
                                                     <div className="flex items-center gap-4">
                                                         <div className="h-8 w-8 rounded-lg bg-foreground/5 flex items-center justify-center">

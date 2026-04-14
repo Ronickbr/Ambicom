@@ -163,7 +163,7 @@ export default function AdminSettingsPage() {
                     </div>
 
                     {/* Sequence Setting Card */}
-                    <form onSubmit={handleSave} className="glass-card bg-card/40 border-border/10 space-y-8">
+                    <form onSubmit={handleSave} className="glass-card bg-muted/30 border-border/10 space-y-8">
                         <div className="flex items-center gap-4 border-b border-border/10 pb-6">
                             <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
                                 <Hash className="h-6 w-6" />

@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.31.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+  - **v2.32.0**:
+    - **Otimização de UI/UX**: Correção de visibilidade e contraste nos temas claro/escuro.
+    - **Ajuste de Tabelas**: Colunas fixas agora utilizam fundo sólido para evitar sobreposição de dados.
+    - **Modal de Exclusão**: Padronização do fundo do modal de inventário para suporte dinâmico a temas.
   - **v2.31.0**:
     - **Normalização de Dados**: Disponibilização de script de manutenção para correção massiva de encoding (UTF-8) no banco de dados.
   - **v2.30.1**:
