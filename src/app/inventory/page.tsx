@@ -1146,28 +1146,28 @@ export default function InventoryPage() {
 
                 {/* Modal de Exclusão */}
                 {deletingProduct && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-6 bg-background/98 backdrop-blur-3xl animate-in zoom-in-95 duration-300">
-                        <div className="glass-card w-full max-w-md p-8 sm:p-12 border-red-500/30 shadow-4xl text-center space-y-8 sm:space-y-10 bg-neutral-950 relative overflow-hidden">
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-6 bg-background/80 backdrop-blur-sm animate-in zoom-in-95 duration-300">
+                        <div className="w-full max-w-md p-8 sm:p-12 rounded-3xl bg-white border border-red-100 shadow-2xl text-center space-y-8 sm:space-y-10 relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
-                            <div className="h-24 w-24 rounded-3xl bg-red-500/10 flex items-center justify-center mx-auto ring-8 ring-red-500/5 rotate-12 group-hover:rotate-0 transition-transform"><AlertCircle className="h-12 w-12 text-red-500" /></div>
+                            <div className="h-24 w-24 rounded-3xl bg-red-50 flex items-center justify-center mx-auto ring-8 ring-red-50 rotate-12 transition-transform hover:rotate-0"><AlertCircle className="h-12 w-12 text-red-500" /></div>
                             <div className="space-y-4">
-                                <h2 className="text-3xl font-black uppercase tracking-tighter text-foreground">Excluir Permanente?</h2>
-                                <p className="text-sm text-muted-foreground italic leading-relaxed px-4 opacity-70">
-                                    Esta ação é irreversível e irá apagar todos os vínculos e logs do ativo <span className="text-foreground font-black underline decoration-red-500/50 underline-offset-4">{deletingProduct.internal_serial}</span>.
+                                <h2 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">Excluir Permanente?</h2>
+                                <p className="text-sm text-neutral-500 italic leading-relaxed px-4">
+                                    Esta ação é irreversível e irá apagar todos os vínculos e logs do ativo <span className="text-neutral-900 font-black underline decoration-red-500/50 underline-offset-4">{deletingProduct.internal_serial}</span>.
                                 </p>
                             </div>
                             <div className="flex flex-col gap-4">
                                 <button
                                     onClick={handleDelete}
                                     disabled={isSaving}
-                                    className="h-16 rounded-2xl bg-red-500 hover:bg-red-600 text-foreground font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-red-500/30 transition-all active:scale-95 flex items-center justify-center gap-3"
+                                    className="h-16 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-red-500/20 transition-all active:scale-95 flex items-center justify-center gap-3"
                                 >
                                     {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5" />}
                                     Confirmar Destruição
                                 </button>
                                 <button
                                     onClick={() => setDeletingProduct(null)}
-                                    className="h-12 text-muted-foreground hover:text-foreground font-black text-[10px] uppercase transition-all tracking-[0.3em]"
+                                    className="h-12 text-neutral-400 hover:text-neutral-900 font-black text-[10px] uppercase transition-all tracking-[0.3em]"
                                 >
                                     Manter Registro Seguro
                                 </button>
