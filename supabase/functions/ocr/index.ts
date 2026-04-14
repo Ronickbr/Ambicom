@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
 
         console.log(`OpenAI Request: Model=${model}`);
 
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        const response = await fetch("https://api.openai.com/v1/responses", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${openaiKey}`,
@@ -43,28 +43,59 @@ Deno.serve(async (req: Request) => {
             },
             body: JSON.stringify({
                 model: model,
-                messages: [
+                input: [
                     {
                         role: "user",
                         content: [
                             {
-                                type: "text",
+                                type: "input_text",
                                 text: "Extraia dados técnicos desta etiqueta industrial para JSON. Retorne apenas o JSON: fabricante, modelo, codigo_comercial, cor, pnc_ml, numero_serie, data_fabricacao, gas_refrigerante, volume_total, tensao, tipo, classe_mercado, carga_gas, compressor, volume_freezer, volume_refrigerator, pressao_alta_baixa, capacidade_congelamento, corrente_eletrica, potencia_degelo, frequencia."
                             },
                             {
-                                type: "image_url",
-                                image_url: {
-                                    url: `data:image/jpeg;base64,${image}`
-                                }
+                                type: "input_image",
+                                image_url: `data:image/jpeg;base64,${image}`
                             }
                         ]
                     }
                 ],
-                response_format: { type: "json_object" }
+                response_format: {
+                    type: "json_schema",
+                    json_schema: {
+                        name: "etiqueta_tecnica",
+                        schema: {
+                            type: "object",
+                            properties: {
+                                fabricante: { type: "string" },
+                                modelo: { type: "string" },
+                                codigo_comercial: { type: "string" },
+                                cor: { type: "string" },
+                                pnc_ml: { type: "string" },
+                                numero_serie: { type: "string" },
+                                data_fabricacao: { type: "string" },
+                                gas_refrigerante: { type: "string" },
+                                volume_total: { type: "string" },
+                                tensao: { type: "string" },
+                                tipo: { type: "string" },
+                                classe_mercado: { type: "string" },
+                                carga_gas: { type: "string" },
+                                compressor: { type: "string" },
+                                volume_freezer: { type: "string" },
+                                volume_refrigerator: { type: "string" },
+                                pressao_alta_baixa: { type: "string" },
+                                capacidade_congelamento: { type: "string" },
+                                corrente_eletrica: { type: "string" },
+                                potencia_degelo: { type: "string" },
+                                frequencia: { type: "string" }
+                            },
+                            additionalProperties: false
+                        }
+                    }
+                }
             })
         });
 
         const resData = await response.json();
+        console.log(`OpenAI Status: ${response.status}`);
 
         if (!response.ok) {
             // Retorna o erro exato da OpenAI para o frontend
