@@ -58,6 +58,7 @@ export interface Product {
     frequency: string | null;
     voltage: string | null;
     size?: string | null;
+    has_water_dispenser?: boolean;
     status: 'CADASTRO' | 'EM AVALIAÇÃO' | 'EM ESTOQUE' | 'VENDIDO' | 'RECUSADO' | 'LIBERADO' | 'TECNICO' | 'SUPERVISOR' | 'GESTOR' | 'REPROVADO';
     photo_product: string | null;
     photo_model: string | null;

@@ -40,7 +40,7 @@ import { handleError } from "@/lib/errors";
 
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Product, ProductLog } from "@/lib/types";
-import { calculateProductSize, formatTotalVolume } from "@/lib/product-utils";
+import { calculateProductSize, formatTotalVolume, resolveCanonicalBrand } from "@/lib/product-utils";
 import { useRemotePrint } from "@/hooks/useRemotePrint";
 import { RemotePrinterSelector } from "@/components/printing/RemotePrinterSelector";
 
@@ -259,10 +259,11 @@ export default function InventoryPage() {
         setIsSaving(true);
         try {
             const productSize = await calculateProductSize(editingProduct.volume_total);
+            const canonicalBrand = await resolveCanonicalBrand(editingProduct.brand);
             const { error: updateError } = await supabase
                 .from("products")
                 .update({
-                    brand: editingProduct.brand,
+                    brand: canonicalBrand,
                     model: editingProduct.model,
                     original_serial: editingProduct.original_serial,
                     voltage: editingProduct.voltage,

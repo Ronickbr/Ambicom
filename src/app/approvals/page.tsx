@@ -560,7 +560,7 @@ export default function ApprovalsPage() {
                                         }
 
                                         // Filtra os itens do log que ainda existem no esquema atual
-                                        const filteredItems = checklistSchema.filter(item => checklist.hasOwnProperty(item.id));
+                                        const filteredItems = checklistSchema.filter(item => Object.prototype.hasOwnProperty.call(checklist, item.id));
 
                                         // Agrupa por categoria
                                         const groupedItems = filteredItems.reduce((acc, item) => {

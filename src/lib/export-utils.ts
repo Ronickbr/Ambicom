@@ -152,7 +152,9 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
             try {
                 const qrImg = await QRCode.toDataURL(serial, { margin: 0 });
                 doc.addImage(qrImg, 'PNG', X0 + 3, curY + 1.5, 15, 15);
-            } catch (e) {}
+            } catch (e) {
+                console.warn("Falha ao gerar QRCode", e);
+            }
         }
         const textStartX = X0 + 20;
         doc.setFontSize(5).text("NÚMERO DE SÉRIE AMBICOM:", textStartX, curY + 4);

@@ -87,10 +87,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Safety timeout to prevent infinite loading
         const safetyTimeout = setTimeout(() => {
-            if (loading) {
-                logger.warn("Auth initialization timed out after 15s. Forcing loading to false.");
-                setLoading(false);
-            }
+            setLoading((prev) => {
+                if (prev) {
+                    logger.warn("Auth initialization timed out after 15s. Forcing loading to false.");
+                    return false;
+                }
+                return prev;
+            });
         }, 15000);
 
         try {

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { logger } from './logger';
+import type { Product } from './types';
 
 export async function calculateProductSize(volumeTotalStr: string | number | null | undefined): Promise<string | null> {
     if (!volumeTotalStr) return null;
@@ -34,6 +35,98 @@ export async function calculateProductSize(volumeTotalStr: string | number | nul
     if (volume <= smallMax) return 'Pequeno';
     if (volume <= mediumMax) return 'Médio';
     return 'Grande';
+}
+
+export function formatProductSizeForLabel(
+    size: string | null | undefined,
+    hasWaterDispenser: boolean | null | undefined
+): string | null {
+    if (!size) return null;
+    if (size === 'Grande' && hasWaterDispenser) return 'Grande/A';
+    return size;
+}
+
+export function isLargeProductSize(size: string | null | undefined): boolean {
+    return size === 'Grande';
+}
+
+export function buildOcrFormFromScan(
+    scanData: Partial<Product> & Record<string, unknown>,
+    productSize: string | null
+): Partial<Product> & Record<string, unknown> {
+    return {
+        ...scanData,
+        size: productSize,
+        has_water_dispenser: false
+    };
+}
+
+export function normalizeBrandKey(brand: string | null | undefined): string | null {
+    if (!brand) return null;
+
+    const raw = brand.trim();
+    if (!raw) return null;
+
+    const deaccented = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const lowered = deaccented.toLowerCase();
+    const cleaned = lowered.replace(/[^a-z0-9]+/g, ' ').trim();
+
+    if (!cleaned) return null;
+
+    const stopwords = new Set([
+        'da', 'das', 'de', 'do', 'dos', 'e',
+        'br', 'brasil', 'brazil',
+        'ltda', 'me', 'mei', 'epp', 'eireli',
+        'sa', 's', 'a',
+        'industria', 'industrial', 'ind',
+        'comercio', 'comercial', 'com',
+        'grupo', 'group', 'holding'
+    ]);
+
+    const tokens = cleaned.split(/\s+/g).filter(Boolean).filter(t => !stopwords.has(t));
+    if (tokens.length === 0) return null;
+
+    return tokens.join(' ');
+}
+
+export function formatBrandCanonical(brand: string | null | undefined): string | null {
+    if (!brand) return null;
+    const raw = brand.trim().replace(/\s+/g, ' ');
+    if (!raw) return null;
+
+    const tokens = raw.split(' ').filter(Boolean);
+    if (tokens.length === 0) return null;
+
+    const canonical = tokens
+        .map(t => {
+            if (/[0-9]/.test(t)) return t.toUpperCase();
+            if (t.length <= 2) return t.toUpperCase();
+            if (t === t.toUpperCase() && t.length <= 4) return t.toUpperCase();
+            return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+        })
+        .join(' ');
+
+    return canonical;
+}
+
+export async function resolveCanonicalBrand(brand: string | null | undefined): Promise<string | null> {
+    const key = normalizeBrandKey(brand);
+    if (!key) return formatBrandCanonical(brand);
+
+    try {
+        const { data, error } = await supabase
+            .from('brand_aliases')
+            .select('canonical')
+            .eq('alias_key', key)
+            .maybeSingle();
+
+        if (error) throw error;
+        if (data?.canonical) return data.canonical;
+    } catch (e) {
+        logger.error("Error resolving canonical brand", e);
+    }
+
+    return formatBrandCanonical(brand);
 }
 
 export function formatTotalVolume(

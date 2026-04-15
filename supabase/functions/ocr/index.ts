@@ -1,4 +1,4 @@
-// @ts-ignore: Deno is defined in the Supabase Edge Runtime environment
+// @ts-expect-error: Deno is defined in the Supabase Edge Runtime environment
 declare const Deno: any;
 
 const corsHeaders = {

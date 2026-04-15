@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { logger } from './logger';
 
 export type PrintJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'dead_letter';
 export type PayloadType = 'zpl' | 'tspl' | 'png' | 'pdf';
@@ -39,11 +40,33 @@ export const printService = {
             .order('bridge_name', { ascending: true });
 
         if (error) {
-            console.error('Erro ao buscar pontes de impressão:', error);
+            logger.error('Erro ao buscar pontes de impressão', error);
             throw error;
         }
 
         return data || [];
+    },
+
+    async upsertActiveBridge(input: { bridge_name: string; available_printers: string[] }) {
+        const { data, error } = await supabase
+            .from('active_bridges')
+            .upsert(
+                [{
+                    bridge_name: input.bridge_name,
+                    available_printers: input.available_printers,
+                    last_heartbeat: new Date().toISOString(),
+                }],
+                { onConflict: 'bridge_name' }
+            )
+            .select('*')
+            .single();
+
+        if (error) {
+            logger.error('Erro ao upsert em active_bridges', { error, input });
+            throw error;
+        }
+
+        return data as ActiveBridge;
     },
 
     /**
@@ -64,7 +87,7 @@ export const printService = {
             .single();
 
         if (error) {
-            console.error('Erro ao enviar trabalho de impressão:', error);
+            logger.error('Erro ao enviar trabalho de impressão', error);
             throw error;
         }
 

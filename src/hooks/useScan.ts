@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Product } from '@/lib/types'
 import { logger } from '@/lib/logger'
 import { generateNextInternalSerial } from '@/lib/id-generator'
-import { calculateProductSize } from '@/lib/product-utils'
+import { calculateProductSize, resolveCanonicalBrand } from '@/lib/product-utils'
 
 const SCAN_COOLDOWN = 3000
 
@@ -115,6 +115,7 @@ export function useScan() {
     setIsProcessing(true)
     try {
       const internalSerial = await generateNextInternalSerial()
+      const { has_water_dispenser, ...rest } = data
       const photoUrls: Record<string, string | null> = {
         photo_product: null,
         photo_model: null,
@@ -149,14 +150,17 @@ export function useScan() {
 
       const { data: { user } } = await supabase.auth.getUser();
       const productSize = await calculateProductSize(data.volume_total);
+      const canonicalBrand = await resolveCanonicalBrand(data.brand);
 
       const { data: newProduct, error } = await supabase
         .from("products")
         .insert({
-          ...data,
+          ...rest,
+          has_water_dispenser: Boolean(has_water_dispenser),
           ...photoUrls,
           size: productSize,
           internal_serial: internalSerial,
+          brand: canonicalBrand,
           status: 'CADASTRO',
           is_in_stock: true,
           created_by: user?.id

@@ -99,7 +99,9 @@ function getExifOrientation(dataUrl: string): number {
                 offset += 2 + segLen;
             }
         }
-    } catch { }
+    } catch (err) {
+        logger.debug("Falha ao ler EXIF orientation", err);
+    }
     return 1;
 }
 

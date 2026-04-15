@@ -1,8 +1,22 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = 'https://tqjpbnplnpujygojgkcy.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxanBibnBsbnB1anlnb2pna2N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5NjAyMjIsImV4cCI6MjA4NzUzNjIyMn0.i6iEk7KqBsct7UG9ADemu9x3DeyEWulof2ugy4xR6JE';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl =
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    process.env.VITE_PUBLIC_SUPABASE_URL;
+
+const supabaseAnonKey =
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+        "Configuração do Supabase ausente. Defina SUPABASE_URL/SUPABASE_ANON_KEY ou VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY."
+    );
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 async function insertData() {
     const internalSerial = `INT-LABEL-${Math.floor(Math.random() * 1000000)}`;

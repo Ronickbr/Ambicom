@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
     Plus,
@@ -308,21 +308,7 @@ export default function OrdersPage() {
         setPage(0);
     }, [searchTerm]);
 
-    useEffect(() => {
-        if (!authLoading && !isAuthorized) {
-            toast.error("Acesso restrito");
-            navigate("/");
-            return;
-        }
-        if (isAuthorized) {
-            const timer = setTimeout(() => {
-                fetchOrders();
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-    }, [authLoading, isAuthorized, navigate, page, searchTerm]);
-
-    const fetchOrders = async (silent: boolean = false) => {
+    const fetchOrders = useCallback(async (silent: boolean = false) => {
         if (!silent) setIsLoading(true);
         try {
             let query = supabase
@@ -355,7 +341,21 @@ export default function OrdersPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [page, searchTerm]);
+
+    useEffect(() => {
+        if (!authLoading && !isAuthorized) {
+            toast.error("Acesso restrito");
+            navigate("/");
+            return;
+        }
+        if (isAuthorized) {
+            const timer = setTimeout(() => {
+                fetchOrders();
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [authLoading, fetchOrders, isAuthorized, navigate]);
 
     const handleExportPDF = async (order?: Order) => {
         const { exportToPDF } = await import("@/lib/export-utils");
