@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.27.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.27.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.27.2**:
+  - **Normalização de Marcas (OCR)**: Implementada lógica de sanitização para unificar variações de "Electrolux" (ex: "Electrolux do Brasil") em uma única marca padrão ("ELECTROLUX").
+  - **Redundância de OCR**: Normalização aplicada tanto na Edge Function (`ocr`) quanto no frontend (`ScanPage`), garantindo integridade mesmo em falhas de processamento.
 - **v2.27.1**:
   - **Correção de Somatório de Pedidos**: Implementação de recálculo automático de totais baseado no somatório real dos itens, eliminando divergências de sincronia (drift).
   - **Auto-Sincronização**: O sistema agora detecta e corrige automaticamente discrepâncias nos totais ao visualizar os detalhes de um pedido.

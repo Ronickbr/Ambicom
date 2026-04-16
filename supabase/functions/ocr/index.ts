@@ -74,11 +74,28 @@ Deno.serve(async (req: Request) => {
             throw new Error(`OPENROUTER_REJECTED (${response.status}): ${orError}`);
         }
 
-        const content = resData.choices?.[0]?.message?.content;
+        let content = resData.choices?.[0]?.message?.content;
 
         if (!content) {
             throw new Error('IA_EMPTY_CONTENT: O OpenRouter não devolveu conteúdo na resposta.');
         }
+
+        // --- Normalização de Marca ---
+        try {
+            const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+            if (parsed.fabricante) {
+                const brand = parsed.fabricante.trim().toUpperCase();
+                // Normaliza Electrolux e variações (incluindo erros comuns de digitação como Eletrolux)
+                if (brand.startsWith('ELECTROLUX') || brand.startsWith('ELETROLUX')) {
+                    parsed.fabricante = 'ELECTROLUX';
+                    content = JSON.stringify(parsed);
+                }
+            }
+        } catch (e) {
+            console.error('Erro na normalização de marca:', e);
+            // Mantém o conteúdo original se o parse falhar (a IA pode ter retornado algo estranho)
+        }
+        // -----------------------------
 
         return new Response(JSON.stringify({ content }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -172,6 +172,15 @@ function getValidZoom(caps: any, targetMultiplier: number): number | null {
     return Math.min(targetMultiplier, max);
 }
 
+const normalizeBrand = (brand: string) => {
+    if (!brand) return "";
+    const b = brand.trim().toUpperCase();
+    if (b.startsWith("ELECTROLUX") || b.startsWith("ELETROLUX")) {
+        return "ELECTROLUX";
+    }
+    return brand;
+};
+
 // ─── Tipos ─────────────────────────────────────────────────────────────────
 type FocusStatus = "idle" | "focusing" | "locked" | "failed";
 
@@ -450,7 +459,7 @@ const ScanPage = () => {
 
                 // 1. Pedimos permissão básica para listar os dispositivos com nomes
                 const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                
+
                 // Libera o stream temporário para não bloquear a câmera
                 tempStream.getTracks().forEach(track => track.stop());
 
@@ -473,7 +482,7 @@ const ScanPage = () => {
                             // Evitamos excluir apenas "wide" porque iPhones podem nomear a principal como "Back Wide Camera". Focamos em "ultra" e "0.5".
                             const isUltraWide = label.includes('ultra') || label.includes('0.5');
                             const isMacroOrDepth = label.includes('macro') || label.includes('depth');
-                            
+
                             return isBack && !isUltraWide && !isMacroOrDepth;
                         });
 
@@ -680,7 +689,7 @@ const ScanPage = () => {
     // ── Captura + compressão + OCR ────────────────────────────────────────
     const handleCaptureAndOCR = async () => {
         if (!webcamRef.current) return;
-        
+
         setIsCapturing(true);
 
         triggerFocusAnimation();
@@ -690,7 +699,7 @@ const ScanPage = () => {
         await new Promise(r => setTimeout(r, 600));
 
         const rawImage = webcamRef.current.getScreenshot();
-        
+
         setIsCapturing(false);
 
         if (!rawImage) return;
@@ -706,7 +715,7 @@ const ScanPage = () => {
         const data = await scanImage(compressed);
         if (data) {
             setScannedData({
-                brand: data.fabricante || "",
+                brand: normalizeBrand(data.fabricante || ""),
                 model: data.modelo || "",
                 original_serial: data.numero_serie || "",
                 commercial_code: data.codigo_comercial || "",
@@ -758,7 +767,7 @@ const ScanPage = () => {
                 const data = await scanImage(compressed);
                 if (data) {
                     setScannedData({
-                        brand: data.fabricante || "Electrolux",
+                        brand: normalizeBrand(data.fabricante || "ELECTROLUX"),
                         model: data.modelo || "",
                         original_serial: data.numero_serie || "",
                         commercial_code: data.codigo_comercial || "",
@@ -877,155 +886,155 @@ const ScanPage = () => {
                             })()}
 
                             <div className="glass-card p-2 border-border/20 bg-black shadow-2xl relative overflow-hidden group max-w-sm mx-auto w-full">
-                            <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-card border border-border/10">
-                                {!cameraError && !isInitializingCamera ? (
-                                    <>
-                                        <Webcam
-                                            ref={webcamRef}
-                                            audio={false}
-                                            screenshotFormat="image/jpeg"
-                                            screenshotQuality={CAPTURE_QUALITY}
-                                            videoConstraints={videoConstraints}
-                                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                                            onUserMediaError={handleCameraError}
-                                            onUserMedia={handleCameraReady}
-                                            forceScreenshotSourceSize
-                                            imageSmoothing={false}
-                                        />
+                                <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-card border border-border/10">
+                                    {!cameraError && !isInitializingCamera ? (
+                                        <>
+                                            <Webcam
+                                                ref={webcamRef}
+                                                audio={false}
+                                                screenshotFormat="image/jpeg"
+                                                screenshotQuality={CAPTURE_QUALITY}
+                                                videoConstraints={videoConstraints}
+                                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                                onUserMediaError={handleCameraError}
+                                                onUserMedia={handleCameraReady}
+                                                forceScreenshotSourceSize
+                                                imageSmoothing={false}
+                                            />
 
-                                        {cameraReady && (
-                                            <div className={cn(
-                                                "absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm bg-black/40 transition-all duration-300",
-                                                focusIndicator.color
-                                            )}>
-                                                {focusIndicator.icon}
-                                                <span className="text-[9px] font-black uppercase tracking-widest">{focusIndicator.label}</span>
-                                            </div>
-                                        )}
-
-                                        {cameraReady && (
-                                            <div className="absolute inset-0 z-10 pointer-events-none">
+                                            {cameraReady && (
                                                 <div className={cn(
-                                                    "absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 rounded-tl transition-colors duration-300",
-                                                    focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/20"
-                                                )} />
-                                                <div className={cn(
-                                                    "absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 rounded-tr transition-colors duration-300",
-                                                    focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/20"
-                                                )} />
-                                                <div className={cn(
-                                                    "absolute bottom-28 left-6 w-8 h-8 border-b-2 border-l-2 rounded-bl transition-colors duration-300",
-                                                    focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/20"
-                                                )} />
-                                                <div className={cn(
-                                                    "absolute bottom-28 right-6 w-8 h-8 border-b-2 border-r-2 rounded-br transition-colors duration-300",
-                                                    focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/20"
-                                                )} />
-
-                                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20">
-                                                    <Camera className="h-12 w-12 text-white" />
+                                                    "absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm bg-black/40 transition-all duration-300",
+                                                    focusIndicator.color
+                                                )}>
+                                                    {focusIndicator.icon}
+                                                    <span className="text-[9px] font-black uppercase tracking-widest">{focusIndicator.label}</span>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
 
-                                        {cameraReady && (
-                                            <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-                                                <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-white/10">
-                                                    <span className="text-[8px] font-black text-white/60 uppercase tracking-widest">HD · 720p</span>
+                                            {cameraReady && (
+                                                <div className="absolute inset-0 z-10 pointer-events-none">
+                                                    <div className={cn(
+                                                        "absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 rounded-tl transition-colors duration-300",
+                                                        focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/20"
+                                                    )} />
+                                                    <div className={cn(
+                                                        "absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 rounded-tr transition-colors duration-300",
+                                                        focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/20"
+                                                    )} />
+                                                    <div className={cn(
+                                                        "absolute bottom-28 left-6 w-8 h-8 border-b-2 border-l-2 rounded-bl transition-colors duration-300",
+                                                        focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/20"
+                                                    )} />
+                                                    <div className={cn(
+                                                        "absolute bottom-28 right-6 w-8 h-8 border-b-2 border-r-2 rounded-br transition-colors duration-300",
+                                                        focusStatus === "locked" ? "border-emerald-400" : focusStatus === "focusing" ? "border-amber-400" : "border-white/20"
+                                                    )} />
+
+                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20">
+                                                        <Camera className="h-12 w-12 text-white" />
+                                                    </div>
                                                 </div>
+                                            )}
 
+                                            {cameraReady && (
+                                                <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+                                                    <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-white/10">
+                                                        <span className="text-[8px] font-black text-white/60 uppercase tracking-widest">HD · 720p</span>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={toggleTorch}
+                                                        title={torchSupported ? (torchOn ? "Desligar flash" : "Ligar flash") : "Flash indisponível"}
+                                                        className={cn(
+                                                            "h-8 w-8 rounded-full flex items-center justify-center backdrop-blur-sm border transition-all duration-200",
+                                                            torchOn
+                                                                ? "bg-amber-400/30 border-amber-400/70 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.5)]"
+                                                                : torchSupported
+                                                                    ? "bg-black/50 border-white/20 text-white/60 hover:text-white hover:border-white/40"
+                                                                    : "bg-black/30 border-white/10 text-white/20 cursor-not-allowed"
+                                                        )}
+                                                    >
+                                                        {torchOn
+                                                            ? <Flashlight className="h-4 w-4" />
+                                                            : <FlashlightOff className="h-4 w-4" />}
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center px-4">
                                                 <button
-                                                    onClick={toggleTorch}
-                                                    title={torchSupported ? (torchOn ? "Desligar flash" : "Ligar flash") : "Flash indisponível"}
-                                                    className={cn(
-                                                        "h-8 w-8 rounded-full flex items-center justify-center backdrop-blur-sm border transition-all duration-200",
-                                                        torchOn
-                                                            ? "bg-amber-400/30 border-amber-400/70 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.5)]"
-                                                            : torchSupported
-                                                                ? "bg-black/50 border-white/20 text-white/60 hover:text-white hover:border-white/40"
-                                                                : "bg-black/30 border-white/10 text-white/20 cursor-not-allowed"
-                                                    )}
+                                                    onClick={handleCaptureAndOCR}
+                                                    disabled={ocrLoading || isCapturing || !cameraReady}
+                                                    className="w-full max-w-sm h-16 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-4 transition-all shadow-[0_0_40px_rgba(14,165,233,0.4)] active:scale-95 disabled:opacity-50 disabled:grayscale"
                                                 >
-                                                    {torchOn
-                                                        ? <Flashlight className="h-4 w-4" />
-                                                        : <FlashlightOff className="h-4 w-4" />}
+                                                    {(ocrLoading || isCapturing) ? (
+                                                        <Loader2 className="h-6 w-6 animate-spin" />
+                                                    ) : (
+                                                        <Camera className="h-6 w-6" />
+                                                    )}
+                                                    {isCapturing ? "Focando e Capturando..." : ocrLoading ? "Lendo dados..." : "Extrair Dados da Etiqueta"}
                                                 </button>
                                             </div>
-                                        )}
 
-                                        <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center px-4">
                                             <button
-                                                onClick={handleCaptureAndOCR}
-                                                disabled={ocrLoading || isCapturing || !cameraReady}
-                                                className="w-full max-w-sm h-16 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-4 transition-all shadow-[0_0_40px_rgba(14,165,233,0.4)] active:scale-95 disabled:opacity-50 disabled:grayscale"
-                                            >
-                                                {(ocrLoading || isCapturing) ? (
-                                                    <Loader2 className="h-6 w-6 animate-spin" />
-                                                ) : (
-                                                    <Camera className="h-6 w-6" />
-                                                )}
-                                                {isCapturing ? "Focando e Capturando..." : ocrLoading ? "Lendo dados..." : "Extrair Dados da Etiqueta"}
-                                            </button>
-                                        </div>
+                                                className="absolute inset-0 z-[5] cursor-crosshair bg-transparent"
+                                                onClick={triggerFocusAnimation}
+                                                aria-label="Acionar autofoco"
+                                            />
 
-                                        <button
-                                            className="absolute inset-0 z-[5] cursor-crosshair bg-transparent"
-                                            onClick={triggerFocusAnimation}
-                                            aria-label="Acionar autofoco"
-                                        />
-
-                                        {!cameraReady && (
-                                            <div className="absolute inset-0 bg-background/80 backdrop-blur-md flex flex-col items-center justify-center z-50">
-                                                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Trocando Câmera...</p>
+                                            {!cameraReady && (
+                                                <div className="absolute inset-0 bg-background/80 backdrop-blur-md flex flex-col items-center justify-center z-50">
+                                                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Trocando Câmera...</p>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : isInitializingCamera ? (
+                                        <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-4">
+                                            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
+                                                <Loader2 className="h-8 w-8 animate-spin" />
                                             </div>
-                                        )}
-                                    </>
-                                ) : isInitializingCamera ? (
-                                    <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-4">
-                                        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
-                                            <Loader2 className="h-8 w-8 animate-spin" />
+                                            <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Iniciando Câmera</h3>
+                                            <p className="text-sm text-muted-foreground max-w-xs mx-auto">Selecionando a melhor lente para leitura...</p>
                                         </div>
-                                        <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Iniciando Câmera</h3>
-                                        <p className="text-sm text-muted-foreground max-w-xs mx-auto">Selecionando a melhor lente para leitura...</p>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-4">
-                                        <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-2">
-                                            <Camera className="h-8 w-8" />
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-4">
+                                            <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-2">
+                                                <Camera className="h-8 w-8" />
+                                            </div>
+                                            <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Câmera Indisponível</h3>
+                                            <p className="text-sm text-muted-foreground max-w-xs mx-auto">Verifique as permissões do navegador ou suba uma foto da galeria.</p>
+                                            <div className="flex gap-4 w-full max-w-sm">
+                                                <button
+                                                    onClick={() => {
+                                                        activeTrackRef.current = null;
+                                                        capsRef.current = null;
+                                                        setCameraError(false);
+                                                        setCameraReady(false);
+                                                        setVideoConstraints(CAMERA_CONSTRAINTS);
+                                                    }}
+                                                    className="flex-1 px-6 py-4 bg-foreground/5 hover:bg-foreground/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-foreground transition-all border border-border/10 flex items-center justify-center gap-3"
+                                                >
+                                                    <RefreshCw className="h-4 w-4" />
+                                                    Tentar Novamente
+                                                </button>
+                                                <button
+                                                    onClick={handleFileUpload}
+                                                    className="flex-1 px-6 py-4 bg-primary text-primary-foreground rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3"
+                                                >
+                                                    <Upload className="h-4 w-4" />
+                                                    Subir Foto
+                                                </button>
+                                            </div>
                                         </div>
-                                        <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Câmera Indisponível</h3>
-                                        <p className="text-sm text-muted-foreground max-w-xs mx-auto">Verifique as permissões do navegador ou suba uma foto da galeria.</p>
-                                        <div className="flex gap-4 w-full max-w-sm">
-                                            <button
-                                                onClick={() => {
-                                                    activeTrackRef.current = null;
-                                                    capsRef.current = null;
-                                                    setCameraError(false);
-                                                    setCameraReady(false);
-                                                    setVideoConstraints(CAMERA_CONSTRAINTS);
-                                                }}
-                                                className="flex-1 px-6 py-4 bg-foreground/5 hover:bg-foreground/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-foreground transition-all border border-border/10 flex items-center justify-center gap-3"
-                                            >
-                                                <RefreshCw className="h-4 w-4" />
-                                                Tentar Novamente
-                                            </button>
-                                            <button
-                                                onClick={handleFileUpload}
-                                                className="flex-1 px-6 py-4 bg-primary text-primary-foreground rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3"
-                                            >
-                                                <Upload className="h-4 w-4" />
-                                                Subir Foto
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Lado Direito: Histórico / Ações adicionais */}
+                    {/* Lado Direito: Histórico / Ações adicionais */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="glass-card bg-card/50 border-border/10 h-full flex flex-col p-8 relative overflow-hidden">
                             <div className="flex items-center gap-3 mb-8">
