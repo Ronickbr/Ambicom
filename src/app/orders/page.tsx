@@ -236,11 +236,14 @@ export default function OrdersPage() {
 
             if (insertError) throw insertError;
 
-            const newTotal = (selectedOrder.total_amount || 0) + unitPrice;
-            await supabase
-                .from("orders")
-                .update({ total_amount: newTotal })
-                .eq("id", selectedOrder.id);
+            // const newTotal = (selectedOrder.total_amount || 0) + unitPrice;
+            // await supabase
+            //     .from("orders")
+            //     .update({ total_amount: newTotal })
+            //     .eq("id", selectedOrder.id);
+
+            // Use a more robust recalculation after adding
+            await recalculateOrderTotal(selectedOrder.id);
 
             toast.success("Produto adicionado!", {
                 description: `${product.brand} ${product.model} - R$ ${unitPrice.toFixed(2)}`
@@ -276,11 +279,14 @@ export default function OrdersPage() {
 
             if (updateError) throw updateError;
 
-            const newTotal = Math.max(0, (selectedOrder.total_amount || 0) - unitPrice);
-            await supabase
-                .from("orders")
-                .update({ total_amount: newTotal })
-                .eq("id", selectedOrder.id);
+            // const newTotal = Math.max(0, (selectedOrder.total_amount || 0) - unitPrice);
+            // await supabase
+            //     .from("orders")
+            //     .update({ total_amount: newTotal })
+            //     .eq("id", selectedOrder.id);
+
+            // Use a more robust recalculation after removing
+            await recalculateOrderTotal(selectedOrder.id);
 
             toast.info("Produto removido do pedido.");
 
@@ -452,12 +458,53 @@ export default function OrdersPage() {
                 .single();
 
             if (error) throw error;
-            setSelectedOrder(data as Order);
+            const updatedOrder = data as Order;
+            setSelectedOrder(updatedOrder);
+
+            // Automatic Total Correction Check
+            const actualTotal = updatedOrder.order_items?.reduce((acc, item) => acc + (item.unit_price || 0), 0) || 0;
+            if (actualTotal !== updatedOrder.total_amount) {
+                console.log(`[Order Fix] Discrepancy detected in order ${updatedOrder.id}: Stored ${updatedOrder.total_amount} vs Actual ${actualTotal}. Fixing...`);
+                await recalculateOrderTotal(updatedOrder.id, actualTotal);
+
+                // Update local state to show correct total immediately
+                setSelectedOrder(prev => prev ? { ...prev, total_amount: actualTotal } : null);
+                if (!silent) toast.info("O total do pedido foi sincronizado automaticamente.");
+                fetchOrders(true);
+            }
+
         } catch (error) {
             logger.error("Erro ao buscar detalhes do pedido:", error);
             toast.error("Erro ao carregar detalhes do pedido");
         } finally {
             setIsFetchingDetails(false);
+        }
+    };
+
+    const recalculateOrderTotal = async (orderId: string, providedTotal?: number) => {
+        try {
+            let total = providedTotal;
+
+            if (total === undefined) {
+                const { data: items, error: itemsError } = await supabase
+                    .from("order_items")
+                    .select("unit_price")
+                    .eq("order_id", orderId);
+
+                if (itemsError) throw itemsError;
+                total = items?.reduce((acc, item) => acc + (item.unit_price || 0), 0) || 0;
+            }
+
+            const { error: updateError } = await supabase
+                .from("orders")
+                .update({ total_amount: total })
+                .eq("id", orderId);
+
+            if (updateError) throw updateError;
+            return total;
+        } catch (err) {
+            logger.error(`Erro ao recalcular total do pedido ${orderId}:`, err);
+            return null;
         }
     };
 

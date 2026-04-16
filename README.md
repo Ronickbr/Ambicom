@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.27.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.27.1**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.27.1**:
+  - **Correção de Somatório de Pedidos**: Implementação de recálculo automático de totais baseado no somatório real dos itens, eliminando divergências de sincronia (drift).
+  - **Auto-Sincronização**: O sistema agora detecta e corrige automaticamente discrepâncias nos totais ao visualizar os detalhes de um pedido.
 - **v2.27.0**:
   - **Unificação de Temas (Modais)**: Padronização visual completa dos modais de detalhes em Aprovações e Inventário, corrigindo alto contraste e visibilidade no tema claro.
   - **Otimização de Tabelas (No-Scroll)**: Remoção do scroll vertical interno das tabelas de listagem, aproveitando o fluxo natural da página já paginada.
