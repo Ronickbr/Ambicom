@@ -105,6 +105,7 @@ export interface Client {
     price_small: number;
     price_medium: number;
     price_large: number;
+    price_large_a: number;
     created_at: string;
     updated_at: string;
 }
