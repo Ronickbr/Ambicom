@@ -25,6 +25,7 @@ export default function AdminSettingsPage() {
     const [orderSequenceStart, setOrderSequenceStart] = useState<string>("1");
     const [smallMax, setSmallMax] = useState<string>("300");
     const [mediumMax, setMediumMax] = useState<string>("550");
+    const [largeAMin, setLargeAMin] = useState<string>("600");
 
     const isAuthorized = profile?.role === "ADMIN";
 
@@ -59,6 +60,7 @@ export default function AdminSettingsPage() {
                     const parsedValue = typeof refSize.value === 'string' ? JSON.parse(refSize.value) : refSize.value;
                     setSmallMax(parsedValue.small_max?.toString() || "300");
                     setMediumMax(parsedValue.medium_max?.toString() || "550");
+                    setLargeAMin(parsedValue.large_a_min?.toString() || "600");
                 }
             }
         } catch (error) {
@@ -103,9 +105,10 @@ export default function AdminSettingsPage() {
 
             const sMaxNum = parseInt(smallMax);
             const mMaxNum = parseInt(mediumMax);
+            const largeAMinNum = parseInt(largeAMin);
 
-            if (isNaN(sMaxNum) || sMaxNum < 1 || isNaN(mMaxNum) || mMaxNum <= sMaxNum) {
-                toast.error("Limites de volume inválidos. O limite do médio deve ser maior que o limite do pequeno.");
+            if (isNaN(sMaxNum) || sMaxNum < 1 || isNaN(mMaxNum) || mMaxNum <= sMaxNum || isNaN(largeAMinNum) || largeAMinNum <= mMaxNum) {
+                toast.error("Limites de volume inválidos. O limite do médio deve ser maior que o limite do pequeno e o início do Grande/A deve ser maior que o limite do médio.");
                 return;
             }
 
@@ -113,7 +116,7 @@ export default function AdminSettingsPage() {
                 .from("system_settings")
                 .upsert({
                     key: "refrigerator_sizes",
-                    value: { small_max: sMaxNum, medium_max: mMaxNum },
+                    value: { small_max: sMaxNum, medium_max: mMaxNum, large_a_min: largeAMinNum },
                     updated_by: profile?.id
                 }, { onConflict: 'key' });
 
@@ -273,7 +276,7 @@ export default function AdminSettingsPage() {
                                 </div>
                             </div>
 
-                            <div className="grid sm:grid-cols-3 gap-6">
+                            <div className="grid sm:grid-cols-4 gap-6">
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block ml-1">Até (Pequeno)</label>
                                     <div className="relative group">
@@ -308,11 +311,29 @@ export default function AdminSettingsPage() {
                                     </div>
                                 </div>
 
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block ml-1">A partir de (Grande/A)</label>
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-emerald-500 transition-colors">
+                                            <span className="font-bold text-sm">L</span>
+                                        </div>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            required
+                                            className="w-full h-14 bg-background/50 border border-border/50 rounded-2xl pl-10 pr-4 text-xl font-black text-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 outline-none shadow-inner transition-all text-center"
+                                            value={largeAMin}
+                                            onChange={(e) => setLargeAMin(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="bg-foreground/5 border border-border/10 rounded-2xl p-4 space-y-3 flex flex-col justify-center">
                                     <div className="space-y-2">
                                         <p className="text-[10px] text-muted-foreground"><strong>Pequeno:</strong> 0 a {smallMax || "300"} L</p>
                                         <p className="text-[10px] text-muted-foreground"><strong>Médio:</strong> {(parseInt(smallMax) || 300) + 1} a {mediumMax || "550"} L</p>
                                         <p className="text-[10px] text-muted-foreground"><strong>Grande:</strong> Acima de {mediumMax || "550"} L</p>
+                                        <p className="text-[10px] text-muted-foreground"><strong>Grande/A:</strong> Marcável no scan a partir de {largeAMin || "600"} L</p>
                                     </div>
                                 </div>
                             </div>

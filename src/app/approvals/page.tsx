@@ -51,6 +51,8 @@ export default function ApprovalsPage() {
     const [selectedProduct, setSelectedProduct] = useState<ProductWithLogs | null>(null);
     const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
     const [checklistSchema, setChecklistSchema] = useState<ChecklistItem[]>([]);
+    const [evidencePhotoUrl, setEvidencePhotoUrl] = useState<string | null>(null);
+    const [evidencePhotoLabel, setEvidencePhotoLabel] = useState<string | null>(null);
 
     const isAuthorized = profile?.role === "SUPERVISOR" || profile?.role === "GESTOR" || profile?.role === "ADMIN";
 
@@ -65,6 +67,58 @@ export default function ApprovalsPage() {
             fetchChecklistSchema();
         }
     }, [authLoading, isAuthorized, navigate]);
+
+    const parseStorageObjectPath = (url: string): { bucket: string; path: string } | null => {
+        const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+)$/);
+        if (!match) return null;
+        return { bucket: match[1], path: decodeURIComponent(match[2]) };
+    };
+
+    const pickEvidencePhoto = (product: ProductWithLogs): { url: string; label: string } | null => {
+        if (product.photo_model) return { url: product.photo_model, label: "ETIQUETA (SCAN)" };
+        if (product.photo_serial) return { url: product.photo_serial, label: "ETIQUETA SERIAL" };
+        if (product.photo_product) return { url: product.photo_product, label: "VISTA GERAL" };
+        if (product.photo_defect) return { url: product.photo_defect, label: "EVIDÊNCIA DEFEITO" };
+        return null;
+    };
+
+    useEffect(() => {
+        const resolveEvidencePhotoUrl = async () => {
+            if (!selectedProduct) {
+                setEvidencePhotoUrl(null);
+                setEvidencePhotoLabel(null);
+                return;
+            }
+
+            const picked = pickEvidencePhoto(selectedProduct);
+            if (!picked) {
+                setEvidencePhotoUrl(null);
+                setEvidencePhotoLabel(null);
+                return;
+            }
+
+            setEvidencePhotoLabel(picked.label);
+
+            const storageObj = parseStorageObjectPath(picked.url);
+            if (!storageObj) {
+                setEvidencePhotoUrl(picked.url);
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase.storage
+                    .from(storageObj.bucket)
+                    .createSignedUrl(storageObj.path, 60 * 60);
+
+                if (error) throw error;
+                setEvidencePhotoUrl(data?.signedUrl || picked.url);
+            } catch (e) {
+                setEvidencePhotoUrl(picked.url);
+            }
+        };
+
+        resolveEvidencePhotoUrl();
+    }, [selectedProduct]);
 
     const fetchChecklistSchema = async () => {
         try {
@@ -512,11 +566,8 @@ export default function ApprovalsPage() {
                                 </div>
                                 <div className="flex justify-center">
                                     {(() => {
-                                        const photo = selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect;
-                                        const label = selectedProduct.photo_product ? "VISTA GERAL" :
-                                            selectedProduct.photo_model ? "ETIQUETA MODELO" :
-                                                selectedProduct.photo_serial ? "ETIQUETA SERIAL" :
-                                                    selectedProduct.photo_defect ? "EVIDÊNCIA DEFEITO" : "FOTO";
+                                        const photo = evidencePhotoUrl;
+                                        const label = evidencePhotoLabel || "FOTO";
 
                                         return (
                                             <div

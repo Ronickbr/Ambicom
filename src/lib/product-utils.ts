@@ -2,19 +2,19 @@ import { supabase } from './supabase';
 import { logger } from './logger';
 import type { Product } from './types';
 
-export async function calculateProductSize(volumeTotalStr: string | number | null | undefined): Promise<string | null> {
+export function parseVolumeToNumber(volumeTotalStr: string | number | null | undefined): number | null {
     if (!volumeTotalStr) return null;
-
-    // Ensure value is a string before extracting text/numeric value from strings like "350 L" or numbers like 350
     const strValue = String(volumeTotalStr);
     const match = strValue.replace(',', '.').match(/(\d+(\.\d+)?)/);
     if (!match) return null;
-
     const volume = parseFloat(match[1]);
-    if (isNaN(volume)) return null;
+    return Number.isFinite(volume) ? volume : null;
+}
 
+async function fetchRefrigeratorSizeConfig(): Promise<{ smallMax: number; mediumMax: number; largeAMin: number }> {
     let smallMax = 300;
     let mediumMax = 550;
+    let largeAMin = 600;
 
     try {
         const { data, error } = await supabase
@@ -23,18 +23,41 @@ export async function calculateProductSize(volumeTotalStr: string | number | nul
             .eq('key', 'refrigerator_sizes')
             .maybeSingle();
 
+        if (error) throw error;
+
         if (data && data.value) {
             const config = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
             if (config.small_max) smallMax = Number(config.small_max);
             if (config.medium_max) mediumMax = Number(config.medium_max);
+            if (config.large_a_min) largeAMin = Number(config.large_a_min);
         }
     } catch (e) {
         logger.error("Error fetching size config", e);
     }
 
+    if (!Number.isFinite(smallMax) || smallMax < 1) smallMax = 300;
+    if (!Number.isFinite(mediumMax) || mediumMax <= smallMax) mediumMax = 550;
+    if (!Number.isFinite(largeAMin) || largeAMin <= mediumMax) largeAMin = Math.max(600, mediumMax + 1);
+
+    return { smallMax, mediumMax, largeAMin };
+}
+
+export async function calculateProductSize(volumeTotalStr: string | number | null | undefined): Promise<string | null> {
+    const volume = parseVolumeToNumber(volumeTotalStr);
+    if (volume === null) return null;
+
+    const { smallMax, mediumMax } = await fetchRefrigeratorSizeConfig();
+
     if (volume <= smallMax) return 'Pequeno';
     if (volume <= mediumMax) return 'Médio';
     return 'Grande';
+}
+
+export async function isEligibleForLargeA(volumeTotalStr: string | number | null | undefined): Promise<boolean> {
+    const volume = parseVolumeToNumber(volumeTotalStr);
+    if (volume === null) return false;
+    const { largeAMin } = await fetchRefrigeratorSizeConfig();
+    return volume >= largeAMin;
 }
 
 export function formatProductSizeForLabel(
