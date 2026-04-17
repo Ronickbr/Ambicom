@@ -102,6 +102,15 @@ function calculateItemsTotal(items?: Array<{ unit_price?: number | null }>): num
     return (items || []).reduce((acc, item) => acc + Number(item.unit_price || 0), 0);
 }
 
+function getUnitPriceForClientAndSize(client: any, sizeLabel: string | null | undefined): number {
+    const normalized = (sizeLabel || "").trim();
+    if (normalized === "Pequeno") return Number(client?.price_small || 0) || 0;
+    if (normalized === "Médio" || normalized === "Medio") return Number(client?.price_medium || 0) || 0;
+    if (normalized === "Grande") return Number(client?.price_large || 0) || 0;
+    if (normalized === "Grande/A") return Number(client?.price_large_a || 0) || 0;
+    return 0;
+}
+
 function formatOrderCode(orderId: string): string {
     const short = (orderId || "").split("-")[0] || "";
     return short.toUpperCase();
@@ -384,6 +393,30 @@ export default function OrdersPage() {
         handleAddProductToOrder(code);
     };
 
+    const ensureClientPricing = async (order: Order): Promise<any | null> => {
+        const currentClient = (order as any)?.clients;
+        const hasPricing = currentClient && (
+            currentClient.price_small !== undefined ||
+            currentClient.price_medium !== undefined ||
+            currentClient.price_large !== undefined ||
+            currentClient.price_large_a !== undefined
+        );
+
+        if (hasPricing) return currentClient;
+
+        const clientId = (order as any)?.client_id;
+        if (!clientId) return currentClient || null;
+
+        const { data, error } = await supabase
+            .from("clients")
+            .select("*")
+            .eq("id", clientId)
+            .maybeSingle();
+
+        if (error) throw error;
+        return data || currentClient || null;
+    };
+
     const handleAddProductToOrder = async (code: string) => {
         if (!selectedOrder || selectedOrder.status !== "PENDENTE") {
             toast.error("Selecione um pedido pendente ativo.");
@@ -449,17 +482,9 @@ export default function OrdersPage() {
                 return;
             }
 
-            const client = (selectedOrder as any).clients;
-
-            let unitPrice = 0;
-
-            if (client) {
-                const sizeLabel = formatProductSizeForLabel(product.size, product.has_water_dispenser) || product.size;
-                if (sizeLabel === 'Pequeno') unitPrice = client.price_small || 0;
-                else if (sizeLabel === 'Médio') unitPrice = client.price_medium || 0;
-                else if (sizeLabel === 'Grande') unitPrice = client.price_large || 0;
-                else if (sizeLabel === 'Grande/A') unitPrice = client.price_large_a || 0;
-            }
+            const client = await ensureClientPricing(selectedOrder);
+            const sizeLabel = formatProductSizeForLabel(product.size, product.has_water_dispenser) || product.size;
+            const unitPrice = getUnitPriceForClientAndSize(client, sizeLabel);
 
             const { error: updateError } = await supabase
                 .from("products")
@@ -796,9 +821,9 @@ export default function OrdersPage() {
     };
 
     const handleViewOrder = async (order: Order, silent: boolean = false) => {
-        setSelectedOrder(order);
         setShowDetailsModal(true);
         if (!silent) setIsFetchingDetails(true);
+        setSelectedOrder(prev => (silent && prev?.id === order.id ? prev : order));
         try {
             const { data, error } = await supabase
                 .from("orders")
@@ -816,6 +841,44 @@ export default function OrdersPage() {
 
             if (error) throw error;
             const detailedOrder = data as Order;
+
+            const client = await ensureClientPricing(detailedOrder);
+            const itemsToFix = (detailedOrder.order_items || []).filter((item: any) => {
+                const current = Number(item?.unit_price || 0);
+                return current <= 0 && item?.products;
+            });
+
+            if (client && itemsToFix.length > 0 && detailedOrder.status === "PENDENTE") {
+                await Promise.all(itemsToFix.map(async (item: any) => {
+                    const sizeLabel = formatProductSizeForLabel(item.products?.size, item.products?.has_water_dispenser) || item.products?.size;
+                    const expected = getUnitPriceForClientAndSize(client, sizeLabel);
+                    if (!(expected > 0)) return;
+                    const { error: updateItemError } = await supabase
+                        .from("order_items")
+                        .update({ unit_price: expected })
+                        .eq("id", item.id);
+                    if (updateItemError) throw updateItemError;
+                }));
+
+                const { data: refreshed, error: refreshError } = await supabase
+                    .from("orders")
+                    .select(`
+                        *,
+                        clients (*),
+                        order_items (
+                            id,
+                            unit_price,
+                            products (*)
+                        )
+                    `)
+                    .eq("id", order.id)
+                    .single();
+
+                if (refreshError) throw refreshError;
+                (detailedOrder as any).order_items = (refreshed as any)?.order_items || (detailedOrder as any).order_items;
+                (detailedOrder as any).clients = (refreshed as any)?.clients || (detailedOrder as any).clients;
+                (detailedOrder as any).total_amount = (refreshed as any)?.total_amount ?? (detailedOrder as any).total_amount;
+            }
             const syncedTotal = await syncOrderTotalIfNeeded(
                 detailedOrder.id,
                 detailedOrder.order_items,
