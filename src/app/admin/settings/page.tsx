@@ -116,7 +116,11 @@ export default function AdminSettingsPage() {
                 .from("system_settings")
                 .upsert({
                     key: "refrigerator_sizes",
-                    value: { small_max: sMaxNum, medium_max: mMaxNum, large_a_min: largeAMinNum },
+                    value: {
+                        small_max: sMaxNum,
+                        medium_max: mMaxNum,
+                        large_a_min: largeAMinNum
+                    },
                     updated_by: profile?.id
                 }, { onConflict: 'key' });
 
@@ -333,7 +337,7 @@ export default function AdminSettingsPage() {
                                         <p className="text-[10px] text-muted-foreground"><strong>Pequeno:</strong> 0 a {smallMax || "300"} L</p>
                                         <p className="text-[10px] text-muted-foreground"><strong>Médio:</strong> {(parseInt(smallMax) || 300) + 1} a {mediumMax || "550"} L</p>
                                         <p className="text-[10px] text-muted-foreground"><strong>Grande:</strong> Acima de {mediumMax || "550"} L</p>
-                                        <p className="text-[10px] text-muted-foreground"><strong>Grande/A:</strong> Marcável no scan a partir de {largeAMin || "600"} L</p>
+                                        <p className="text-[10px] text-muted-foreground"><strong>Grande/A:</strong> Exibido quando tamanho for Grande e marcado como Com Dispenser</p>
                                     </div>
                                 </div>
                             </div>

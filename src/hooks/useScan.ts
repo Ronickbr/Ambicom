@@ -137,6 +137,9 @@ export function useScan() {
 
           if (uploadError) {
             logger.error(`Error uploading ${key}`, uploadError);
+            toast.error("Falha ao salvar imagem no Storage", {
+              description: uploadError.message
+            });
           } else if (uploadData) {
             const { data: { publicUrl } } = supabase.storage
               .from('product-photos')

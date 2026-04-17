@@ -32,7 +32,6 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useScan } from "@/hooks/useScan";
 import { logger } from "@/lib/logger";
-import { formatTotalVolume, parseVolumeToNumber } from "@/lib/product-utils";
 
 import { RemotePrinterSelector } from "@/components/printing/RemotePrinterSelector";
 import { useRemotePrint } from "@/hooks/useRemotePrint";
@@ -206,23 +205,19 @@ async function applyAdvancedConstraintsSafely(
 const OCRModal = ({
     initialData,
     labelPhoto,
-    largeAMinVolume,
     isProcessing,
     onClose,
     onConfirm
 }: {
     initialData: any;
     labelPhoto: string | null;
-    largeAMinVolume: number;
     isProcessing: boolean;
     onClose: () => void;
     onConfirm: (data: any) => void;
 }) => {
     const [ocrForm, setOcrForm] = useState(() => ({ has_water_dispenser: false, ...initialData }));
     const [isFullscreenImage, setIsFullscreenImage] = useState(false);
-    const volumeTotal = parseVolumeToNumber(ocrForm.volume_total);
-    const isEligibleForLargeA = volumeTotal !== null && volumeTotal >= largeAMinVolume;
-    const isLargeAChecked = Boolean(ocrForm.has_water_dispenser) && isEligibleForLargeA;
+    const hasWaterDispenserChecked = Boolean(ocrForm.has_water_dispenser);
 
     return (
         <>
@@ -332,28 +327,27 @@ const OCRModal = ({
                                 </div>
                                 <div className={cn(
                                     "rounded-2xl border px-4 py-3 flex items-center justify-between gap-4",
-                                    isEligibleForLargeA ? "bg-emerald-500/10 border-emerald-500/20" : "bg-foreground/5 border-border/20 opacity-80"
+                                    "bg-emerald-500/10 border-emerald-500/20"
                                 )}>
                                     <div className="min-w-0">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-foreground">Classificar como Grande/A</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-foreground">Com Dispenser de Água</p>
                                         <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest truncate">
-                                            Disponível a partir de {new Intl.NumberFormat("pt-BR").format(largeAMinVolume)} L
+                                            Se o tamanho for Grande e estiver marcado, a etiqueta sai como Grande/A
                                         </p>
                                     </div>
                                     <label className={cn(
                                         "h-10 w-14 rounded-full border flex items-center p-1 transition-colors shrink-0 cursor-pointer",
-                                        isEligibleForLargeA ? "border-emerald-500/30 bg-emerald-500/10" : "border-border/20 bg-foreground/5 cursor-not-allowed"
+                                        "border-emerald-500/30 bg-emerald-500/10"
                                     )}>
                                         <input
                                             type="checkbox"
                                             className="sr-only"
-                                            checked={isLargeAChecked}
-                                            onChange={(e) => setOcrForm({ ...ocrForm, has_water_dispenser: isEligibleForLargeA ? e.target.checked : false })}
-                                            disabled={!isEligibleForLargeA}
+                                            checked={hasWaterDispenserChecked}
+                                            onChange={(e) => setOcrForm({ ...ocrForm, has_water_dispenser: e.target.checked })}
                                         />
                                         <span className={cn(
                                             "h-8 w-8 rounded-full transition-all",
-                                            isLargeAChecked ? "translate-x-4 bg-emerald-500" : "translate-x-0 bg-muted-foreground/40"
+                                            hasWaterDispenserChecked ? "translate-x-4 bg-emerald-500" : "translate-x-0 bg-muted-foreground/40"
                                         )} />
                                     </label>
                                 </div>
@@ -378,7 +372,7 @@ const OCRModal = ({
                                 Cancelar
                             </button>
                             <button
-                                onClick={() => onConfirm({ ...ocrForm, has_water_dispenser: isLargeAChecked })}
+                                onClick={() => onConfirm({ ...ocrForm, has_water_dispenser: hasWaterDispenserChecked })}
                                 disabled={isProcessing}
                                 className="flex-1 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -454,7 +448,6 @@ const ScanPage = () => {
 
     const [labelPhoto, setLabelPhoto] = useState<string | null>(null);
     const [scannedData, setScannedData] = useState<any>(null);
-    const [largeAMinVolume, setLargeAMinVolume] = useState(600);
 
     const {
         isProcessing,
@@ -467,30 +460,6 @@ const ScanPage = () => {
         setNotFound,
         registerProduct
     } = useScan();
-
-    useEffect(() => {
-        const fetchLargeAMin = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from("system_settings")
-                    .select("value")
-                    .eq("key", "refrigerator_sizes")
-                    .maybeSingle();
-
-                if (error) throw error;
-
-                const parsedValue = typeof data?.value === "string" ? JSON.parse(data.value) : data?.value;
-                const parsedMin = Number(parsedValue?.large_a_min);
-                if (Number.isFinite(parsedMin) && parsedMin > 0) {
-                    setLargeAMinVolume(parsedMin);
-                }
-            } catch (e) {
-                logger.error("Erro ao carregar configuração de Grande/A:", e);
-            }
-        };
-
-        fetchLargeAMin();
-    }, []);
 
     useEffect(() => {
         if (!authLoading && !profile) {
@@ -1166,7 +1135,6 @@ const ScanPage = () => {
                 <OCRModal
                     initialData={scannedData}
                     labelPhoto={labelPhoto}
-                    largeAMinVolume={largeAMinVolume}
                     isProcessing={isProcessing}
                     onClose={() => setShowOcrModal(false)}
                     onConfirm={async (finalData) => {

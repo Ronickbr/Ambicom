@@ -11,7 +11,11 @@ export function parseVolumeToNumber(volumeTotalStr: string | number | null | und
     return Number.isFinite(volume) ? volume : null;
 }
 
-async function fetchRefrigeratorSizeConfig(): Promise<{ smallMax: number; mediumMax: number; largeAMin: number }> {
+async function fetchRefrigeratorSizeConfig(): Promise<{
+    smallMax: number;
+    mediumMax: number;
+    largeAMin: number;
+}> {
     let smallMax = 300;
     let mediumMax = 550;
     let largeAMin = 600;

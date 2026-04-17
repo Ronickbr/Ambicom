@@ -320,6 +320,31 @@ export default function InventoryPage() {
         if (!deletingProduct) return;
         setIsSaving(true);
         try {
+            const internalSerial = deletingProduct.internal_serial;
+            if (internalSerial) {
+                const { data: files, error: listError } = await supabase.storage
+                    .from("product-photos")
+                    .list(internalSerial, { limit: 100 });
+
+                if (listError) {
+                    toast.error("Falha ao listar fotos do produto", { description: listError.message });
+                } else {
+                    const paths = (files || [])
+                        .filter(f => f && typeof f.name === "string" && f.name.length > 0)
+                        .map(f => `${internalSerial}/${f.name}`);
+
+                    if (paths.length > 0) {
+                        const { error: removeError } = await supabase.storage
+                            .from("product-photos")
+                            .remove(paths);
+
+                        if (removeError) {
+                            toast.error("Falha ao remover fotos do produto", { description: removeError.message });
+                        }
+                    }
+                }
+            }
+
             const { error: deleteError } = await supabase.from("products").delete().eq("id", deletingProduct.id);
             if (deleteError) throw deleteError;
             toast.success("Registro removido.");

@@ -98,6 +98,10 @@ function formatCurrencyBRL(value: number | null | undefined): string {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(normalized);
 }
 
+function calculateItemsTotal(items?: Array<{ unit_price?: number | null }>): number {
+    return (items || []).reduce((acc, item) => acc + Number(item.unit_price || 0), 0);
+}
+
 function formatOrderCode(orderId: string): string {
     const short = (orderId || "").split("-")[0] || "";
     return short.toUpperCase();
@@ -422,10 +426,25 @@ export default function OrdersPage() {
 
             // Check if product is available
             if (product.status !== "EM ESTOQUE" || product.order_id !== null) {
+                const analysisStatuses = new Set<Product["status"]>([
+                    "CADASTRO",
+                    "EM AVALIAÇÃO",
+                    "TECNICO",
+                    "SUPERVISOR",
+                    "GESTOR"
+                ]);
+
+                const description = (() => {
+                    if (product.status === "VENDIDO") return "Este item já foi vendido.";
+                    if (product.order_id) return "Este item já está reservado em outro pedido.";
+                    if (analysisStatuses.has(product.status)) return "Este item ainda está em análise, aguardando liberação para o estoque.";
+                    if (product.status === "LIBERADO") return "Este item foi liberado, mas ainda não consta como em estoque.";
+                    if (product.status === "RECUSADO" || product.status === "REPROVADO") return "Este item foi recusado na avaliação e não pode ser adicionado a pedidos.";
+                    return `Este item está com status "${product.status}" e não está disponível para venda.`;
+                })();
+
                 toast.warning("Produto indisponível!", {
-                    description: product.status === "VENDIDO"
-                        ? "Este item já foi vendido."
-                        : "Este item já está reservado em outro pedido."
+                    description
                 });
                 return;
             }
@@ -459,12 +478,6 @@ export default function OrdersPage() {
 
             if (insertError) throw insertError;
 
-            const newTotal = (selectedOrder.total_amount || 0) + unitPrice;
-            await supabase
-                .from("orders")
-                .update({ total_amount: newTotal })
-                .eq("id", selectedOrder.id);
-
             toast.success("Produto adicionado!", {
                 description: `${product.brand} ${product.model} - R$ ${unitPrice.toFixed(2)}`
             });
@@ -480,7 +493,33 @@ export default function OrdersPage() {
         }
     };
 
-    const handleRemoveItemFromOrder = async (itemId: string, productId: string, unitPrice: number) => {
+    const syncOrderTotalIfNeeded = async (
+        orderId: string,
+        items?: Array<{ unit_price?: number | null }>,
+        currentTotal?: number | null,
+        silent: boolean = false
+    ): Promise<number> => {
+        const recalculatedTotal = calculateItemsTotal(items);
+        const storedTotal = Number(currentTotal || 0);
+        const hasDrift = Math.abs(recalculatedTotal - storedTotal) > 0.009;
+
+        if (!hasDrift) return storedTotal;
+
+        const { data: rpcData, error: rpcError } = await supabase
+            .rpc("recalculate_order_total", { p_order_id: orderId });
+
+        if (rpcError) throw rpcError;
+
+        if (!silent) {
+            toast.info("Total do pedido auto-sincronizado.", {
+                description: "Detectamos divergência e ajustamos o valor com base nos itens."
+            });
+        }
+
+        return Number(rpcData ?? recalculatedTotal);
+    };
+
+    const handleRemoveItemFromOrder = async (itemId: string, productId?: string | null) => {
         if (!selectedOrder || selectedOrder.status !== "PENDENTE") return;
 
         setIsSaving(true);
@@ -492,18 +531,14 @@ export default function OrdersPage() {
 
             if (deleteError) throw deleteError;
 
-            const { error: updateError } = await supabase
-                .from("products")
-                .update({ order_id: null })
-                .eq("id", productId);
+            if (productId) {
+                const { error: updateError } = await supabase
+                    .from("products")
+                    .update({ order_id: null })
+                    .eq("id", productId);
 
-            if (updateError) throw updateError;
-
-            const newTotal = Math.max(0, (selectedOrder.total_amount || 0) - unitPrice);
-            await supabase
-                .from("orders")
-                .update({ total_amount: newTotal })
-                .eq("id", selectedOrder.id);
+                if (updateError) throw updateError;
+            }
 
             toast.info("Produto removido do pedido.");
 
@@ -780,7 +815,17 @@ export default function OrdersPage() {
                 .single();
 
             if (error) throw error;
-            setSelectedOrder(data as Order);
+            const detailedOrder = data as Order;
+            const syncedTotal = await syncOrderTotalIfNeeded(
+                detailedOrder.id,
+                detailedOrder.order_items,
+                detailedOrder.total_amount,
+                silent
+            );
+            setSelectedOrder({
+                ...detailedOrder,
+                total_amount: syncedTotal
+            } as Order);
         } catch (error) {
             logger.error("Erro ao buscar detalhes do pedido:", error);
             toast.error("Erro ao carregar detalhes do pedido");
@@ -1567,7 +1612,7 @@ export default function OrdersPage() {
                                                                     </div>
                                                                     {selectedOrder.status === "PENDENTE" && (
                                                                         <button
-                                                                            onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id, item.unit_price || 0)}
+                                                                            onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id)}
                                                                             className="w-full h-10 flex items-center justify-center gap-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all text-[9px] font-black uppercase tracking-widest border border-red-500/20"
                                                                         >
                                                                             <Trash2 className="h-3.5 w-3.5" />
@@ -1613,7 +1658,7 @@ export default function OrdersPage() {
                                                                             <td className="px-4 sm:px-6 py-3 text-right">
                                                                                 <button
                                                                                     type="button"
-                                                                                    onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id, item.unit_price || 0)}
+                                                                                    onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id)}
                                                                                     className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500 transition-all inline-flex items-center justify-center shrink-0"
                                                                                 >
                                                                                     <Trash2 className="h-4 w-4" />
