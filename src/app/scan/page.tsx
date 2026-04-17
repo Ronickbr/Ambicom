@@ -32,6 +32,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useScan } from "@/hooks/useScan";
 import { logger } from "@/lib/logger";
+import { parseVolumeToNumber } from "@/lib/product-utils";
 
 import { RemotePrinterSelector } from "@/components/printing/RemotePrinterSelector";
 import { useRemotePrint } from "@/hooks/useRemotePrint";
@@ -205,19 +206,34 @@ async function applyAdvancedConstraintsSafely(
 const OCRModal = ({
     initialData,
     labelPhoto,
+    smallMax,
+    mediumMax,
     isProcessing,
     onClose,
     onConfirm
 }: {
     initialData: any;
     labelPhoto: string | null;
+    smallMax: number;
+    mediumMax: number;
     isProcessing: boolean;
     onClose: () => void;
     onConfirm: (data: any) => void;
 }) => {
-    const [ocrForm, setOcrForm] = useState(() => ({ has_water_dispenser: false, ...initialData }));
+    const [ocrForm, setOcrForm] = useState(() => {
+        const base = { has_water_dispenser: false, ...initialData };
+        const volume = parseVolumeToNumber((base as any)?.volume_total);
+        const size = volume === null ? null : volume <= smallMax ? "Pequeno" : volume <= mediumMax ? "Médio" : "Grande";
+        return {
+            ...base,
+            has_water_dispenser: size === "Grande" ? Boolean((base as any)?.has_water_dispenser) : false
+        };
+    });
     const [isFullscreenImage, setIsFullscreenImage] = useState(false);
-    const hasWaterDispenserChecked = Boolean(ocrForm.has_water_dispenser);
+    const volumeTotal = parseVolumeToNumber(ocrForm.volume_total);
+    const baseSize = volumeTotal === null ? null : volumeTotal <= smallMax ? "Pequeno" : volumeTotal <= mediumMax ? "Médio" : "Grande";
+    const isDispenserEnabled = baseSize === "Grande";
+    const hasWaterDispenserChecked = isDispenserEnabled && Boolean(ocrForm.has_water_dispenser);
 
     return (
         <>
@@ -323,7 +339,16 @@ const OCRModal = ({
                                 <div className="grid grid-cols-3 gap-3">
                                     <div className="space-y-1.5"><label className="text-[8px] font-black text-muted-foreground uppercase tracking-widest pl-1">Freezer</label><input type="text" value={ocrForm.volume_freezer} onChange={e => setOcrForm({ ...ocrForm, volume_freezer: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-primary/50 outline-none transition-all font-bold text-center" /></div>
                                     <div className="space-y-1.5"><label className="text-[8px] font-black text-muted-foreground uppercase tracking-widest pl-1">Refrig.</label><input type="text" value={ocrForm.volume_refrigerator} onChange={e => setOcrForm({ ...ocrForm, volume_refrigerator: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-primary/50 outline-none transition-all font-bold text-center" /></div>
-                                    <div className="space-y-1.5"><label className="text-[8px] font-black text-muted-foreground uppercase tracking-widest pl-1">Total</label><input type="text" value={ocrForm.volume_total} onChange={e => setOcrForm({ ...ocrForm, volume_total: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-primary/50 outline-none transition-all font-bold text-center" /></div>
+                                    <div className="space-y-1.5"><label className="text-[8px] font-black text-muted-foreground uppercase tracking-widest pl-1">Total</label><input type="text" value={ocrForm.volume_total} onChange={e => {
+                                        const nextVolumeRaw = e.target.value;
+                                        const nextVolume = parseVolumeToNumber(nextVolumeRaw);
+                                        const nextSize = nextVolume === null ? null : nextVolume <= smallMax ? "Pequeno" : nextVolume <= mediumMax ? "Médio" : "Grande";
+                                        setOcrForm((prev: any) => ({
+                                            ...prev,
+                                            volume_total: nextVolumeRaw,
+                                            has_water_dispenser: nextSize === "Grande" ? prev.has_water_dispenser : false
+                                        }));
+                                    }} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-primary/50 outline-none transition-all font-bold text-center" /></div>
                                 </div>
                                 <div className={cn(
                                     "rounded-2xl border px-4 py-3 flex items-center justify-between gap-4",
@@ -332,22 +357,26 @@ const OCRModal = ({
                                     <div className="min-w-0">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-foreground">Com Dispenser de Água</p>
                                         <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest truncate">
-                                            Se o tamanho for Grande e estiver marcado, a etiqueta sai como Grande/A
+                                            {isDispenserEnabled ? "Se estiver marcado, a etiqueta sai como Grande/A" : "Disponível somente quando o tamanho for Grande"}
                                         </p>
                                     </div>
                                     <label className={cn(
                                         "h-10 w-14 rounded-full border flex items-center p-1 transition-colors shrink-0 cursor-pointer",
-                                        "border-emerald-500/30 bg-emerald-500/10"
+                                        isDispenserEnabled ? "border-emerald-500/30 bg-emerald-500/10" : "border-border/20 bg-foreground/5 cursor-not-allowed opacity-50"
                                     )}>
                                         <input
                                             type="checkbox"
                                             className="sr-only"
                                             checked={hasWaterDispenserChecked}
-                                            onChange={(e) => setOcrForm({ ...ocrForm, has_water_dispenser: e.target.checked })}
+                                            onChange={(e) => {
+                                                if (!isDispenserEnabled) return;
+                                                setOcrForm({ ...ocrForm, has_water_dispenser: e.target.checked });
+                                            }}
+                                            disabled={!isDispenserEnabled}
                                         />
                                         <span className={cn(
                                             "h-8 w-8 rounded-full transition-all",
-                                            hasWaterDispenserChecked ? "translate-x-4 bg-emerald-500" : "translate-x-0 bg-muted-foreground/40"
+                                            hasWaterDispenserChecked && isDispenserEnabled ? "translate-x-4 bg-emerald-500" : "translate-x-0 bg-muted-foreground/40"
                                         )} />
                                     </label>
                                 </div>
@@ -448,6 +477,8 @@ const ScanPage = () => {
 
     const [labelPhoto, setLabelPhoto] = useState<string | null>(null);
     const [scannedData, setScannedData] = useState<any>(null);
+    const [sizeSmallMax, setSizeSmallMax] = useState(300);
+    const [sizeMediumMax, setSizeMediumMax] = useState(550);
 
     const {
         isProcessing,
@@ -460,6 +491,30 @@ const ScanPage = () => {
         setNotFound,
         registerProduct
     } = useScan();
+
+    useEffect(() => {
+        const fetchSizeConfig = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("system_settings")
+                    .select("value")
+                    .eq("key", "refrigerator_sizes")
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                const parsedValue = typeof data?.value === "string" ? JSON.parse(data.value) : data?.value;
+                const parsedSmall = Number(parsedValue?.small_max);
+                const parsedMedium = Number(parsedValue?.medium_max);
+                if (Number.isFinite(parsedSmall) && parsedSmall > 0) setSizeSmallMax(parsedSmall);
+                if (Number.isFinite(parsedMedium) && parsedMedium > 0) setSizeMediumMax(parsedMedium);
+            } catch (e) {
+                logger.error("Erro ao carregar configuração de tamanhos:", e);
+            }
+        };
+
+        fetchSizeConfig();
+    }, []);
 
     useEffect(() => {
         if (!authLoading && !profile) {
@@ -1135,6 +1190,8 @@ const ScanPage = () => {
                 <OCRModal
                     initialData={scannedData}
                     labelPhoto={labelPhoto}
+                    smallMax={sizeSmallMax}
+                    mediumMax={sizeMediumMax}
                     isProcessing={isProcessing}
                     onClose={() => setShowOcrModal(false)}
                     onConfirm={async (finalData) => {
