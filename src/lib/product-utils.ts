@@ -73,3 +73,14 @@ export function formatTotalVolume(
 
     return '-';
 }
+
+export function formatProductSizeForLabel(size: string | null | undefined, hasWaterDispenser: boolean | null | undefined): string | null {
+    if (!size) return null;
+
+    // Se for Grande e tiver dispenser de água, vira "Grande/A"
+    if (size === 'Grande' && hasWaterDispenser) {
+        return 'Grande/A';
+    }
+
+    return size;
+}

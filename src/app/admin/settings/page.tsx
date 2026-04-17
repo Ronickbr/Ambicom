@@ -25,6 +25,7 @@ export default function AdminSettingsPage() {
     const [orderSequenceStart, setOrderSequenceStart] = useState<string>("1");
     const [smallMax, setSmallMax] = useState<string>("300");
     const [mediumMax, setMediumMax] = useState<string>("550");
+    const [smartSizeEnabled, setSmartSizeEnabled] = useState<boolean>(true);
 
     const isAuthorized = profile?.role === "ADMIN";
 
@@ -60,6 +61,9 @@ export default function AdminSettingsPage() {
                     setSmallMax(parsedValue.small_max?.toString() || "300");
                     setMediumMax(parsedValue.medium_max?.toString() || "550");
                 }
+
+                const smartSize = data.find(s => s.key === "smart_size_logic_enabled");
+                if (smartSize) setSmartSizeEnabled(smartSize.value === "true" || smartSize.value === true);
             }
         } catch (error) {
             logger.error("Erro ao carregar configurações:", error);
@@ -118,6 +122,16 @@ export default function AdminSettingsPage() {
                 }, { onConflict: 'key' });
 
             if (error3) throw error3;
+
+            const { error: error4 } = await supabase
+                .from("system_settings")
+                .upsert({
+                    key: "smart_size_logic_enabled",
+                    value: smartSizeEnabled,
+                    updated_by: profile?.id
+                }, { onConflict: 'key' });
+
+            if (error4) throw error4;
 
             toast.success("Configurações salvas com sucesso!");
         } catch (error) {

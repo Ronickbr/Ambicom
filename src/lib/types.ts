@@ -58,6 +58,7 @@ export interface Product {
     frequency: string | null;
     voltage: string | null;
     size?: string | null;
+    has_water_dispenser?: boolean | null;
     status: 'CADASTRO' | 'EM AVALIAÇÃO' | 'EM ESTOQUE' | 'VENDIDO' | 'RECUSADO' | 'LIBERADO' | 'TECNICO' | 'SUPERVISOR' | 'GESTOR' | 'REPROVADO';
     photo_product: string | null;
     photo_model: string | null;
@@ -104,6 +105,7 @@ export interface Client {
     price_small: number;
     price_medium: number;
     price_large: number;
+    price_large_a?: number;
     created_at: string;
     updated_at: string;
 }
@@ -136,6 +138,8 @@ export interface Order {
             brand?: string | null;
             internal_serial?: string | null;
             original_serial?: string | null;
+            size?: string | null;
+            has_water_dispenser?: boolean | null;
         } | null;
     }[];
 }

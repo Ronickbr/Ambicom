@@ -50,9 +50,13 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.27.2**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.28.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.28.0**:
+  - **Layout de Pedidos em PDF**: Implementação de layout customizado A4 para pedidos, com resumo por tamanho e suporte a rótulo "Grande/A".
+  - **Lógica de Dispenser Inteligente**: Novo sistema que classifica produtos como Médio ou Grande/A baseado na presença de dispenser de água, com controle via configurações administrativas.
+  - **Feedback de Estoque Aprimorado**: Mensagens de aviso mais precisas ao escanear itens em avaliação, evitando confusão com itens reservados.
 - **v2.27.2**:
   - **Normalização de Marcas (OCR)**: Implementada lógica de sanitização para unificar variações de "Electrolux" (ex: "Electrolux do Brasil") em uma única marca padrão ("ELECTROLUX").
   - **Redundância de OCR**: Normalização aplicada tanto na Edge Function (`ocr`) quanto no frontend (`ScanPage`), garantindo integridade mesmo em falhas de processamento.

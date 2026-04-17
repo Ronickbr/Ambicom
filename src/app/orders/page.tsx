@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
     Plus,
@@ -18,7 +18,9 @@ import {
     Check,
     Camera,
     Trash2,
-    ArrowRight
+    ArrowRight,
+    Printer,
+    Eye
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -28,12 +30,230 @@ import { useNavigate } from "react-router-dom";
 import { Order, Client, Product } from "@/lib/types";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { logger } from "@/lib/logger";
+import { formatProductSizeForLabel } from "@/lib/product-utils";
 
 const statusStyles = {
     PENDENTE: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
     CONCLUIDO: "bg-green-500/10 text-green-500 border-green-500/20",
     CANCELADO: "bg-red-500/10 text-red-500 border-red-500/20",
 };
+
+type OrderDetails = Order & {
+    clients?: Partial<Client> & { name?: string | null };
+    order_items?: Array<{
+        id: string;
+        unit_price?: number | null;
+        products?: (Partial<Product> & {
+            model?: string | null;
+            internal_serial?: string | null;
+            original_serial?: string | null;
+            brand?: string | null;
+            size?: string | null;
+            has_water_dispenser?: boolean | null;
+        }) | null;
+    }>;
+};
+
+const ORDER_PDF_LOGO_URL = "https://ambicom.com.br/wp-content/uploads/2019/03/logoambicom.jpg";
+
+const ORDER_PDF_CSS = `
+@page { size: A4; margin: 16mm; }
+html, body { padding: 0; margin: 0; }
+* { box-sizing: border-box; }
+body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fff; color: #111827; }
+.order-pdf-page { width: 210mm; min-height: 297mm; margin: 0 auto; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+.order-pdf-card { border: 2px solid #111827; padding: 14mm; }
+.order-pdf-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10mm; }
+.order-pdf-logo { height: 14mm; width: auto; object-fit: contain; }
+.order-pdf-title { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; margin: 0; }
+.order-pdf-meta { margin-top: 6px; font-size: 10px; color: #111827; display: flex; gap: 10px; flex-wrap: wrap; }
+.order-pdf-section { margin-top: 10mm; break-inside: avoid; }
+.order-pdf-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 6mm; font-size: 12px; font-weight: 800; }
+.order-pdf-section-title svg { width: 16px; height: 16px; }
+.order-pdf-kv { display: grid; grid-template-columns: 160px 1fr; row-gap: 6px; column-gap: 10px; font-size: 11px; }
+.order-pdf-k { font-weight: 800; }
+.order-pdf-v { font-weight: 600; }
+.order-pdf-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.order-pdf-table th, .order-pdf-table td { border: 2px solid #111827; padding: 6px 8px; vertical-align: top; }
+.order-pdf-table th { font-weight: 900; background: #ffffff; }
+.order-pdf-table td { font-weight: 600; }
+.order-pdf-table thead { display: table-header-group; }
+.order-pdf-table tr { break-inside: avoid; }
+.order-pdf-summary { margin-top: 8mm; break-inside: avoid; }
+.order-pdf-right { text-align: right; }
+.order-pdf-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+.order-pdf-muted { color: #374151; }
+.order-pdf-total-row td { font-weight: 900; }
+
+@media screen {
+  body { background: transparent; }
+  .order-pdf-page { width: 794px; min-height: 1123px; }
+  .order-pdf-card { padding: 56px; }
+  .order-pdf-logo { height: 52px; }
+}
+`;
+
+function formatCurrencyBRL(value: number | null | undefined): string {
+    const normalized = Number.isFinite(value as number) ? (value as number) : 0;
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(normalized);
+}
+
+function calculateItemsTotal(items?: Array<{ unit_price?: number | null }>): number {
+    return (items || []).reduce((acc, item) => acc + Number(item.unit_price || 0), 0);
+}
+
+function formatOrderCode(orderId: string): string {
+    const short = (orderId || "").split("-")[0] || "";
+    return short.toUpperCase();
+}
+
+function safeText(value: unknown, fallback: string): string {
+    const text = typeof value === "string" ? value.trim() : "";
+    return text ? text : fallback;
+}
+
+function buildOrderSummaryBySize(order: OrderDetails) {
+    const items = (order.order_items || [])
+        .map(i => ({
+            unitPrice: Number(i.unit_price || 0),
+            product: i.products || null
+        }))
+        .filter(i => i.product);
+
+    const orderKey: Record<string, number> = {
+        Pequeno: 1,
+        "Médio": 2,
+        Medio: 2,
+        Grande: 3,
+        "Grande/A": 4
+    };
+
+    const map = new Map<string, { size: string; qty: number; unit: number; total: number }>();
+
+    for (const item of items) {
+        const sizeRaw = (item.product as any)?.size as string | null | undefined;
+        const hasWater = Boolean((item.product as any)?.has_water_dispenser);
+        const sizeLabel = formatProductSizeForLabel(sizeRaw ?? null, hasWater) || "Não informado";
+
+        const current = map.get(sizeLabel) || { size: sizeLabel, qty: 0, unit: item.unitPrice, total: 0 };
+        current.qty += 1;
+        current.total += item.unitPrice;
+        if (!current.unit && item.unitPrice) current.unit = item.unitPrice;
+        map.set(sizeLabel, current);
+    }
+
+    const rows = Array.from(map.values()).sort((a, b) => {
+        const ka = orderKey[a.size] ?? 999;
+        const kb = orderKey[b.size] ?? 999;
+        if (ka !== kb) return ka - kb;
+        return a.size.localeCompare(b.size, "pt-BR");
+    });
+
+    const grandTotal = rows.reduce((acc, r) => acc + r.total, 0);
+    return { rows, grandTotal };
+}
+
+function OrderPdfDocument({ order, issuedAt }: { order: OrderDetails; issuedAt: Date }) {
+    const client = (order as any).clients || {};
+    const code = formatOrderCode(order.id);
+    const { rows, grandTotal } = buildOrderSummaryBySize(order);
+
+    return (
+        <div className="order-pdf-page">
+            <style>{ORDER_PDF_CSS}</style>
+            <div className="order-pdf-card">
+                <div className="order-pdf-header">
+                    <div>
+                        <h1 className="order-pdf-title">Pedido de Venda #{code}</h1>
+                        <div className="order-pdf-meta">
+                            <span><span className="order-pdf-muted">Data de Emissão:</span> {issuedAt.toLocaleDateString("pt-BR")}</span>
+                            <span><span className="order-pdf-muted">Hora:</span> {issuedAt.toLocaleTimeString("pt-BR")}</span>
+                        </div>
+                    </div>
+                    <img className="order-pdf-logo" src={ORDER_PDF_LOGO_URL} alt="Logo Ambicom" />
+                </div>
+
+                <div className="order-pdf-section">
+                    <div className="order-pdf-section-title">
+                        <User className="h-4 w-4" />
+                        Informações do Cliente
+                    </div>
+                    <div className="order-pdf-kv">
+                        <div className="order-pdf-k">Nome:</div>
+                        <div className="order-pdf-v">{safeText(client?.name, "N/A")}</div>
+
+                        <div className="order-pdf-k">CPF/CNPJ:</div>
+                        <div className="order-pdf-v order-pdf-mono">{safeText(client?.tax_id, "N/A")}</div>
+
+                        <div className="order-pdf-k">Contato:</div>
+                        <div className="order-pdf-v">{safeText(client?.phone, "N/A")}</div>
+
+                        <div className="order-pdf-k">Endereço:</div>
+                        <div className="order-pdf-v">{safeText(client?.address, "Não informado")}</div>
+                    </div>
+                </div>
+
+                <div className="order-pdf-section">
+                    <div className="order-pdf-section-title">
+                        <Package className="h-4 w-4" />
+                        Itens do Pedido
+                    </div>
+
+                    <table className="order-pdf-table">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>S/N Interno</th>
+                                <th>S/N Original</th>
+                                <th>Marca</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {(order.order_items || []).map((item) => {
+                                const p: any = item.products || {};
+                                return (
+                                    <tr key={item.id}>
+                                        <td>{safeText(p?.model, "N/A")}</td>
+                                        <td className="order-pdf-mono">{safeText(p?.internal_serial, "N/A")}</td>
+                                        <td className="order-pdf-mono">{safeText(p?.original_serial, "N/A")}</td>
+                                        <td>{safeText(p?.brand, "N/A")}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+
+                    <div className="order-pdf-summary">
+                        <table className="order-pdf-table">
+                            <thead>
+                                <tr>
+                                    <th>Tamanhos</th>
+                                    <th className="order-pdf-right">Quantidade</th>
+                                    <th className="order-pdf-right">Valor Uni.</th>
+                                    <th className="order-pdf-right">Valor Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.map(r => (
+                                    <tr key={r.size}>
+                                        <td>{r.size}</td>
+                                        <td className="order-pdf-right">{r.qty}</td>
+                                        <td className="order-pdf-right">{formatCurrencyBRL(r.unit)}</td>
+                                        <td className="order-pdf-right">{formatCurrencyBRL(r.total)}</td>
+                                    </tr>
+                                ))}
+                                <tr className="order-pdf-total-row">
+                                    <td colSpan={3} className="order-pdf-right">Total:</td>
+                                    <td className="order-pdf-right">{formatCurrencyBRL(grandTotal || order.total_amount || 0)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function OrdersPage() {
     const { profile, loading: authLoading } = useAuth();
@@ -59,6 +279,11 @@ export default function OrdersPage() {
     const [showMountingCamera, setShowMountingCamera] = useState(false);
     const [detectedScanCode, setDetectedScanCode] = useState("");
     const scannerRef = useRef<Html5Qrcode | null>(null);
+    const [pdfPreviewOrder, setPdfPreviewOrder] = useState<OrderDetails | null>(null);
+    const [pdfPreviewIssuedAt, setPdfPreviewIssuedAt] = useState<Date | null>(null);
+    const [showPdfPreviewModal, setShowPdfPreviewModal] = useState(false);
+    const [isPreparingPdfPreview, setIsPreparingPdfPreview] = useState(false);
+    const pdfPrintableRef = useRef<HTMLDivElement | null>(null);
 
 
 
@@ -200,11 +425,19 @@ export default function OrdersPage() {
             const product = productData as Product;
 
             // Check if product is available
-            if (product.status !== "EM ESTOQUE" || product.order_id !== null) {
+            if (product.status !== "EM ESTOQUE" || (product.order_id !== null && product.order_id !== selectedOrder.id)) {
+                let description = "Este item já está reservado em outro pedido.";
+
+                if (product.status === "VENDIDO") {
+                    description = "Este item já foi vendido.";
+                } else if (product.status === "EM AVALIAÇÃO" || product.status === "CADASTRO" || product.status === "TECNICO") {
+                    description = "Este item ainda está em análise aguardando liberação para o estoque.";
+                } else if (product.status === "REPROVADO" || product.status === "RECUSADO") {
+                    description = "Este item foi reprovado ou recusado na avaliação.";
+                }
+
                 toast.warning("Produto indisponível!", {
-                    description: product.status === "VENDIDO"
-                        ? "Este item já foi vendido."
-                        : "Este item já está reservado em outro pedido."
+                    description: description
                 });
                 return;
             }
@@ -214,9 +447,11 @@ export default function OrdersPage() {
             let unitPrice = 0;
 
             if (client) {
-                if (product.size === 'Pequeno') unitPrice = client.price_small || 0;
-                else if (product.size === 'Médio') unitPrice = client.price_medium || 0;
-                else if (product.size === 'Grande') unitPrice = client.price_large || 0;
+                const sizeLabel = formatProductSizeForLabel(product.size, product.has_water_dispenser) || product.size;
+                if (sizeLabel === 'Pequeno') unitPrice = client.price_small || 0;
+                else if (sizeLabel === 'Médio') unitPrice = client.price_medium || 0;
+                else if (sizeLabel === 'Grande') unitPrice = client.price_large || 0;
+                else if (sizeLabel === 'Grande/A') unitPrice = client.price_large_a || 0;
             }
 
             const { error: updateError } = await supabase
@@ -236,15 +471,6 @@ export default function OrdersPage() {
 
             if (insertError) throw insertError;
 
-            // const newTotal = (selectedOrder.total_amount || 0) + unitPrice;
-            // await supabase
-            //     .from("orders")
-            //     .update({ total_amount: newTotal })
-            //     .eq("id", selectedOrder.id);
-
-            // Use a more robust recalculation after adding
-            await recalculateOrderTotal(selectedOrder.id);
-
             toast.success("Produto adicionado!", {
                 description: `${product.brand} ${product.model} - R$ ${unitPrice.toFixed(2)}`
             });
@@ -260,7 +486,36 @@ export default function OrdersPage() {
         }
     };
 
-    const handleRemoveItemFromOrder = async (itemId: string, productId: string, unitPrice: number) => {
+    const syncOrderTotalIfNeeded = async (
+        orderId: string,
+        items?: Array<{ unit_price?: number | null }>,
+        currentTotal?: number | null,
+        silent: boolean = false
+    ): Promise<number> => {
+        const recalculatedTotal = calculateItemsTotal(items);
+        const storedTotal = Number(currentTotal || 0);
+        const hasDrift = Math.abs(recalculatedTotal - storedTotal) > 0.009;
+
+        if (!hasDrift) return storedTotal;
+
+        // Corrige drift de total pelo somatório real dos itens.
+        const { error: updateTotalError } = await supabase
+            .from("orders")
+            .update({ total_amount: recalculatedTotal })
+            .eq("id", orderId);
+
+        if (updateTotalError) throw updateTotalError;
+
+        if (!silent) {
+            toast.info("Total do pedido auto-sincronizado.", {
+                description: "Detectamos divergência e ajustamos o valor com base nos itens."
+            });
+        }
+
+        return recalculatedTotal;
+    };
+
+    const handleRemoveItemFromOrder = async (itemId: string, productId: string) => {
         if (!selectedOrder || selectedOrder.status !== "PENDENTE") return;
 
         setIsSaving(true);
@@ -278,15 +533,6 @@ export default function OrdersPage() {
                 .eq("id", productId);
 
             if (updateError) throw updateError;
-
-            // const newTotal = Math.max(0, (selectedOrder.total_amount || 0) - unitPrice);
-            // await supabase
-            //     .from("orders")
-            //     .update({ total_amount: newTotal })
-            //     .eq("id", selectedOrder.id);
-
-            // Use a more robust recalculation after removing
-            await recalculateOrderTotal(selectedOrder.id);
 
             toast.info("Produto removido do pedido.");
 
@@ -314,21 +560,7 @@ export default function OrdersPage() {
         setPage(0);
     }, [searchTerm]);
 
-    useEffect(() => {
-        if (!authLoading && !isAuthorized) {
-            toast.error("Acesso restrito");
-            navigate("/");
-            return;
-        }
-        if (isAuthorized) {
-            const timer = setTimeout(() => {
-                fetchOrders();
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-    }, [authLoading, isAuthorized, navigate, page, searchTerm]);
-
-    const fetchOrders = async (silent: boolean = false) => {
+    const fetchOrders = useCallback(async (silent: boolean = false) => {
         if (!silent) setIsLoading(true);
         try {
             let query = supabase
@@ -338,14 +570,6 @@ export default function OrdersPage() {
                 .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
             if (searchTerm) {
-                // Note: Searching on joined tables (clients.name) is tricky in Supabase basic syntax without embedding.
-                // We use !inner on clients to filter by client name, OR filter by order ID.
-                // However, OR across tables is hard.
-                // Simple approach: Search ID only, or use a specific RPC, or just filter by ID for now.
-                // Or better: filter on ID OR filter on client name (requires embedding).
-                // "id.ilike.%term%,clients.name.ilike.%term%" - this doesn't work easily with joined cols in top level OR.
-                // Let's stick to ID search for simplicity, or try to filter on the joined column if possible.
-                // Actually, let's search just ID for now to be safe and fast.
                 query = query.ilike('id', `%${searchTerm}%`);
             }
 
@@ -361,19 +585,146 @@ export default function OrdersPage() {
         } finally {
             setIsLoading(false);
         }
+    }, [page, searchTerm]);
+
+    useEffect(() => {
+        if (!authLoading && !isAuthorized) {
+            toast.error("Acesso restrito");
+            navigate("/");
+            return;
+        }
+        if (isAuthorized) {
+            const timer = setTimeout(() => {
+                fetchOrders();
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [authLoading, fetchOrders, isAuthorized, navigate]);
+
+    const fetchOrderForPdf = async (orderId: string): Promise<OrderDetails> => {
+        const { data, error } = await supabase
+            .from("orders")
+            .select(`
+                *,
+                clients (*),
+                order_items (
+                    id,
+                    unit_price,
+                    products (*)
+                )
+            `)
+            .eq("id", orderId)
+            .single();
+
+        if (error) throw error;
+        return data as OrderDetails;
+    };
+
+    const openPdfPreview = async (order: Order) => {
+        setIsPreparingPdfPreview(true);
+        try {
+            if (!order?.id) {
+                toast.error("Pedido inválido para gerar PDF.");
+                return;
+            }
+
+            const details = await fetchOrderForPdf(order.id);
+            const items = details.order_items || [];
+
+            if (!details.clients || !safeText((details as any).clients?.name, "")) {
+                toast.error("Dados do cliente ausentes.", { description: "Verifique o cadastro do cliente antes de gerar o PDF." });
+                return;
+            }
+
+            if (items.length === 0) {
+                toast.error("Pedido sem itens.", { description: "Adicione produtos ao pedido antes de gerar o PDF." });
+                return;
+            }
+
+            setPdfPreviewOrder(details);
+            setPdfPreviewIssuedAt(new Date());
+            setShowPdfPreviewModal(true);
+        } catch (err) {
+            logger.error("Erro ao preparar preview do PDF:", err);
+            toast.error("Erro ao preparar preview do PDF.");
+        } finally {
+            setIsPreparingPdfPreview(false);
+        }
+    };
+
+    const handlePrintPdfPreview = async () => {
+        const content = pdfPrintableRef.current;
+        if (!content) {
+            toast.error("Não foi possível preparar a impressão.");
+            return;
+        }
+
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "0";
+        iframe.setAttribute("aria-hidden", "true");
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentDocument;
+        const win = iframe.contentWindow;
+        if (!doc || !win) {
+            iframe.remove();
+            toast.error("Impressão indisponível neste navegador.");
+            return;
+        }
+
+        const title = pdfPreviewOrder ? `Pedido_${formatOrderCode(pdfPreviewOrder.id)}` : "Pedido";
+        doc.open();
+        doc.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><style>${ORDER_PDF_CSS}</style></head><body></body></html>`);
+        doc.close();
+        doc.body.innerHTML = content.innerHTML;
+
+        const images = Array.from(doc.images || []);
+        if (images.length > 0) {
+            await Promise.all(images.map((img) => new Promise<void>((resolve) => {
+                if (img.complete) {
+                    resolve();
+                    return;
+                }
+                const onDone = () => {
+                    img.removeEventListener("load", onDone);
+                    img.removeEventListener("error", onDone);
+                    resolve();
+                };
+                img.addEventListener("load", onDone);
+                img.addEventListener("error", onDone);
+            })));
+        }
+
+        const cleanup = () => {
+            iframe.remove();
+        };
+
+        const onAfterPrint = () => {
+            win.removeEventListener("afterprint", onAfterPrint);
+            cleanup();
+        };
+        win.addEventListener("afterprint", onAfterPrint);
+
+        setTimeout(() => {
+            try {
+                win.focus();
+                win.print();
+            } catch (e) {
+                cleanup();
+                toast.error("Falha ao abrir diálogo de impressão.");
+            }
+        }, 150);
     };
 
     const handleExportPDF = async (order?: Order) => {
         const { exportToPDF } = await import("@/lib/export-utils");
         if (order) {
-            const headers = ["Produto", "S/N Interno", "S/N Original", "Marca"];
-            const data = (order.order_items || []).map((item: any) => [
-                item.products?.model || "N/A",
-                item.products?.internal_serial || "N/A",
-                item.products?.original_serial || "N/A",
-                item.products?.brand || "N/A"
-            ]);
-            exportToPDF(`Pedido #${order.id.split("-")[0].toUpperCase()} - ${order.clients?.name}`, headers, data, `pedido_${order.id.split("-")[0]}`);
+            await openPdfPreview(order);
         } else {
             const headers = ["Pedido ID", "Cliente", "Status", "Data de Criação"];
             const data = orders.map(o => [
@@ -458,53 +809,22 @@ export default function OrdersPage() {
                 .single();
 
             if (error) throw error;
-            const updatedOrder = data as Order;
-            setSelectedOrder(updatedOrder);
-
-            // Automatic Total Correction Check
-            const actualTotal = updatedOrder.order_items?.reduce((acc, item) => acc + (item.unit_price || 0), 0) || 0;
-            if (actualTotal !== updatedOrder.total_amount) {
-                console.log(`[Order Fix] Discrepancy detected in order ${updatedOrder.id}: Stored ${updatedOrder.total_amount} vs Actual ${actualTotal}. Fixing...`);
-                await recalculateOrderTotal(updatedOrder.id, actualTotal);
-
-                // Update local state to show correct total immediately
-                setSelectedOrder(prev => prev ? { ...prev, total_amount: actualTotal } : null);
-                if (!silent) toast.info("O total do pedido foi sincronizado automaticamente.");
-                fetchOrders(true);
-            }
-
+            const detailedOrder = data as Order;
+            const syncedTotal = await syncOrderTotalIfNeeded(
+                detailedOrder.id,
+                detailedOrder.order_items,
+                detailedOrder.total_amount,
+                silent
+            );
+            setSelectedOrder({
+                ...detailedOrder,
+                total_amount: syncedTotal
+            } as Order);
         } catch (error) {
             logger.error("Erro ao buscar detalhes do pedido:", error);
             toast.error("Erro ao carregar detalhes do pedido");
         } finally {
             setIsFetchingDetails(false);
-        }
-    };
-
-    const recalculateOrderTotal = async (orderId: string, providedTotal?: number) => {
-        try {
-            let total = providedTotal;
-
-            if (total === undefined) {
-                const { data: items, error: itemsError } = await supabase
-                    .from("order_items")
-                    .select("unit_price")
-                    .eq("order_id", orderId);
-
-                if (itemsError) throw itemsError;
-                total = items?.reduce((acc, item) => acc + (item.unit_price || 0), 0) || 0;
-            }
-
-            const { error: updateError } = await supabase
-                .from("orders")
-                .update({ total_amount: total })
-                .eq("id", orderId);
-
-            if (updateError) throw updateError;
-            return total;
-        } catch (err) {
-            logger.error(`Erro ao recalcular total do pedido ${orderId}:`, err);
-            return null;
         }
     };
 
@@ -1038,9 +1358,13 @@ export default function OrdersPage() {
                                 <>
                                     {/* Resumo por Tamanho */}
                                     {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (
-                                        <div className="grid grid-cols-3 gap-4 mb-8">
-                                            {['Pequeno', 'Médio', 'Grande'].map(size => {
-                                                const count = selectedOrder.order_items?.filter((item: any) => item.products?.size === size).length || 0;
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                                            {['Pequeno', 'Médio', 'Grande', 'Grande/A'].map(size => {
+                                                const count = selectedOrder.order_items?.filter((item: any) => {
+                                                    const product = item.products;
+                                                    const sizeLabel = formatProductSizeForLabel(product?.size, product?.has_water_dispenser) || product?.size;
+                                                    return sizeLabel === size;
+                                                }).length || 0;
                                                 return (
                                                     <div key={size} className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex flex-col items-center justify-center">
                                                         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{size}</span>
@@ -1282,7 +1606,7 @@ export default function OrdersPage() {
                                                                     </div>
                                                                     {selectedOrder.status === "PENDENTE" && (
                                                                         <button
-                                                                            onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id, item.unit_price || 0)}
+                                                                            onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id)}
                                                                             className="w-full h-10 flex items-center justify-center gap-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all text-[9px] font-black uppercase tracking-widest border border-red-500/20"
                                                                         >
                                                                             <Trash2 className="h-3.5 w-3.5" />
@@ -1328,7 +1652,7 @@ export default function OrdersPage() {
                                                                             <td className="px-4 sm:px-6 py-3 text-right">
                                                                                 <button
                                                                                     type="button"
-                                                                                    onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id, item.unit_price || 0)}
+                                                                                    onClick={() => handleRemoveItemFromOrder(item.id, item.products?.id)}
                                                                                     className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500 transition-all inline-flex items-center justify-center shrink-0"
                                                                                 >
                                                                                     <Trash2 className="h-4 w-4" />
@@ -1383,6 +1707,61 @@ export default function OrdersPage() {
                             >
                                 {selectedOrder.status === "CONCLUIDO" ? "Sair" : "Aguardar"}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showPdfPreviewModal && pdfPreviewOrder && pdfPreviewIssuedAt && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-background/90 backdrop-blur-xl animate-in fade-in duration-300">
+                    <div className="glass-card w-full max-w-6xl max-h-[95vh] overflow-hidden border-border/20 shadow-2xl bg-card/95 relative flex flex-col">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+
+                        <div className="p-4 sm:p-6 border-b border-border/20 flex items-center justify-between gap-4 shrink-0">
+                            <div className="min-w-0">
+                                <h2 className="text-lg sm:text-xl font-black text-foreground tracking-tight flex items-center gap-2">
+                                    <Eye className="h-5 w-5 text-primary" />
+                                    Preview do PDF — Pedido #{formatOrderCode(pdfPreviewOrder.id)}
+                                </h2>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-black truncate">
+                                    Revise antes de imprimir/salvar como PDF
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                    onClick={handlePrintPdfPreview}
+                                    disabled={isPreparingPdfPreview}
+                                    className="h-11 sm:h-12 px-4 sm:px-6 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all active:scale-95 flex items-center justify-center gap-2 text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-xl shadow-primary/20"
+                                >
+                                    <Printer className="h-4 w-4" />
+                                    Imprimir / Salvar PDF
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowPdfPreviewModal(false);
+                                        setPdfPreviewOrder(null);
+                                        setPdfPreviewIssuedAt(null);
+                                    }}
+                                    className="h-11 sm:h-12 w-11 sm:w-12 rounded-2xl bg-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all hover:bg-red-500/20 hover:text-red-500 border border-border/20"
+                                    title="Fechar"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar bg-foreground/5 p-3 sm:p-6">
+                            <div className="mx-auto w-full max-w-[920px]">
+                                <div className="rounded-2xl border border-border/20 bg-white shadow-2xl overflow-hidden">
+                                    <div ref={pdfPrintableRef}>
+                                        <OrderPdfDocument order={pdfPreviewOrder} issuedAt={pdfPreviewIssuedAt} />
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex items-center justify-between text-[10px] text-muted-foreground">
+                                    <span className="font-black uppercase tracking-widest opacity-60">Formato A4 • Margens otimizadas</span>
+                                    <span className="font-mono opacity-60">{new Date().toLocaleString("pt-BR")}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

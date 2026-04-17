@@ -223,7 +223,11 @@ const OCRModal = ({
     onClose: () => void;
     onConfirm: (data: any) => void;
 }) => {
-    const [ocrForm, setOcrForm] = useState(initialData);
+    // Inicializa o formulário garantindo que has_water_dispenser exista
+    const [ocrForm, setOcrForm] = useState({
+        ...initialData,
+        has_water_dispenser: initialData.has_water_dispenser ?? false
+    });
     const [isFullscreenImage, setIsFullscreenImage] = useState(false);
 
     return (
@@ -341,6 +345,25 @@ const OCRModal = ({
                                     <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Frequência</label><input type="text" value={ocrForm.frequency} onChange={e => setOcrForm({ ...ocrForm, frequency: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
                                     <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Corrente Elétrica</label><input type="text" value={ocrForm.electric_current} onChange={e => setOcrForm({ ...ocrForm, electric_current: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
                                     <div className="space-y-1.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest pl-1">Potência Degelo</label><input type="text" value={ocrForm.defrost_power} onChange={e => setOcrForm({ ...ocrForm, defrost_power: e.target.value })} className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary/50 outline-none transition-all font-bold" /></div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest border-l-2 border-blue-500 pl-2">Opcionais do Equipamento</h4>
+                                <div className="p-4 bg-foreground/5 border border-border/20 rounded-2xl flex items-center justify-between group hover:bg-foreground/10 transition-all cursor-pointer" onClick={() => setOcrForm({ ...ocrForm, has_water_dispenser: !ocrForm.has_water_dispenser })}>
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-black text-foreground uppercase tracking-tight">Com Dispenser de Água</p>
+                                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Afeta a classificação de tamanho (Grande/A)</p>
+                                    </div>
+                                    <div className={cn(
+                                        "h-7 w-12 rounded-full transition-all duration-300 relative border",
+                                        ocrForm.has_water_dispenser ? "bg-primary border-primary shadow-[0_0_10px_rgba(14,165,233,0.3)]" : "bg-foreground/10 border-border/20"
+                                    )}>
+                                        <div className={cn(
+                                            "absolute top-1 w-5 h-5 rounded-full bg-white transition-all duration-300 shadow-sm",
+                                            ocrForm.has_water_dispenser ? "left-6" : "left-1"
+                                        )} />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -736,6 +759,7 @@ const ScanPage = () => {
                 defrost_power: data.potencia_degelo || "",
                 frequency: data.frequencia || "",
                 voltage: data.tensao || "",
+                has_water_dispenser: false,
             });
             setShowOcrModal(true);
         }
@@ -788,6 +812,7 @@ const ScanPage = () => {
                         defrost_power: data.potencia_degelo || "",
                         frequency: data.frequencia || "",
                         voltage: data.tensao || "",
+                        has_water_dispenser: false,
                     });
                     setShowOcrModal(true);
                 }

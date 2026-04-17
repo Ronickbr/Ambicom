@@ -148,7 +148,23 @@ export function useScan() {
       }
 
       const { data: { user } } = await supabase.auth.getUser();
-      const productSize = await calculateProductSize(data.volume_total);
+
+      // Busca configuração global de lógica inteligente
+      const { data: smartSizeConfig } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "smart_size_logic_enabled")
+        .maybeSingle();
+
+      const isSmartSizeEnabled = smartSizeConfig?.value === "true" || smartSizeConfig?.value === true || smartSizeConfig === null; // Default true if not found
+
+      // Nova regra de negócio: Se marcar dispenser, é Grande. Se não, é Médio (sobrescreve cálculo automático por volume)
+      let productSize: string | null = null;
+      if (isSmartSizeEnabled && data.has_water_dispenser !== undefined) {
+        productSize = data.has_water_dispenser ? 'Grande' : 'Médio';
+      } else {
+        productSize = await calculateProductSize(data.volume_total);
+      }
 
       const { data: newProduct, error } = await supabase
         .from("products")
