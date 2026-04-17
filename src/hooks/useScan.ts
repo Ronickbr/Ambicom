@@ -158,12 +158,16 @@ export function useScan() {
 
       const isSmartSizeEnabled = smartSizeConfig?.value === "true" || smartSizeConfig?.value === true || smartSizeConfig === null; // Default true if not found
 
-      // Nova regra de negócio: Se marcar dispenser, é Grande. Se não, é Médio (sobrescreve cálculo automático por volume)
-      let productSize: string | null = null;
-      if (isSmartSizeEnabled && data.has_water_dispenser !== undefined) {
+      // Nova regra de negócio refinada:
+      // A) 3 tamanhos base: Pequeno, Médio, Grande.
+      // 1. Calcula tamanho base por volume.
+      let productSize: string | null = await calculateProductSize(data.volume_total);
+
+      // 2. Se a lógica inteligente estiver ativa e não for um frigobar (Pequeno):
+      if (isSmartSizeEnabled && productSize !== 'Pequeno' && data.has_water_dispenser !== undefined) {
+        // Se tiver dispenser, força para Grande (que será exibido como Grande/A)
+        // Se não tiver, força para Médio (conforme regra anterior do usuário)
         productSize = data.has_water_dispenser ? 'Grande' : 'Médio';
-      } else {
-        productSize = await calculateProductSize(data.volume_total);
       }
 
       const { data: newProduct, error } = await supabase

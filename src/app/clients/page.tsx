@@ -18,7 +18,7 @@ export default function ClientsPage() {
 
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [clientForm, setClientForm] = useState({ name: "", tax_id: "", email: "", phone: "", address: "", price_small: 0, price_medium: 0, price_large: 0 });
+  const [clientForm, setClientForm] = useState({ name: "", tax_id: "", email: "", phone: "", address: "", price_small: 0, price_medium: 0, price_large: 0, price_large_a: 0 });
   const [isSaving, setIsSaving] = useState(false);
 
   const canEdit = profile?.role === "GESTOR" || profile?.role === "ADMIN";
@@ -103,11 +103,12 @@ export default function ClientsPage() {
         address: client.address || "",
         price_small: client.price_small || 0,
         price_medium: client.price_medium || 0,
-        price_large: client.price_large || 0
+        price_large: client.price_large || 0,
+        price_large_a: client.price_large_a || 0
       });
     } else {
       setEditingClient(null);
-      setClientForm({ name: "", tax_id: "", email: "", phone: "", address: "", price_small: 0, price_medium: 0, price_large: 0 });
+      setClientForm({ name: "", tax_id: "", email: "", phone: "", address: "", price_small: 0, price_medium: 0, price_large: 0, price_large_a: 0 });
     }
     setShowModal(true);
   };
@@ -135,7 +136,8 @@ export default function ClientsPage() {
             tax_id: clientForm.tax_id,
             price_small: clientForm.price_small,
             price_medium: clientForm.price_medium,
-            price_large: clientForm.price_large
+            price_large: clientForm.price_large,
+            price_large_a: clientForm.price_large_a
           }]);
 
         if (error) throw error;
@@ -517,7 +519,7 @@ export default function ClientsPage() {
                 </div>
                 <div className="space-y-4">
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1 block">Tabela de Preços por Tamanho (R$)</label>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div className="space-y-2">
                       <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Pequeno</label>
                       <input
@@ -551,10 +553,21 @@ export default function ClientsPage() {
                         placeholder="0,00"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-bold text-primary/80 uppercase ml-1">Grande (Disp.)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={clientForm.price_large_a}
+                        onChange={e => setClientForm({ ...clientForm, price_large_a: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold italic"
+                        placeholder="0,00"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-4 pt-4">
-                  <button 
+                  <button
                     type="submit"
                     disabled={isSaving}
                     className="flex-[2] bg-primary hover:brightness-110 text-primary-foreground font-black uppercase tracking-[0.2em] text-[10px] h-16 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 border-t border-border/20 flex items-center justify-center gap-3"

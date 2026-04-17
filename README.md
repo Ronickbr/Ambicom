@@ -50,9 +50,12 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.28.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.29.0**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+- **v2.29.0**:
+  - **Refinação de Categorias e Preços**: Lógica reestruturada para 3 categorias base (Pequeno, Médio, Grande) e 4 valores de cobrança distintos (Pequeno, Médio, Grande, Grande/A).
+  - **Gestão de Clientes v2**: Formulário de parceiros atualizado para suportar a configuração individual do preço para o novo rótulo "Grande/A" (com dispenser).
 - **v2.28.0**:
   - **Layout de Pedidos em PDF**: Implementação de layout customizado A4 para pedidos, com resumo por tamanho e suporte a rótulo "Grande/A".
   - **Lógica de Dispenser Inteligente**: Novo sistema que classifica produtos como Médio ou Grande/A baseado na presença de dispenser de água, com controle via configurações administrativas.
