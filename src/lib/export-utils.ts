@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import * as QRCode from 'qrcode';
+import { formatProductSizeForLabel } from '@/lib/product-utils';
 
 // ─── Relatórios Comuns ────────────────────────────────────────────────────────
 export const exportToPDF = (title: string, headers: string[], data: (string | number | boolean | null)[][], fileName: string) => {
@@ -44,6 +45,10 @@ export function generateLabelsTSPL(products: any[]): string {
     const lines: string[] = [];
     for (let idx = 0; idx < products.length; idx++) {
         const p = products[idx];
+        const labelSize = formatProductSizeForLabel(
+            p.size,
+            Boolean(p.has_water_dispenser ?? p.hasWaterDispenser)
+        );
         lines.push('SIZE 55 mm,80 mm', 'GAP 0 mm,0 mm', 'DIRECTION 1', 'CLS', 'CODEPAGE UTF-8');
 
         // HEADER
@@ -84,7 +89,7 @@ export function generateLabelsTSPL(products: any[]): string {
             { l: ["GÁS FRIG.", "CARGA GÁS", "COMPR."], v: [p.refrigerant_gas, p.gas_charge, p.compressor] },
             { l: ["VOL. FRZ", "VOL. REF.", "VOL. TOT."], v: [p.volume_freezer, p.volume_refrigerator, p.volume_total] },
             { l: ["P. ALTA", "P. BAIXA", "CAP. CONG."], v: [String(p.pressure_high_low).split('/')[0], String(p.pressure_high_low).split('/')[1], p.freezing_capacity] },
-            { l: ["CORRENTE", "POT. DEG.", "TAM."], v: [p.electric_current, p.defrost_power, p.size] }
+            { l: ["CORRENTE", "POT. DEG.", "TAM."], v: [p.electric_current, p.defrost_power, labelSize || p.size] }
         ];
 
         rows.forEach(r => {
@@ -110,6 +115,10 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
 
     for (let idx = 0; idx < products.length; idx++) {
         const p = products[idx];
+        const labelSize = formatProductSizeForLabel(
+            p.size,
+            Boolean(p.has_water_dispenser ?? p.hasWaterDispenser)
+        );
         if (idx > 0) doc.addPage([55, 80], 'p');
         const val = (v: any) => String(v ?? '').trim() || '-';
         const X0 = 2, X1 = 53, Y0 = 2, CENTER_X = 27.5;
@@ -198,7 +207,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         // Removida a linha COL1 para unir as duas primeiras colunas
         doc.line(COL2, curY, COL2, curY + H_STD);
         doc.setFontSize(5).text("PRESSÃO ALTA / BAIXA", (X0 + COL2) / 2, curY + 2.2, { align: 'center' });
-        doc.setFontSize(6.5).text(val(p.pressure_high_low), (X0 + COL2) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(5).text(val(p.pressure_high_low), (X0 + COL2) / 2, curY + 5.8, { align: 'center' });
         doc.setFontSize(5).text("CAP. CONG.", (COL2 + X1) / 2, curY + 2.2, { align: 'center' });
         doc.setFontSize(6.5).text(val(p.freezing_capacity), (COL2 + X1) / 2, curY + 5.8, { align: 'center' });
         curY += H_STD; doc.line(X0, curY, X1, curY);
@@ -210,7 +219,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         doc.setFontSize(5).text("POT. DEG.", (COL1 + COL2) / 2, curY + 2.2, { align: 'center' });
         doc.setFontSize(6.5).text(val(p.defrost_power), (COL1 + COL2) / 2, curY + 5.8, { align: 'center' });
         doc.setFontSize(5).text("TAM.", (COL2 + X1) / 2, curY + 2.2, { align: 'center' });
-        doc.setFontSize(6.5).text(val(p.size), (COL2 + X1) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(6.5).text(val(labelSize || p.size), (COL2 + X1) / 2, curY + 5.8, { align: 'center' });
         curY += H_STD; doc.line(X0, curY, X1, curY);
 
         // Bordas externas laterais
