@@ -65,33 +65,34 @@ const ORDER_PDF_CSS = `
 html, body { padding: 0; margin: 0; }
 * { box-sizing: border-box; }
 body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fff; color: #111827; }
-.order-pdf-page { width: 210mm; min-height: 297mm; margin: 0 auto; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+.order-pdf-page { width: 210mm; min-height: 297mm; margin: 0 auto; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color: #111827 !important; background-color: #ffffff !important; }
 .order-pdf-card { border: 2px solid #111827; padding: 14mm; }
-.order-pdf-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10mm; }
+.order-pdf-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10mm; color: #111827 !important; }
 .order-pdf-logo { height: 14mm; width: auto; object-fit: contain; }
-.order-pdf-title { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; margin: 0; }
-.order-pdf-meta { margin-top: 6px; font-size: 10px; color: #111827; display: flex; gap: 10px; flex-wrap: wrap; }
-.order-pdf-section { margin-top: 10mm; break-inside: avoid; }
-.order-pdf-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 6mm; font-size: 12px; font-weight: 800; }
-.order-pdf-section-title svg { width: 16px; height: 16px; }
-.order-pdf-kv { display: grid; grid-template-columns: 160px 1fr; row-gap: 6px; column-gap: 10px; font-size: 11px; }
-.order-pdf-k { font-weight: 800; }
-.order-pdf-v { font-weight: 600; }
-.order-pdf-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-.order-pdf-table th, .order-pdf-table td { border: 2px solid #111827; padding: 6px 8px; vertical-align: top; }
-.order-pdf-table th { font-weight: 900; background: #ffffff; }
+.order-pdf-title { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; margin: 0; color: #111827 !important; }
+.order-pdf-meta { margin-top: 6px; font-size: 10px; color: #111827 !important; display: flex; gap: 10px; flex-wrap: wrap; }
+.order-pdf-meta span { color: #111827 !important; }
+.order-pdf-section { margin-top: 10mm; break-inside: avoid; color: #111827 !important; }
+.order-pdf-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 6mm; font-size: 12px; font-weight: 800; color: #111827 !important; }
+.order-pdf-section-title svg { width: 16px; height: 16px; color: #111827 !important; }
+.order-pdf-kv { display: grid; grid-template-columns: 160px 1fr; row-gap: 6px; column-gap: 10px; font-size: 11px; color: #111827 !important; }
+.order-pdf-k { font-weight: 800; color: #111827 !important; }
+.order-pdf-v { font-weight: 600; color: #111827 !important; }
+.order-pdf-table { width: 100%; border-collapse: collapse; font-size: 11px; color: #111827 !important; }
+.order-pdf-table th, .order-pdf-table td { border: 2px solid #111827; padding: 6px 8px; vertical-align: top; color: #111827 !important; }
+.order-pdf-table th { font-weight: 900; background: #ffffff !important; }
 .order-pdf-table td { font-weight: 600; }
 .order-pdf-table thead { display: table-header-group; }
-.order-pdf-table tr { break-inside: avoid; }
+.order-pdf-table tr { break-inside: avoid; color: #111827 !important; }
 .order-pdf-summary { margin-top: 8mm; break-inside: avoid; }
 .order-pdf-right { text-align: right; }
 .order-pdf-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-.order-pdf-muted { color: #374151; }
+.order-pdf-muted { color: #374151 !important; }
 .order-pdf-total-row td { font-weight: 900; }
 
 @media screen {
   body { background: transparent; }
-  .order-pdf-page { width: 794px; min-height: 1123px; }
+  .order-pdf-page { width: 794px; min-height: 1123px; color: #111827 !important; background-color: #ffffff !important; }
   .order-pdf-card { padding: 56px; }
   .order-pdf-logo { height: 52px; }
 }
