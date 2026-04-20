@@ -78,6 +78,18 @@ type InventoryRow = Pick<
     | "photo_defect"
     | "has_water_dispenser"
     | "volume_total"
+    | "pnc_ml"
+    | "gas_charge"
+    | "compressor"
+    | "volume_freezer"
+    | "volume_refrigerator"
+    | "pressure_high_low"
+    | "freezing_capacity"
+    | "electric_current"
+    | "defrost_power"
+    | "frequency"
+    | "commercial_code"
+    | "manufacturing_date"
 > & {
     orders: ({
         id: string;
@@ -196,7 +208,7 @@ export default function InventoryPage() {
 
             let query = supabase
                 .from("products")
-                .select("id,internal_serial,original_serial,brand,model,voltage,product_type,market_class,refrigerant_gas,status,size,created_at,updated_at,order_id,photo_model,photo_product,photo_serial,photo_defect,has_water_dispenser,volume_total,orders(id,clients(name))", { count: 'exact' })
+                .select("id,internal_serial,original_serial,brand,model,voltage,product_type,market_class,refrigerant_gas,status,size,created_at,updated_at,order_id,photo_model,photo_product,photo_serial,photo_defect,has_water_dispenser,volume_total,pnc_ml,gas_charge,compressor,volume_freezer,volume_refrigerator,pressure_high_low,freezing_capacity,electric_current,defrost_power,frequency,commercial_code,manufacturing_date,orders(id,clients(name))", { count: 'exact' })
                 .order("created_at", { ascending: false })
                 .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 

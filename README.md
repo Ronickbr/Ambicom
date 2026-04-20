@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.3**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+  - **v2.32.4**:
+    - **Correção Etiqueta**: Resolvido problema em que campos técnicos (PNC, Carga de Gás, Compressor, etc.) não eram exibidos na etiqueta quando impressa a partir da página de Inventário. Ajuste na lógica de fallback da frequência para 60 Hz.
   - **v2.32.3**:
     - **Visualização de PDF**: Correção na interface de pré-visualização de ordens, onde fontes claras e transparentes dificultavam a leitura. Ajustes CSS base para suportar e forçar o texto no formato impressão independentemente do tema ativo na aplicação.
   - **v2.32.2**:

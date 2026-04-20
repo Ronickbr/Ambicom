@@ -31,9 +31,9 @@ export function generateLabelsTSPL(products: any[]): string {
     const sv = (v: any) => String(v ?? '').trim().replace(/"/g, "'").replace(/\r?\n/g, ' ') || '-';
     const MM = 8;
     const X0 = 16, X1 = 424, Y0 = 16;
-    
+
     // --- DISTRIBUIÇÃO PARA LIMITE DE 608 DOTS ---
-    const HEADER_H = 125; 
+    const HEADER_H = 125;
     const ROW_QR_H = 140;
     const ROW_STD = 56; // Ajustado para fechar a conta em ~608-610 dots totais
 
@@ -63,8 +63,8 @@ export function generateLabelsTSPL(products: any[]): string {
 
         // ROW 1: MODELO | VOLTAGEM
         lines.push(`LINE 220,${Y_HEADER_END},220,${Y_ROW1_END},2`);
-        lines.push(`TEXT 118,${Y_HEADER_END+10},"1",0,1,1,2,"MODELO"`, `TEXT 118,${Y_HEADER_END+35},"3",0,1,1,2,"${sv(p.model || p.modelo)}"`);
-        lines.push(`TEXT 322,${Y_HEADER_END+10},"1",0,1,1,2,"VOLTAGEM"`, `TEXT 322,${Y_HEADER_END+35},"3",0,1,1,2,"${sv(p.voltage || p.tensao)}"`);
+        lines.push(`TEXT 118,${Y_HEADER_END + 10},"1",0,1,1,2,"MODELO"`, `TEXT 118,${Y_HEADER_END + 35},"3",0,1,1,2,"${sv(p.model || p.modelo)}"`);
+        lines.push(`TEXT 322,${Y_HEADER_END + 10},"1",0,1,1,2,"VOLTAGEM"`, `TEXT 322,${Y_HEADER_END + 35},"3",0,1,1,2,"${sv(p.voltage || p.tensao)}"`);
         lines.push(`LINE ${X0},${Y_ROW1_END},${X1},${Y_ROW1_END},2`);
 
         // ROW 2: QR & SERIAL
@@ -74,13 +74,13 @@ export function generateLabelsTSPL(products: any[]): string {
         lines.push(`TEXT 280,${Y_ROW1_END + 25},"2",0,1,1,2,"NÚMERO DE SÉRIE AMBICOM:"`);
         lines.push(`TEXT 280,${Y_ROW1_END + 60},"5",0,1,1,2,"${serial}"`);
         // Inclusão do Commercial Code
-        lines.push(`TEXT 280,${Y_ROW1_END + 105},"3",0,1,1,2,"${commCode}"`);   
+        lines.push(`TEXT 280,${Y_ROW1_END + 105},"3",0,1,1,2,"${commCode}"`);
         lines.push(`LINE ${X0},${Y_ROW2_END},${X1},${Y_ROW2_END},2`);
 
         // ROW 3: PNC
         lines.push(`LINE 220,${Y_ROW2_END},220,${Y_ROW3_END},2`);
-        lines.push(`TEXT 118,${Y_ROW2_END+10},"1",0,1,1,2,"PNC/ML"`, `TEXT 118,${Y_ROW2_END+35},"3",0,1,1,2,"${sv(p.pnc_ml)}"`);
-        lines.push(`TEXT 322,${Y_ROW2_END+25},"3",0,1,1,2,"${sv(p.frequency) || '60 Hz'}"`);
+        lines.push(`TEXT 118,${Y_ROW2_END + 10},"1",0,1,1,2,"PNC/ML"`, `TEXT 118,${Y_ROW2_END + 35},"3",0,1,1,2,"${sv(p.pnc_ml)}"`);
+        lines.push(`TEXT 322,${Y_ROW2_END + 25},"3",0,1,1,2,"${sv(p.frequency || '60 Hz')}"`);
         lines.push(`LINE ${X0},${Y_ROW3_END},${X1},${Y_ROW3_END},2`);
 
         // ROWS 4-7: DADOS TÉCNICOS
@@ -93,10 +93,10 @@ export function generateLabelsTSPL(products: any[]): string {
         ];
 
         rows.forEach(r => {
-            lines.push(`LINE 150,${curY},150,${curY+ROW_STD},2`, `LINE 294,${curY},294,${curY+ROW_STD},2`);
+            lines.push(`LINE 150,${curY},150,${curY + ROW_STD},2`, `LINE 294,${curY},294,${curY + ROW_STD},2`);
             const c = [83, 222, 359];
             r.l.forEach((lbl, i) => {
-                lines.push(`TEXT ${c[i]},${curY+8},"1",0,1,1,2,"${lbl}"`, `TEXT ${c[i]},${curY+30},"2",0,1,1,2,"${sv(r.v[i])}"`);
+                lines.push(`TEXT ${c[i]},${curY + 8},"1",0,1,1,2,"${lbl}"`, `TEXT ${c[i]},${curY + 30},"2",0,1,1,2,"${sv(r.v[i])}"`);
             });
             curY += ROW_STD;
             lines.push(`LINE ${X0},${curY},${X1},${curY},2`);
@@ -124,15 +124,15 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         const X0 = 2, X1 = 53, Y0 = 2, CENTER_X = 27.5;
 
         // --- AJUSTE PARA TERMINAR EM 76mm (608 dots) ---
-        const H_HEADER = 17; 
-        const H_STD = 7.0; 
+        const H_HEADER = 17;
+        const H_STD = 7.0;
         const H_QR = 18;
 
         let curY = Y0;
 
         // --- HEADER ---
         doc.setFont("helvetica", "bold").setFontSize(16).text("Ambicom", X0 + 1, curY + 6);
-        
+
         doc.setFontSize(5);
         doc.text("PRODUTO", X1 - 1, curY + 3, { align: 'right' });
         doc.text("REMANUFATURADO", X1 - 1, curY + 5.2, { align: 'right' });
@@ -141,7 +141,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
 
         doc.setFont("helvetica", "bold").setFontSize(5).text("R. Wenceslau Marek, 10 - Águas Belas, SJP - PR", X0 + 1, curY + 11);
         doc.setFont("helvetica", "bold").setFontSize(8).text("SAC: 41-3382-5410", X0 + 1, curY + 15);
-        
+
         curY += H_HEADER;
         doc.setLineWidth(0.4).line(X0, curY, X1, curY);
 
@@ -180,7 +180,7 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         doc.setFontSize(5).text("PNC/ML", (X0 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
         doc.setFontSize(8).text(val(p.pnc_ml), (X0 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
         doc.setFontSize(5).text("FREQUÊNCIA", (X1 + CENTER_X) / 2, curY + 2.2, { align: 'center' });
-        doc.setFontSize(8).text(val(p.frequency) || "60 Hz", (X1 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
+        doc.setFontSize(8).text(val(p.frequency || "60 Hz"), (X1 + CENTER_X) / 2, curY + 5.8, { align: 'center' });
         curY += H_STD; doc.line(X0, curY, X1, curY);
 
         // ROW 4: GÁS | CARGA | COMPR. (3 Colunas)
@@ -223,20 +223,20 @@ export const generateLabelsPDF = async (products: any[]): Promise<jsPDF> => {
         curY += H_STD; doc.line(X0, curY, X1, curY);
 
         // Bordas externas laterais
-        doc.line(X0, Y0 + H_HEADER, X0, curY); 
+        doc.line(X0, Y0 + H_HEADER, X0, curY);
         doc.line(X1, Y0 + H_HEADER, X1, curY);
     }
     return doc;
 };
 
 export const pdfToBase64 = (doc: jsPDF): string => doc.output('datauristring').split(',')[1];
-export const printLabels = async (products: any[]) => { 
+export const printLabels = async (products: any[]) => {
     console.log("Chamando printLabels com produtos:", products);
     try {
-        const doc = await generateLabelsPDF(products); 
+        const doc = await generateLabelsPDF(products);
         console.log("Doc PDF gerado, chamando doc.save()...");
         const fileName = `etiquetas_ambicom_${Date.now()}.pdf`;
-        
+
         doc.save(fileName);
         console.log("doc.save() executado com sucesso.");
     } catch (err) {
@@ -247,18 +247,18 @@ export const printLabels = async (products: any[]) => {
 
 export const printLabelsNative = async (products: any[]) => {
     const doc = await generateLabelsPDF(products);
-    
+
     // Configura o PDF para abrir a janela de impressão automaticamente ao ser visualizado
     doc.autoPrint();
-    
+
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
-    
+
     // Cria um iframe oculto para impressão direta do documento PDF
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     iframe.src = url;
-    
+
     iframe.onload = () => {
         try {
             iframe.contentWindow?.focus();
@@ -267,9 +267,9 @@ export const printLabelsNative = async (products: any[]) => {
             console.error('Erro na impressão nativa do PDF:', e);
         }
     };
-    
+
     document.body.appendChild(iframe);
-    
+
     // Limpeza após tempo seguro
     setTimeout(() => {
         if (document.body.contains(iframe)) {
