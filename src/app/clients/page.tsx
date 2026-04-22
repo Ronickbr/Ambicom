@@ -428,162 +428,164 @@ export default function ClientsPage() {
 
         {/* Modal de Cadastro/Edição */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-500">
-            <div className="glass-card w-full max-w-lg space-y-6 sm:space-y-8 border-border/20 shadow-2xl p-6 sm:p-10 bg-card/95 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md animate-in fade-in duration-500 overflow-y-auto py-10 sm:py-20 flex items-center justify-center">
+            <div className="min-h-full w-full flex items-center justify-center p-4">
+              <div className="glass-card w-full max-w-lg space-y-6 sm:space-y-8 border-border/20 shadow-2xl p-6 sm:p-10 bg-card/95 relative overflow-hidden my-auto">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
-              <div className="flex items-center justify-between relative">
-                <div className="space-y-1">
-                  <h2 className="text-3xl font-black text-foreground tracking-tight">{editingClient ? "Sincronizar Perfil" : "Novo Cadastro"}</h2>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-black">Informações do Cliente / Parceiro</p>
-                </div>
-                <button onClick={() => setShowModal(false)} className="h-12 w-12 rounded-2xl bg-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all active:scale-95 hover:bg-red-500/20 hover:text-red-500 border border-border/20">
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveClient} className="space-y-6 relative">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Nome Completo / Razão Social</label>
-                  <div className="relative group/field">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                      <User className="h-4 w-4 text-muted-foreground group-focus-within/field:text-primary transition-colors" />
-                    </div>
-                    <input
-                      required
-                      value={clientForm.name}
-                      onChange={e => setClientForm({ ...clientForm, name: e.target.value })}
-                      className="w-full bg-foreground/5 border border-border/20 rounded-2xl pl-12 pr-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground transition-all shadow-inner font-bold"
-                      placeholder="Nome oficial da entidade"
-                    />
+                <div className="flex items-center justify-between relative">
+                  <div className="space-y-1">
+                    <h2 className="text-3xl font-black text-foreground tracking-tight">{editingClient ? "Sincronizar Perfil" : "Novo Cadastro"}</h2>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-black">Informações do Cliente / Parceiro</p>
                   </div>
+                  <button onClick={() => setShowModal(false)} className="h-12 w-12 rounded-2xl bg-foreground/5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all active:scale-95 hover:bg-red-500/20 hover:text-red-500 border border-border/20">
+                    <X className="h-6 w-6" />
+                  </button>
                 </div>
-                <div className="grid grid-cols-2 gap-6">
+
+                <form onSubmit={handleSaveClient} className="space-y-6 relative">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Documento Identificação</label>
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Nome Completo / Razão Social</label>
                     <div className="relative group/field">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                        <ShieldCheck className="h-4 w-4 text-muted-foreground group-focus-within/field:text-primary transition-colors" />
+                        <User className="h-4 w-4 text-muted-foreground group-focus-within/field:text-primary transition-colors" />
                       </div>
                       <input
-                        value={clientForm.tax_id}
-                        onChange={e => setClientForm({ ...clientForm, tax_id: formatTaxId(e.target.value) })}
-                        className="w-full bg-foreground/5 border border-border/20 rounded-2xl pl-12 pr-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 font-mono text-foreground transition-all shadow-inner font-bold"
-                        placeholder="CPF ou CNPJ"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Telefone Principal</label>
-                    <div className="relative group/field">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                        <Phone className="h-4 w-4 text-muted-foreground group-focus-within/field:text-primary transition-colors" />
-                      </div>
-                      <input
-                        value={clientForm.phone}
-                        onChange={e => setClientForm({ ...clientForm, phone: formatPhone(e.target.value) })}
+                        required
+                        value={clientForm.name}
+                        onChange={e => setClientForm({ ...clientForm, name: e.target.value })}
                         className="w-full bg-foreground/5 border border-border/20 rounded-2xl pl-12 pr-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground transition-all shadow-inner font-bold"
-                        placeholder="(00) 00000-0000"
+                        placeholder="Nome oficial da entidade"
                       />
                     </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">E-mail Corporativo</label>
-                  <div className="relative group/field">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                      <Mail className="h-4 w-4 text-muted-foreground group-focus-within/field:text-primary transition-colors" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Documento Identificação</label>
+                      <div className="relative group/field">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                          <ShieldCheck className="h-4 w-4 text-muted-foreground group-focus-within/field:text-primary transition-colors" />
+                        </div>
+                        <input
+                          value={clientForm.tax_id}
+                          onChange={e => setClientForm({ ...clientForm, tax_id: formatTaxId(e.target.value) })}
+                          className="w-full bg-foreground/5 border border-border/20 rounded-2xl pl-12 pr-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 font-mono text-foreground transition-all shadow-inner font-bold"
+                          placeholder="CPF ou CNPJ"
+                        />
+                      </div>
                     </div>
-                    <input
-                      type="email"
-                      value={clientForm.email}
-                      onChange={e => setClientForm({ ...clientForm, email: e.target.value })}
-                      className="w-full bg-foreground/5 border border-border/20 rounded-2xl pl-12 pr-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground transition-all shadow-inner font-bold"
-                      placeholder="email@empresa.com.br"
-                    />
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Telefone Principal</label>
+                      <div className="relative group/field">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                          <Phone className="h-4 w-4 text-muted-foreground group-focus-within/field:text-primary transition-colors" />
+                        </div>
+                        <input
+                          value={clientForm.phone}
+                          onChange={e => setClientForm({ ...clientForm, phone: formatPhone(e.target.value) })}
+                          className="w-full bg-foreground/5 border border-border/20 rounded-2xl pl-12 pr-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground transition-all shadow-inner font-bold"
+                          placeholder="(00) 00000-0000"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Endereço de Correspondência</label>
-                  <div className="relative group/field">
-                    <div className="absolute top-4 left-4 pointer-events-none">
-                      <MapPin className="h-4 w-4 text-muted-foreground group-focus-within/field:text-primary transition-colors" />
-                    </div>
-                    <textarea
-                      value={clientForm.address}
-                      onChange={e => setClientForm({ ...clientForm, address: e.target.value })}
-                      className="w-full bg-foreground/5 border border-border/20 rounded-2xl pl-12 pr-5 py-4 h-28 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 resize-none text-foreground transition-all shadow-inner font-bold"
-                      placeholder="Rua, Número, Bairro, Cidade - Estado"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1 block">Tabela de Preços por Tamanho (R$)</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Pequeno</label>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">E-mail Corporativo</label>
+                    <div className="relative group/field">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        <Mail className="h-4 w-4 text-muted-foreground group-focus-within/field:text-primary transition-colors" />
+                      </div>
                       <input
-                        type="number"
-                        step="0.01"
-                        value={clientForm.price_small}
-                        onChange={e => setClientForm({ ...clientForm, price_small: parseFloat(e.target.value) || 0 })}
-                        className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold"
-                        placeholder="0,00"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Médio</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={clientForm.price_medium}
-                        onChange={e => setClientForm({ ...clientForm, price_medium: parseFloat(e.target.value) || 0 })}
-                        className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold"
-                        placeholder="0,00"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Grande</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={clientForm.price_large}
-                        onChange={e => setClientForm({ ...clientForm, price_large: parseFloat(e.target.value) || 0 })}
-                        className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold"
-                        placeholder="0,00"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Grande/A</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={clientForm.price_large_a}
-                        onChange={e => setClientForm({ ...clientForm, price_large_a: parseFloat(e.target.value) || 0 })}
-                        className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold"
-                        placeholder="0,00"
+                        type="email"
+                        value={clientForm.email}
+                        onChange={e => setClientForm({ ...clientForm, email: e.target.value })}
+                        className="w-full bg-foreground/5 border border-border/20 rounded-2xl pl-12 pr-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground transition-all shadow-inner font-bold"
+                        placeholder="email@empresa.com.br"
                       />
                     </div>
                   </div>
-                </div>
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="flex-[2] bg-primary hover:brightness-110 text-primary-foreground font-black uppercase tracking-[0.2em] text-[10px] h-16 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 border-t border-border/20 flex items-center justify-center gap-3"
-                  >
-                    {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <ShieldCheck className="h-6 w-6" />}
-                    {editingClient ? "Sincronizar Alterações" : "Efetivar Cadastro"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 rounded-2xl border border-border/20 bg-foreground/5 hover:bg-foreground/10 transition-all text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground h-16 active:scale-95"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Endereço de Correspondência</label>
+                    <div className="relative group/field">
+                      <div className="absolute top-4 left-4 pointer-events-none">
+                        <MapPin className="h-4 w-4 text-muted-foreground group-focus-within/field:text-primary transition-colors" />
+                      </div>
+                      <textarea
+                        value={clientForm.address}
+                        onChange={e => setClientForm({ ...clientForm, address: e.target.value })}
+                        className="w-full bg-foreground/5 border border-border/20 rounded-2xl pl-12 pr-5 py-4 h-28 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 resize-none text-foreground transition-all shadow-inner font-bold"
+                        placeholder="Rua, Número, Bairro, Cidade - Estado"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1 block">Tabela de Preços por Tamanho (R$)</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Pequeno</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={clientForm.price_small}
+                          onChange={e => setClientForm({ ...clientForm, price_small: parseFloat(e.target.value) || 0 })}
+                          className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold"
+                          placeholder="0,00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Médio</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={clientForm.price_medium}
+                          onChange={e => setClientForm({ ...clientForm, price_medium: parseFloat(e.target.value) || 0 })}
+                          className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold"
+                          placeholder="0,00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Grande</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={clientForm.price_large}
+                          onChange={e => setClientForm({ ...clientForm, price_large: parseFloat(e.target.value) || 0 })}
+                          className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold"
+                          placeholder="0,00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Grande/A</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={clientForm.price_large_a}
+                          onChange={e => setClientForm({ ...clientForm, price_large_a: parseFloat(e.target.value) || 0 })}
+                          className="w-full bg-foreground/5 border border-border/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground transition-all shadow-inner font-bold"
+                          placeholder="0,00"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="flex-[2] bg-primary hover:brightness-110 text-primary-foreground font-black uppercase tracking-[0.2em] text-[10px] h-16 rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 border-t border-border/20 flex items-center justify-center gap-3"
+                    >
+                      {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <ShieldCheck className="h-6 w-6" />}
+                      {editingClient ? "Sincronizar Alterações" : "Efetivar Cadastro"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowModal(false)}
+                      className="flex-1 rounded-2xl border border-border/20 bg-foreground/5 hover:bg-foreground/10 transition-all text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground h-16 active:scale-95"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         )}

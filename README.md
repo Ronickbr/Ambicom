@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.6**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+  - **v2.32.6**:
+    - **Responsividade Mobile**: Correção na centralização e visibilidade do modal de gestão de clientes em dispositivos móveis. Implementação de container de rolagem e ajuste no empilhamento de campos para garantir acesso completo aos botões e ao cabeçalho.
   - **v2.32.5**:
     - **Configuração de Ambiente**: Criação do arquivo `.env` com as credenciais do Supabase e do arquivo `.env.example` para documentação do projeto.
   - **v2.32.4**:
