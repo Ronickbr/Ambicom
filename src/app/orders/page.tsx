@@ -752,96 +752,168 @@ export default function OrdersPage() {
     };
 
     const handlePrintPdfPreview = async () => {
-        const content = pdfPrintableRef.current;
-        if (!content) {
+        if (!pdfPreviewOrder || !pdfPreviewIssuedAt) {
             toast.error("Não foi possível preparar a impressão.");
             return;
         }
 
-        const title = pdfPreviewOrder ? `Pedido_${formatOrderCode(pdfPreviewOrder.id)}` : "Pedido";
-        const htmlContent = content.innerHTML;
+        const { jsPDF } = await import("jspdf");
+        const autoTableModule = await import("jspdf-autotable");
+        const autoTable = autoTableModule.default;
 
-        // Abre uma nova janela/aba dedicada para impressão.
-        // No Chrome mobile, iframe.contentWindow.print() imprime a página principal,
-        // então precisamos de uma janela dedicada com APENAS o relatório.
-        const printWindow = window.open("", "_blank");
+        const order = pdfPreviewOrder;
+        const issuedAt = pdfPreviewIssuedAt;
+        const client = (order as any).clients || {};
+        const code = formatOrderCode(order.id);
+        const { rows: summaryRows, grandTotal } = buildOrderSummaryBySize(order);
 
-        if (!printWindow) {
-            // Fallback: se popup bloqueado, tenta via iframe (desktop geralmente funciona)
-            const iframe = document.createElement("iframe");
-            iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
-            iframe.setAttribute("aria-hidden", "true");
-            document.body.appendChild(iframe);
+        const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 14;
+        const contentWidth = pageWidth - margin * 2;
 
-            const iframeDoc = iframe.contentDocument;
-            const iframeWin = iframe.contentWindow;
-            if (!iframeDoc || !iframeWin) {
-                iframe.remove();
-                toast.error("Impressão indisponível neste navegador.");
-                return;
+        // ══ Logo (tenta carregar, se falhar pula) ══
+        try {
+            const logoImg = new Image();
+            logoImg.crossOrigin = "anonymous";
+            await new Promise<void>((resolve) => {
+                logoImg.onload = () => resolve();
+                logoImg.onerror = () => resolve();
+                logoImg.src = ORDER_PDF_LOGO_URL;
+                setTimeout(resolve, 3000); // timeout de 3s
+            });
+            if (logoImg.complete && logoImg.naturalWidth > 0) {
+                doc.addImage(logoImg, "JPEG", pageWidth - margin - 40, margin, 40, 14);
             }
+        } catch { /* logo opcional */ }
 
-            iframeDoc.open();
-            iframeDoc.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=1024"><title>${title}</title><style>${ORDER_PDF_CSS}</style></head><body>${htmlContent}</body></html>`);
-            iframeDoc.close();
+        // ══ Título ══
+        let y = margin;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text(`Pedido de Venda #${code}`, margin, y + 6);
 
-            const images = Array.from(iframeDoc.images || []);
-            if (images.length > 0) {
-                await Promise.all(images.map(img => new Promise<void>(resolve => {
-                    if (img.complete) { resolve(); return; }
-                    const onDone = () => { img.removeEventListener("load", onDone); img.removeEventListener("error", onDone); resolve(); };
-                    img.addEventListener("load", onDone);
-                    img.addEventListener("error", onDone);
-                })));
-            }
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        y += 12;
+        doc.text(`Data de Emissão: ${issuedAt.toLocaleDateString("pt-BR")}    Hora: ${issuedAt.toLocaleTimeString("pt-BR")}`, margin, y);
 
-            iframeWin.addEventListener("afterprint", () => iframe.remove());
-            setTimeout(() => { try { iframeWin.focus(); iframeWin.print(); } catch { iframe.remove(); toast.error("Falha ao abrir diálogo de impressão."); } }, 300);
-            return;
+        // ══ Linha separadora ══
+        y += 6;
+        doc.setDrawColor(17, 24, 39);
+        doc.setLineWidth(0.5);
+        doc.line(margin, y, pageWidth - margin, y);
+
+        // ══ Informações do Cliente ══
+        y += 8;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text("Informações do Cliente", margin, y);
+
+        y += 6;
+        doc.setFontSize(9);
+        const clientFields = [
+            ["Nome:", safeText(client?.name, "N/A")],
+            ["CPF/CNPJ:", safeText(client?.tax_id, "N/A")],
+            ["Contato:", safeText(client?.phone, "N/A")],
+            ["Endereço:", safeText(client?.address, "Não informado")],
+        ];
+
+        for (const [label, value] of clientFields) {
+            doc.setFont("helvetica", "bold");
+            doc.text(label, margin, y);
+            doc.setFont("helvetica", "normal");
+            // Quebra texto longo no endereço
+            const lines = doc.splitTextToSize(value, contentWidth - 35);
+            doc.text(lines, margin + 32, y);
+            y += lines.length * 4.5;
         }
 
-        // Janela dedicada abriu com sucesso — escreve APENAS o relatório
-        printWindow.document.open();
-        printWindow.document.write(`<!doctype html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=1024">
-    <title>${title}</title>
-    <style>${ORDER_PDF_CSS}</style>
-</head>
-<body>
-    ${htmlContent}
-</body>
-</html>`);
-        printWindow.document.close();
+        // ══ Tabela de Itens ══
+        y += 6;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text("Itens do Pedido", margin, y);
+        y += 2;
 
-        // Aguarda imagens carregarem
-        const images = Array.from(printWindow.document.images || []);
-        if (images.length > 0) {
-            await Promise.all(images.map(img => new Promise<void>(resolve => {
-                if (img.complete) { resolve(); return; }
-                const onDone = () => { img.removeEventListener("load", onDone); img.removeEventListener("error", onDone); resolve(); };
-                img.addEventListener("load", onDone);
-                img.addEventListener("error", onDone);
-            })));
-        }
-
-        // Fecha a janela automaticamente após impressão
-        printWindow.addEventListener("afterprint", () => {
-            printWindow.close();
+        const itemsData = (order.order_items || []).map((item: any) => {
+            const p = item.products || {};
+            return [
+                safeText(p?.model, "N/A"),
+                safeText(p?.internal_serial, "N/A"),
+                safeText(p?.original_serial, "N/A"),
+                safeText(p?.brand, "N/A"),
+            ];
         });
 
-        // Dispara a impressão após o conteúdo estar totalmente carregado
-        setTimeout(() => {
-            try {
-                printWindow.focus();
-                printWindow.print();
-            } catch (e) {
-                logger.error("Erro ao imprimir:", e);
-                toast.error("Falha ao abrir diálogo de impressão.");
-            }
-        }, 400);
+        autoTable(doc, {
+            head: [["Produto", "S/N Interno", "S/N Original", "Marca"]],
+            body: itemsData,
+            startY: y,
+            margin: { left: margin, right: margin },
+            theme: "grid",
+            headStyles: { fillColor: [245, 245, 245], textColor: [17, 24, 39], fontStyle: "bold", fontSize: 9 },
+            bodyStyles: { fontSize: 8, textColor: [17, 24, 39] },
+            styles: { lineColor: [17, 24, 39], lineWidth: 0.3, cellPadding: 2.5 },
+            columnStyles: {
+                0: { cellWidth: contentWidth * 0.22 },
+                1: { cellWidth: contentWidth * 0.26, font: "courier" },
+                2: { cellWidth: contentWidth * 0.26, font: "courier" },
+                3: { cellWidth: contentWidth * 0.26 },
+            },
+        });
+
+        // ══ Tabela Resumo por Tamanho ══
+        const afterItemsY = (doc as any).lastAutoTable?.finalY || y + 20;
+        let summaryY = afterItemsY + 8;
+
+        // Verifica se precisa de nova página para o resumo
+        if (summaryY + (summaryRows.length + 2) * 8 > doc.internal.pageSize.getHeight() - 20) {
+            doc.addPage();
+            summaryY = margin;
+        }
+
+        const summaryData = summaryRows.map(r => [
+            r.size,
+            String(r.qty),
+            formatCurrencyBRL(r.unit),
+            formatCurrencyBRL(r.total),
+        ]);
+
+        // Linha de total
+        summaryData.push(["", "", "Total:", formatCurrencyBRL(grandTotal || order.total_amount || 0)]);
+
+        autoTable(doc, {
+            head: [["Tamanhos", "Quantidade", "Valor Uni.", "Valor Total"]],
+            body: summaryData,
+            startY: summaryY,
+            margin: { left: margin, right: margin },
+            theme: "grid",
+            headStyles: { fillColor: [245, 245, 245], textColor: [17, 24, 39], fontStyle: "bold", fontSize: 9 },
+            bodyStyles: { fontSize: 8, textColor: [17, 24, 39] },
+            styles: { lineColor: [17, 24, 39], lineWidth: 0.3, cellPadding: 2.5 },
+            columnStyles: {
+                0: { cellWidth: contentWidth * 0.35 },
+                1: { cellWidth: contentWidth * 0.20, halign: "right" },
+                2: { cellWidth: contentWidth * 0.22, halign: "right" },
+                3: { cellWidth: contentWidth * 0.23, halign: "right" },
+            },
+            didParseCell: (data: any) => {
+                // Negrito na linha de total
+                if (data.section === "body" && data.row.index === summaryData.length - 1) {
+                    data.cell.styles.fontStyle = "bold";
+                    data.cell.styles.fillColor = [240, 240, 240];
+                }
+            },
+        });
+
+        // ══ Abre o PDF na nova aba ══
+        const pdfBlob = doc.output("blob");
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        window.open(blobUrl, "_blank");
+
+        // Limpa memória após 2 minutos
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
     };
 
     const handleExportPDF = async (order?: Order) => {

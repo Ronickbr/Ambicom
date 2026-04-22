@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.13**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.14**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+  - **v2.32.14**:
+    - **Impressão via PDF Real**: O botão "Imprimir/Salvar PDF" agora gera um arquivo PDF real usando jsPDF + autoTable (em vez de tentar imprimir HTML). O PDF é aberto numa nova aba, onde o navegador permite imprimir ou salvar nativamente. Compatibilidade total com Chrome Desktop e Mobile.
   - **v2.32.13**:
     - **Impressão Isolada via Nova Janela**: Substituição completa do método de impressão. Antes usava `iframe.contentWindow.print()`, que no Chrome mobile imprime a página principal (incluindo o modal e o layout da aplicação). Agora abre uma janela/aba dedicada (`window.open`) contendo APENAS o HTML do relatório, eliminando completamente os elementos da interface na impressão. Mantém fallback via iframe para desktop.
   - **v2.32.12**:
