@@ -76,13 +76,14 @@ const ORDER_PDF_CSS = `
   .order-pdf-page { 
     width: 210mm !important; 
     min-height: 297mm !important; 
-    margin: 0 auto !important; 
+    margin: 0 !important; 
     padding: 0 !important;
     border: none !important;
     box-shadow: none !important;
+    display: block !important;
   }
   /* Oculta qualquer elemento que não seja o PDF se impresso da página principal */
-  header, footer, nav, button, .no-print { 
+  header, footer, nav, button, .no-print, [role="dialog"] > *:not(.order-pdf-page) { 
     display: none !important; 
   }
 }
@@ -747,7 +748,9 @@ export default function OrdersPage() {
 
         const title = pdfPreviewOrder ? `Pedido_${formatOrderCode(pdfPreviewOrder.id)}` : "Pedido";
         doc.open();
-        doc.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><style>${ORDER_PDF_CSS}</style></head><body></body></html>`);
+        // Usamos um viewport fixo de 1024px no iframe para garantir que o layout desktop (A4) 
+        // seja renderizado corretamente antes da escala de impressão no mobile.
+        doc.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=1024"><title>${title}</title><style>${ORDER_PDF_CSS}</style></head><body></body></html>`);
         doc.close();
         doc.body.innerHTML = content.innerHTML;
 
