@@ -63,77 +63,77 @@ const ORDER_PDF_LOGO_URL = "https://ambicom.com.br/wp-content/uploads/2019/03/lo
 const ORDER_PDF_CSS = `
 @page { 
   size: A4; 
-  margin: 0; 
+  margin: 8mm; 
 }
+
 @media print {
-  body { 
-    background: #fff !important; 
-    margin: 0 !important; 
-    padding: 0 !important; 
-    -webkit-print-color-adjust: exact; 
-    print-color-adjust: exact;
+  html, body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 210mm !important;
   }
+  
   .order-pdf-page { 
     width: 210mm !important; 
-    min-height: 297mm !important; 
-    margin: 0 !important; 
+    min-height: 280mm !important; 
+    margin: 0 auto !important; 
     padding: 0 !important;
     border: none !important;
     box-shadow: none !important;
     display: block !important;
+    background: #fff !important;
+    transform: none !important;
   }
-  /* Oculta qualquer elemento que não seja o PDF se impresso da página principal */
+
+  .order-pdf-card {
+    border: 2px solid #111827 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  /* Força a remoção de qualquer sombra ou borda de modal que possa vazar */
+  .glass-card, .rounded-2xl {
+    box-shadow: none !important;
+    border-color: #111827 !important;
+  }
+
+  /* Oculta interface do sistema */
   header, footer, nav, button, .no-print, [role="dialog"] > *:not(.order-pdf-page) { 
     display: none !important; 
   }
 }
 
+/* Base Styles (Shared) */
 html, body { padding: 0; margin: 0; }
 * { box-sizing: border-box; }
-body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #fff; color: #111827; }
-.order-pdf-page { width: 210mm; min-height: 297mm; margin: 0 auto; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color: #111827 !important; background-color: #ffffff !important; }
-.order-pdf-card { border: 2px solid #111827; padding: 14mm; }
-.order-pdf-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10mm; color: #111827 !important; }
+.order-pdf-page { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #111827 !important; background-color: #ffffff !important; }
+.order-pdf-card { border: 2px solid #111827; padding: 10mm; background: #fff; }
+.order-pdf-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8mm; color: #111827 !important; }
 .order-pdf-logo { height: 14mm; width: auto; object-fit: contain; }
 .order-pdf-title { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; margin: 0; color: #111827 !important; }
-.order-pdf-meta { margin-top: 6px; font-size: 10px; color: #111827 !important; display: flex; gap: 10px; flex-wrap: wrap; }
-.order-pdf-meta span { color: #111827 !important; }
-.order-pdf-section { margin-top: 10mm; break-inside: avoid; color: #111827 !important; }
-.order-pdf-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 6mm; font-size: 12px; font-weight: 800; color: #111827 !important; }
-.order-pdf-section-title svg { width: 16px; height: 16px; color: #111827 !important; }
-.order-pdf-kv { display: grid; grid-template-columns: 160px 1fr; row-gap: 6px; column-gap: 10px; font-size: 11px; color: #111827 !important; }
+.order-pdf-meta { margin-top: 4px; font-size: 10px; color: #111827 !important; display: flex; gap: 8px; flex-wrap: wrap; }
+.order-pdf-section { margin-top: 8mm; break-inside: avoid; color: #111827 !important; }
+.order-pdf-section-title { display: flex; align-items: center; gap: 6px; margin: 0 0 4mm; font-size: 12px; font-weight: 800; color: #111827 !important; }
+.order-pdf-kv { display: grid; grid-template-columns: 140px 1fr; row-gap: 4px; column-gap: 8px; font-size: 11px; color: #111827 !important; }
 .order-pdf-k { font-weight: 800; color: #111827 !important; }
 .order-pdf-v { font-weight: 600; color: #111827 !important; }
-.order-pdf-table { width: 100%; border-collapse: collapse; font-size: 11px; color: #111827 !important; }
-.order-pdf-table th, .order-pdf-table td { border: 2px solid #111827; padding: 6px 8px; vertical-align: top; color: #111827 !important; }
-.order-pdf-table th { font-weight: 900; background: #ffffff !important; }
-.order-pdf-table td { font-weight: 600; }
-.order-pdf-table thead { display: table-header-group; }
-.order-pdf-table tr { break-inside: avoid; color: #111827 !important; }
-.order-pdf-summary { margin-top: 8mm; break-inside: avoid; }
+.order-pdf-table { width: 100%; border-collapse: collapse; font-size: 10px; color: #111827 !important; }
+.order-pdf-table th, .order-pdf-table td { border: 1.5px solid #111827; padding: 4px 6px; vertical-align: top; color: #111827 !important; }
+.order-pdf-table th { font-weight: 900; background: #f9fafb !important; }
+.order-pdf-summary { margin-top: 6mm; break-inside: avoid; }
 .order-pdf-right { text-align: right; }
-.order-pdf-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-.order-pdf-muted { color: #374151 !important; }
-.order-pdf-total-row td { font-weight: 900; }
+.order-pdf-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.order-pdf-total-row td { font-weight: 900; background: #f9fafb !important; }
 
 @media screen {
   body { background: transparent; }
   .order-pdf-page { 
     width: 210mm; 
     min-height: 297mm; 
-    color: #111827 !important; 
     background-color: #ffffff !important; 
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    transform-origin: top center;
-  }
-  .order-pdf-card { padding: 14mm; }
-  .order-pdf-logo { height: 52px; }
-}
-
-/* Responsividade para o preview em telas muito pequenas */
-@media screen and (max-width: 640px) {
-  .order-pdf-page {
-    /* Permite que o container pai controle a rolagem, mantendo o tamanho fixo para fidelidade */
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3);
+    margin: 20px auto;
   }
 }
 `;

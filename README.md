@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.10**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.11**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+  - **v2.32.11**:
+    - **Remoção de Sombras na Impressão**: Limpeza total dos estilos de interface (sombras, bordas de modal e fundos cinzas) que vazavam para o documento impresso. Implementação de margens de segurança físicas (8mm) para evitar cortes nas bordas do papel em impressoras e drivers mobile.
   - **v2.32.10**:
     - **Ajuste de Visualização Mobile (Preview)**: Correção do layout do cabeçalho do preview e implementação de rolagem horizontal no container do documento. Agora, o relatório mantém as dimensões A4 reais sem cortes, permitindo navegação completa em telas pequenas.
   - **v2.32.9**:
