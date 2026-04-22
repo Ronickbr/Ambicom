@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.4**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.5**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+  - **v2.32.5**:
+    - **Configuração de Ambiente**: Criação do arquivo `.env` com as credenciais do Supabase e do arquivo `.env.example` para documentação do projeto.
   - **v2.32.4**:
     - **Correção Etiqueta**: Resolvido problema em que campos técnicos (PNC, Carga de Gás, Compressor, etc.) não eram exibidos na etiqueta quando impressa a partir da página de Inventário. Ajuste na lógica de fallback da frequência para 60 Hz.
   - **v2.32.3**:
