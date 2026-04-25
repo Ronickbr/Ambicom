@@ -24,6 +24,9 @@ Deno.serve(async (req: Request) => {
         const openaiKey = Deno.env.get('OPENAI_API_KEY');
         // Forçando um modelo estável para teste
         const model = Deno.env.get('OPENAI_MODEL') || "gpt-4o-mini";
+        const provider = "openai";
+        const endpoint = "https://api.openai.com/v1/responses";
+        const build = "2026-04-25";
 
         if (!openaiKey) {
             throw new Error('CONFIG_MISSING: OPENAI_API_KEY não está definida nas Secrets do Supabase.');
@@ -33,9 +36,9 @@ Deno.serve(async (req: Request) => {
             throw new Error('VALIDATION_ERROR: O campo "image" (base64) é obrigatório.');
         }
 
-        console.log(`OpenAI Request: Model=${model}`);
+        console.log(`OpenAI Request: Provider=${provider} Endpoint=${endpoint} Model=${model} Build=${build}`);
 
-        const response = await fetch("https://api.openai.com/v1/responses", {
+        const response = await fetch(endpoint, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${openaiKey}`,
@@ -43,12 +46,12 @@ Deno.serve(async (req: Request) => {
             },
             body: JSON.stringify({
                 model: model,
-                messages: [
+                input: [
                     {
                         role: "user",
                         content: [
                             {
-                                type: "text",
+                                type: "input_text",
                                 text: "Extraia dados técnicos desta etiqueta industrial para JSON. Retorne apenas o JSON: fabricante, modelo, codigo_comercial, cor, pnc_ml, numero_serie, data_fabricacao, gas_refrigerante, volume_total, tensao, tipo, classe_mercado, carga_gas, compressor, volume_freezer, volume_refrigerator, pressao_alta_baixa, capacidade_congelamento, corrente_eletrica, potencia_degelo, frequencia."
                             },
                             {
@@ -105,13 +108,16 @@ Deno.serve(async (req: Request) => {
             throw new Error(`OPENAI_REJECTED (${response.status}): ${aiError}`);
         }
 
-        const content = resData.choices?.[0]?.message?.content;
+        const content =
+            typeof resData?.output_text === "string" && resData.output_text.trim().length > 0
+                ? resData.output_text
+                : undefined;
 
         if (!content) {
             throw new Error('IA_EMPTY_CONTENT: A OpenAI não devolveu conteúdo na resposta.');
         }
 
-        return new Response(JSON.stringify({ content }), {
+        return new Response(JSON.stringify({ content, provider, model, build }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
         });
@@ -122,7 +128,8 @@ Deno.serve(async (req: Request) => {
 
         return new Response(JSON.stringify({
             error: message,
-            diagnostic: "Check your OpenAI credits or API key status on their dashboard."
+            provider: "openai",
+            diagnostic: "Verifique se a secret OPENAI_API_KEY está correta e se há créditos/limites na conta da OpenAI."
         }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 400,
