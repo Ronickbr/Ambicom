@@ -42,9 +42,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         logger.debug(`Fetching profile for user: ${userId}`);
         const start = performance.now();
 
-        // Create a timeout promise
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Profile fetch timeout")), 15000)
+        const timeoutMs = 15000;
+        const timeoutPromise = new Promise<{ data: any, error: any }>((resolve) =>
+            setTimeout(() => resolve({ data: null, error: { message: "Timeout" } }), timeoutMs)
         );
 
         try {
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     .select("*")
                     .eq("id", userId)
                     .single(),
-                timeoutPromise.then(() => ({ data: null, error: { message: "Timeout" } } as any))
+                timeoutPromise
             ]) as { data: any, error: any };
 
             const { data, error } = result;
@@ -64,6 +64,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             logger.debug(`Profile fetch completed in ${duration.toFixed(2)}ms`);
 
             if (error) {
+                if (error?.message === "Timeout") {
+                    logger.warn(`Profile fetch timeout após ${timeoutMs}ms`, { userId });
+                    return null;
+                }
                 logger.error("Error fetching profile:", error);
                 // If we have cached data, don't clear it on error to stay functional
                 return null;

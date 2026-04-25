@@ -82,15 +82,31 @@ export function useScan() {
       const configuredModel = import.meta.env.VITE_OPENAI_MODEL;
 
       // Chama a Edge Function do Supabase para processar o OCR com segurança
-      const { data, error: functionError } = await supabase.functions.invoke('ocr', {
+      const { data, error: functionError, response } = await supabase.functions.invoke('ocr', {
         body: {
           image: base64Image,
           model: typeof configuredModel === "string" && configuredModel.trim().length > 0 ? configuredModel.trim() : undefined
-        }
+        },
+        timeout: 60000
       });
 
       if (functionError) {
-        throw new Error(`Falha no processamento via Edge Function: ${functionError.message}`);
+        let description = functionError.message;
+        try {
+          const contentType = response?.headers?.get("Content-Type") || "";
+          if (response) {
+            if (contentType.includes("application/json")) {
+              const json = await response.json();
+              description = typeof json?.error === "string" ? json.error : JSON.stringify(json);
+            } else {
+              const text = await response.text();
+              if (typeof text === "string" && text.trim().length > 0) description = text;
+            }
+          }
+        } catch (e) {
+          logger.debug("Falha ao ler o corpo do erro da Edge Function", e);
+        }
+        throw new Error(`Falha no processamento via Edge Function: ${description}`);
       }
 
       const content = data?.content;
