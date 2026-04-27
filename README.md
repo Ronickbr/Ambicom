@@ -50,9 +50,11 @@ Siga os passos abaixo para rodar o projeto localmente:
    npm run dev
    ```
 
-Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.17**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
+Este projeto utiliza o versionamento semântico. A versão atual é **v2.32.18**, representando uma evolução significativa na arquitetura e funcionalidades do sistema original.
 
 ### 📝 Histórico de Versões
+  - **v2.32.18**:
+    - **Ordenação na Central de Revisão**: Atualização na tela de Aprovações para apresentar a listagem de forma decrescente utilizando o campo `internal_serial` (ordem natural de checagem), aprimorando o tracking operacional na revisão.
   - **v2.32.17**:
     - **Correção de Métricas do Dashboard**: Atualização da função RPC `get_dashboard_stats` para incluir as contagens de produtos 'VENDIDOS' e 'REPROVADOS'.
     - **Novo Card de Reprovados**: Implementação de um novo card no dashboard para exibição de produtos reprovados.

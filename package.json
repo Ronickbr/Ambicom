@@ -1,6 +1,6 @@
 {
   "name": "ambicom",
-  "version": "2.32.17",
+  "version": "2.32.18",
   "private": true,
   "type": "module",
   "scripts": {

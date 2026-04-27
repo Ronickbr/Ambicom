@@ -168,7 +168,7 @@ export default function ApprovalsPage() {
                     )
                 `)
                 .in("status", ["EM AVALIAÇÃO", "EM AVALIA├ç├âO"])
-                .order("updated_at", { ascending: false })
+                .order("internal_serial", { ascending: true })
                 .order("created_at", { foreignTable: "product_logs", ascending: false })
                 .limit(50);
 
