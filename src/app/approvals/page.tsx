@@ -18,6 +18,7 @@ import {
     Printer,
     Camera,
     History as HistoryIcon,
+    ChevronLeft,
     ChevronRight,
     Trash2
 } from "lucide-react";
@@ -51,74 +52,12 @@ export default function ApprovalsPage() {
     const [selectedProduct, setSelectedProduct] = useState<ProductWithLogs | null>(null);
     const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
     const [checklistSchema, setChecklistSchema] = useState<ChecklistItem[]>([]);
-    const [evidencePhotoUrl, setEvidencePhotoUrl] = useState<string | null>(null);
-    const [evidencePhotoLabel, setEvidencePhotoLabel] = useState<string | null>(null);
+    const [page, setPage] = useState(0);
+    const [totalCount, setTotalCount] = useState(0);
+
+    const PAGE_SIZE = 50;
 
     const isAuthorized = profile?.role === "SUPERVISOR" || profile?.role === "GESTOR" || profile?.role === "ADMIN";
-
-    useEffect(() => {
-        if (!authLoading && !isAuthorized) {
-            toast.error("Acesso exclusivo para supervisores");
-            navigate("/");
-            return;
-        }
-        if (isAuthorized) {
-            fetchPendingApprovals();
-            fetchChecklistSchema();
-        }
-    }, [authLoading, isAuthorized, navigate]);
-
-    const parseStorageObjectPath = (url: string): { bucket: string; path: string } | null => {
-        const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+)$/);
-        if (!match) return null;
-        return { bucket: match[1], path: decodeURIComponent(match[2]) };
-    };
-
-    const pickEvidencePhoto = (product: ProductWithLogs): { url: string; label: string } | null => {
-        if (product.photo_model) return { url: product.photo_model, label: "ETIQUETA (SCAN)" };
-        if (product.photo_serial) return { url: product.photo_serial, label: "ETIQUETA SERIAL" };
-        if (product.photo_product) return { url: product.photo_product, label: "VISTA GERAL" };
-        if (product.photo_defect) return { url: product.photo_defect, label: "EVIDÊNCIA DEFEITO" };
-        return null;
-    };
-
-    useEffect(() => {
-        const resolveEvidencePhotoUrl = async () => {
-            if (!selectedProduct) {
-                setEvidencePhotoUrl(null);
-                setEvidencePhotoLabel(null);
-                return;
-            }
-
-            const picked = pickEvidencePhoto(selectedProduct);
-            if (!picked) {
-                setEvidencePhotoUrl(null);
-                setEvidencePhotoLabel(null);
-                return;
-            }
-
-            setEvidencePhotoLabel(picked.label);
-
-            const storageObj = parseStorageObjectPath(picked.url);
-            if (!storageObj) {
-                setEvidencePhotoUrl(picked.url);
-                return;
-            }
-
-            try {
-                const { data, error } = await supabase.storage
-                    .from(storageObj.bucket)
-                    .createSignedUrl(storageObj.path, 60 * 60);
-
-                if (error) throw error;
-                setEvidencePhotoUrl(data?.signedUrl || picked.url);
-            } catch (e) {
-                setEvidencePhotoUrl(picked.url);
-            }
-        };
-
-        resolveEvidencePhotoUrl();
-    }, [selectedProduct]);
 
     const fetchChecklistSchema = async () => {
         try {
@@ -155,10 +94,10 @@ export default function ApprovalsPage() {
         }
     };
 
-    const fetchPendingApprovals = async () => {
+    const fetchPendingApprovals = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from("products")
                 .select(`
                     *,
@@ -166,21 +105,49 @@ export default function ApprovalsPage() {
                         data,
                         created_at
                     )
-                `)
-                .in("status", ["EM AVALIAÇÃO", "EM AVALIA├ç├âO"])
-                .order("internal_serial", { ascending: true })
+                `, { count: "exact" })
+                .eq("status", "EM AVALIAÇÃO")
+                .order("updated_at", { ascending: false })
                 .order("created_at", { foreignTable: "product_logs", ascending: false })
-                .limit(50);
+                .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+            if (searchTerm) {
+                query = query.or(`internal_serial.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%,brand.ilike.%${searchTerm}%`);
+            }
+
+            const { data, count, error } = await query;
 
             if (error) throw error;
-            setProducts((data as any[]) || []);
+            setProducts((data as ProductWithLogs[]) || []);
+            setTotalCount(count || 0);
         } catch (error) {
             logger.error("Erro ao buscar aprovações:", error);
             toast.error("Erro ao carregar fila de aprovação");
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [page, searchTerm]);
+
+    useEffect(() => {
+        if (!authLoading && !isAuthorized) {
+            toast.error("Acesso exclusivo para supervisores");
+            navigate("/");
+            return;
+        }
+        if (isAuthorized) {
+            fetchChecklistSchema();
+        }
+    }, [authLoading, isAuthorized, navigate]);
+
+    useEffect(() => {
+        setPage(0);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        if (isAuthorized) {
+            fetchPendingApprovals();
+        }
+    }, [isAuthorized, fetchPendingApprovals]);
 
     const handleAction = async (productId: string, action: "APPROVE" | "REJECT") => {
         setIsProcessing(productId);
@@ -227,8 +194,14 @@ export default function ApprovalsPage() {
                 });
             }
 
-            setProducts(prev => prev.filter(p => p.id !== productId));
             if (selectedProduct?.id === productId) setSelectedProduct(null);
+
+            const shouldGoToPreviousPage = products.length === 1 && page > 0;
+            if (shouldGoToPreviousPage) {
+                setPage(prev => Math.max(0, prev - 1));
+            } else {
+                fetchPendingApprovals();
+            }
         } catch (error) {
             const err = error as Error;
             toast.error("Erro ao processar ação", { description: err.message });
@@ -241,12 +214,6 @@ export default function ApprovalsPage() {
         const { printLabels } = await import("@/lib/export-utils");
         await printLabels([product]);
     };
-
-    const filteredProducts = products.filter(p =>
-        (p.internal_serial || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.model || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.brand || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
     if (authLoading) return null;
 
@@ -302,11 +269,11 @@ export default function ApprovalsPage() {
 
                 </div>
 
-                {filteredProducts.length > 0 ? (
+                {products.length > 0 ? (
                     <div className="space-y-4">
                         {/* Mobile Compact View */}
                         <div className="md:hidden space-y-3 px-2">
-                            {filteredProducts.map((product) => {
+                            {products.map((product) => {
                                 const lastLogWithChecklist = product.product_logs?.find(l => l.data?.checklist);
                                 const checklist = lastLogWithChecklist?.data?.checklist || {};
                                 const activeItemIds = checklistSchema.map(i => i.id);
@@ -436,7 +403,7 @@ export default function ApprovalsPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border/20">
-                                        {filteredProducts.map((product) => {
+                                        {products.map((product) => {
                                             const lastLogWithChecklist = product.product_logs?.find(l => l.data?.checklist);
                                             const checklist = lastLogWithChecklist?.data?.checklist || {};
                                             const activeItemIds = checklistSchema.map(i => i.id);
@@ -511,6 +478,31 @@ export default function ApprovalsPage() {
                                 </table>
                             </div>
                         </div>
+
+                        <div className="flex items-center justify-between p-4 border border-border/10 rounded-2xl bg-card/50 shadow-lg">
+                            <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
+                                Mostrando <span className="text-foreground font-bold">{products.length}</span> de <span className="text-foreground font-bold">{totalCount}</span> registros
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                                    disabled={page === 0}
+                                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-border/10"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                </button>
+                                <span className="text-[10px] font-black text-foreground px-4 bg-foreground/5 h-10 flex items-center rounded-xl border border-border/10 uppercase tracking-widest">
+                                    Pág {page + 1}
+                                </span>
+                                <button
+                                    onClick={() => setPage(p => p + 1)}
+                                    disabled={(page + 1) * PAGE_SIZE >= totalCount}
+                                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-border/10"
+                                >
+                                    <ChevronRight className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <div className="glass-card flex flex-col items-center justify-center py-32 text-center border-dashed border border-border/10 bg-card/20">
@@ -566,8 +558,11 @@ export default function ApprovalsPage() {
                                 </div>
                                 <div className="flex justify-center">
                                     {(() => {
-                                        const photo = evidencePhotoUrl;
-                                        const label = evidencePhotoLabel || "FOTO";
+                                        const photo = selectedProduct.photo_product || selectedProduct.photo_model || selectedProduct.photo_serial || selectedProduct.photo_defect;
+                                        const label = selectedProduct.photo_product ? "VISTA GERAL" :
+                                            selectedProduct.photo_model ? "ETIQUETA MODELO" :
+                                                selectedProduct.photo_serial ? "ETIQUETA SERIAL" :
+                                                    selectedProduct.photo_defect ? "EVIDÊNCIA DEFEITO" : "FOTO";
 
                                         return (
                                             <div
@@ -611,7 +606,7 @@ export default function ApprovalsPage() {
                                         }
 
                                         // Filtra os itens do log que ainda existem no esquema atual
-                                        const filteredItems = checklistSchema.filter(item => Object.prototype.hasOwnProperty.call(checklist, item.id));
+                                        const filteredItems = checklistSchema.filter(item => checklist.hasOwnProperty(item.id));
 
                                         // Agrupa por categoria
                                         const groupedItems = filteredItems.reduce((acc, item) => {

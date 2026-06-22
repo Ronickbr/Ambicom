@@ -11,6 +11,7 @@ import {
     CheckCircle2,
     Loader2,
     ArrowRight,
+    ChevronLeft,
     ChevronRight,
     Box
 } from "lucide-react";
@@ -27,8 +28,39 @@ export default function TechnicianPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [page, setPage] = useState(0);
+    const [totalCount, setTotalCount] = useState(0);
+
+    const PAGE_SIZE = 50;
 
     const isAuthorized = profile?.role === "TECNICO" || profile?.role === "SUPERVISOR" || profile?.role === "GESTOR" || profile?.role === "ADMIN";
+
+    const fetchQueue = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            let query = supabase
+                .from("products")
+                .select("*", { count: "exact" })
+                .eq("status", "CADASTRO")
+                .order("created_at", { ascending: true })
+                .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+            if (searchTerm) {
+                query = query.or(`internal_serial.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`);
+            }
+
+            const { data, count, error } = await query;
+
+            if (error) throw error;
+            setProducts((data as Product[]) || []);
+            setTotalCount(count || 0);
+        } catch (error) {
+            logger.error("Erro ao buscar fila:", error);
+            toast.error("Erro ao carregar fila técnica");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [page, searchTerm]);
 
     useEffect(() => {
         if (!authLoading && !isAuthorized) {
@@ -36,35 +68,17 @@ export default function TechnicianPage() {
             navigate("/");
             return;
         }
+    }, [authLoading, isAuthorized, navigate]);
 
-        const fetchQueue = async () => {
-            setIsLoading(true);
-            try {
-                const { data, error } = await supabase
-                    .from("products")
-                    .select("*")
-                    .eq("status", "CADASTRO")
-                    .order("created_at", { ascending: true });
+    useEffect(() => {
+        setPage(0);
+    }, [searchTerm]);
 
-                if (error) throw error;
-                setProducts((data as Product[]) || []);
-            } catch (error) {
-                logger.error("Erro ao buscar fila:", error);
-                toast.error("Erro ao carregar fila técnica");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
+    useEffect(() => {
         if (isAuthorized) {
             fetchQueue();
         }
-    }, [authLoading, isAuthorized, navigate]);
-
-    const filteredProducts = products.filter(p =>
-        (p.internal_serial || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.model || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    }, [isAuthorized, fetchQueue]);
 
     if (authLoading) return null;
 
@@ -125,12 +139,12 @@ export default function TechnicianPage() {
                     </div>
                 </div>
 
-                {filteredProducts.length > 0 ? (
+                {products.length > 0 ? (
                     <div className="glass-card overflow-hidden rounded-2xl border border-border/20 shadow-2xl p-0">
                         <div className="relative group/table">
                             {/* Mobile Compact View */}
                             <div className="md:hidden space-y-3 px-2 py-4">
-                                {filteredProducts.map((product) => {
+                                {products.map((product) => {
                                     const isExpanded = expandedId === product.id;
                                     return (
                                         <div
@@ -243,7 +257,7 @@ export default function TechnicianPage() {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-white/5">
-                                                {filteredProducts.map((product) => (
+                                                {products.map((product) => (
                                                     <tr
                                                         key={product.id}
                                                         className="group hover:bg-white/[0.02] transition-all cursor-pointer"
@@ -290,6 +304,31 @@ export default function TechnicianPage() {
                                             </tbody>
                                         </table>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 border-t border-border/10 bg-card/50 shadow-lg">
+                                <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
+                                    Mostrando <span className="text-foreground font-bold">{products.length}</span> de <span className="text-foreground font-bold">{totalCount}</span> registros
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                                        disabled={page === 0}
+                                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-border/10"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </button>
+                                    <span className="text-[10px] font-black text-foreground px-4 bg-foreground/5 h-10 flex items-center rounded-xl border border-border/10 uppercase tracking-widest">
+                                        Pág {page + 1}
+                                    </span>
+                                    <button
+                                        onClick={() => setPage(p => p + 1)}
+                                        disabled={(page + 1) * PAGE_SIZE >= totalCount}
+                                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-border/10"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </div>
                         </div>

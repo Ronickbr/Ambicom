@@ -47,6 +47,8 @@ next-env.d.ts
 .agent
 leitor-de-etiquetas-1cf8877b69dc.json
 dist
+# docs
+docs
 
 # tools
 tools/print-bridge/node_modules
