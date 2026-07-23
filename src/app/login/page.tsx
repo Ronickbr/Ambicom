@@ -200,7 +200,7 @@ export default function LoginPage() {
                 {/* Footer Link */}
                 <div className="text-center">
                     <button
-                        onClick={() => navigate("/")}
+                        onClick={() => navigate("https://www.ambicom.com.br/")}
                         className="text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest font-bold opacity-50 hover:opacity-100"
                     >
                         Voltar para a página inicial
