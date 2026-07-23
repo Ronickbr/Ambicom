@@ -199,12 +199,14 @@ export default function LoginPage() {
                 </div>
                 {/* Footer Link */}
                 <div className="text-center">
-                    <button
-                        onClick={() => navigate("https://www.ambicom.com.br/")}
+                   <a
+                        href="https://www.ambicom.com.br"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest font-bold opacity-50 hover:opacity-100"
                     >
                         Voltar para a página inicial
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
