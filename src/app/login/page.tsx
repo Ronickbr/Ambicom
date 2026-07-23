@@ -131,14 +131,14 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* Test Access Section - HIDDEN
+                {/* Test Access Section - HIDDEN */}
                 <div className="pt-4 space-y-4">
                     <div className="flex items-center gap-3 px-2">
                         <div className="h-px flex-1 bg-foreground/5" />
                         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] whitespace-nowrap">Ambiente de Teste</span>
                         <div className="h-px flex-1 bg-foreground/5" />
                     </div>
-
+  {/*
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             type="button"
@@ -152,7 +152,7 @@ export default function LoginPage() {
                             <ShieldCheck className="h-5 w-5 text-primary mb-1 group-hover:scale-110 transition-transform" />
                             <span className="text-[10px] font-black text-foreground uppercase tracking-wider">Admin</span>
                         </button>
-
+*/}
                         <button
                             type="button"
                             onClick={() => {
@@ -197,7 +197,6 @@ export default function LoginPage() {
                         Clique para preencher e clique em "Entrar" para validar
                     </p>
                 </div>
-                */}
                 {/* Footer Link */}
                 <div className="text-center">
                     <button
