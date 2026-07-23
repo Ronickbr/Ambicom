@@ -131,7 +131,7 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* Test Access Section */}
+                {/* Test Access Section - HIDDEN
                 <div className="pt-4 space-y-4">
                     <div className="flex items-center gap-3 px-2">
                         <div className="h-px flex-1 bg-foreground/5" />
@@ -197,7 +197,7 @@ export default function LoginPage() {
                         Clique para preencher e clique em "Entrar" para validar
                     </p>
                 </div>
-
+                */}
                 {/* Footer Link */}
                 <div className="text-center">
                     <button
