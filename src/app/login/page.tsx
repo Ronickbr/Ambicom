@@ -138,9 +138,9 @@ export default function LoginPage() {
                         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] whitespace-nowrap">Ambiente de Teste</span>
                         <div className="h-px flex-1 bg-foreground/5" />
                     </div>
-  {/*
+  
                     <div className="grid grid-cols-2 gap-3">
-                        <button
+                      {/*  <button
                             type="button"
                             onClick={() => {
                                 setEmail("kmkz.clan@gmail.com");
